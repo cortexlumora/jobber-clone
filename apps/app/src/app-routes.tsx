@@ -1,5 +1,4 @@
 import { createBrowserRouter } from "react-router";
-import DashboardPage from "./pages/dashboard/page";
 import CreatePage from "./pages/create/page";
 import HomePage from "./pages/home/page";
 import SchedulePage from "./pages/schedule/page";
@@ -14,23 +13,28 @@ import ExpensesPage from "./pages/expenses/page";
 import TimesheetsPage from "./pages/timesheets/page";
 import CommunityPage from "./pages/community/page";
 import AppsPage from "./pages/apps/page";
+import AppLayout from "./pages/app-layout";
 
 const routes = createBrowserRouter([
-	{ path: "/", element: <HomePage /> },
-	{ path: "/create", element: <CreatePage /> },
-	{ path: "/dashboard", element: <DashboardPage /> },
-	{ path: "/schedule", element: <SchedulePage /> },
-	{ path: "/clients", element: <ClientsPage /> },
-	{ path: "/requests", element: <RequestsPage /> },
-	{ path: "/quotes", element: <QuotesPage /> },
-	{ path: "/jobs", element: <JobsPage /> },
-	{ path: "/invoices", element: <InvoicesPage /> },
-	{ path: "/marketing", element: <MarketingPage /> },
-	{ path: "/reports", element: <ReportsPage /> },
-	{ path: "/expenses", element: <ExpensesPage /> },
-	{ path: "/timesheets", element: <TimesheetsPage /> },
-	{ path: "/community", element: <CommunityPage /> },
-	{ path: "/apps", element: <AppsPage /> },
-])
+	{
+		element: <AppLayout />,
+		children: [
+			{ path: "/", element: <HomePage /> },
+			{ path: "/create", element: <CreatePage /> },
+			{ path: "/schedule", element: <SchedulePage /> },
+			{ path: "/clients", element: <ClientsPage /> },
+			{ path: "/requests", element: <RequestsPage /> },
+			{ path: "/quotes", element: <QuotesPage /> },
+			{ path: "/jobs", element: <JobsPage /> },
+			{ path: "/invoices", element: <InvoicesPage /> },
+			{ path: "/marketing", element: <MarketingPage /> },
+			{ path: "/reports", element: <ReportsPage /> },
+			{ path: "/expenses", element: <ExpensesPage /> },
+			{ path: "/timesheets", element: <TimesheetsPage /> },
+			{ path: "/community", element: <CommunityPage /> },
+			{ path: "/apps", element: <AppsPage /> },
+		],
+	},
+]);
 
-export default routes
+export default routes;
