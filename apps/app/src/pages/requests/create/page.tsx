@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDropzone } from "react-dropzone";
-import { getClients } from "@/lib/api";
-import { Upload, X } from "lucide-react";
+import { getClients, presignUpload, uploadFileToS3, createRequest } from "@/lib/api";
+import { Upload, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,42 +17,62 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import type { CreateRequestForm } from "@repo/zod/request";
 
-interface CreateRequestFormData {
-	clientId: string;
-	serviceDescription: string;
-	bestDay: string;
-	alternateDay: string;
-	preferredArrival: "morning" | "anytime" | "afternoon";
-	assessmentRequired: boolean;
-	internalNotes: string;
+interface UploadedFile {
+	fileId: string;
+	name: string;
 }
 
 const CreateRequestPage = () => {
 	const navigate = useNavigate();
-	const [files, setFiles] = useState<File[]>([]);
-
-	const { getRootProps, getInputProps, isDragActive } = useDropzone({
-		onDrop: (acceptedFiles) => {
-			setFiles((prev) => [...prev, ...acceptedFiles]);
-		},
-	});
-
-	const removeFile = (index: number) => {
-		setFiles((prev) => prev.filter((_, i) => i !== index));
-	};
+	const queryClient = useQueryClient();
+	const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+	const [uploading, setUploading] = useState(false);
 
 	const { data: clients } = useQuery({
 		queryKey: ["clients"],
 		queryFn: getClients,
 	});
 
+	const mutation = useMutation({
+		mutationFn: createRequest,
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["requests"] });
+			navigate("/requests");
+		},
+	});
+
+	const { getRootProps, getInputProps, isDragActive } = useDropzone({
+		onDrop: async (acceptedFiles) => {
+			setUploading(true);
+			try {
+				const results = await Promise.all(
+					acceptedFiles.map(async (file) => {
+						const { fileId, uploadUrl } = await presignUpload(file.name, file.type);
+						await uploadFileToS3(uploadUrl, file);
+						return { fileId, name: file.name };
+					}),
+				);
+				setUploadedFiles((prev) => [...prev, ...results]);
+			} catch (err) {
+				console.error("File upload failed:", err);
+			} finally {
+				setUploading(false);
+			}
+		},
+	});
+
+	const removeFile = (index: number) => {
+		setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+	};
+
 	const {
 		register,
 		handleSubmit,
 		control,
 		formState: { errors },
-	} = useForm<CreateRequestFormData>({
+	} = useForm<CreateRequestForm>({
 		defaultValues: {
 			clientId: "",
 			serviceDescription: "",
@@ -61,11 +81,15 @@ const CreateRequestPage = () => {
 			preferredArrival: "anytime",
 			assessmentRequired: false,
 			internalNotes: "",
+			fileIds: [],
 		},
 	});
 
-	const onSubmit = (data: CreateRequestFormData) => {
-		console.log("Request data:", data, "Files:", files);
+	const onSubmit = (data: CreateRequestForm) => {
+		mutation.mutate({
+			...data,
+			fileIds: uploadedFiles.map((f) => f.fileId),
+		});
 	};
 
 	return (
@@ -205,16 +229,25 @@ const CreateRequestPage = () => {
 						}`}
 					>
 						<input {...getInputProps()} />
-						<Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-						<p className="text-sm text-muted-foreground">
-							{isDragActive ? "Drop your files here" : "Drag your files here"}
-						</p>
+						{uploading ? (
+							<>
+								<Loader2 className="mx-auto h-8 w-8 text-muted-foreground mb-2 animate-spin" />
+								<p className="text-sm text-muted-foreground">Uploading...</p>
+							</>
+						) : (
+							<>
+								<Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+								<p className="text-sm text-muted-foreground">
+									{isDragActive ? "Drop your files here" : "Drag your files here"}
+								</p>
+							</>
+						)}
 					</div>
-					{files.length > 0 && (
+					{uploadedFiles.length > 0 && (
 						<div className="space-y-2">
-							{files.map((file, index) => (
+							{uploadedFiles.map((file, index) => (
 								<div
-									key={`${file.name}-${index}`}
+									key={file.fileId}
 									className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
 								>
 									<span className="truncate">{file.name}</span>
@@ -234,8 +267,13 @@ const CreateRequestPage = () => {
 				</div>
 
 				{/* Actions */}
+				{mutation.isError && (
+					<p className="text-sm text-destructive">{mutation.error.message}</p>
+				)}
 				<div className="flex gap-2 pt-2">
-					<Button type="submit">Save Request</Button>
+					<Button type="submit" disabled={mutation.isPending || uploading}>
+						{mutation.isPending ? "Saving..." : "Save Request"}
+					</Button>
 					<Button type="button" variant="outline" onClick={() => navigate("/requests")}>
 						Cancel
 					</Button>

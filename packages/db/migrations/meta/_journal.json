@@ -15,6 +15,13 @@
       "when": 1772784510534,
       "tag": "0001_sudden_mandroid",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772801620828,
+      "tag": "0002_sad_shinko_yamashiro",
+      "breakpoints": true
     }
   ]
 }
