@@ -1,4 +1,4 @@
-name: Deploy to Railway (Docker)
+name: Deploy API to Railway
 
 on:
   push:
@@ -13,7 +13,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    environment: development
     steps:
       - uses: actions/checkout@v4
 
@@ -21,10 +21,6 @@ jobs:
         run: npm install -g @railway/cli
 
       - name: Deploy to Railway
-        run: |
-          npx railway up \
-            --service ${{ vars.RAILWAY_TOKEN }} \
-            --detach
-
+        run: railway up --service ${{ vars.RAILWAY_SERVICE_NAME }} --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
