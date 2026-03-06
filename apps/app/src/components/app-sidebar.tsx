@@ -47,7 +47,7 @@ function NavGroupSection({
 export function AppSidebar() {
 	return (
 		<Sidebar>
-			<SidebarHeader className="border-b">
+			<SidebarHeader className="border-b h-14 justify-center">
 				<span className="text-lg font-semibold px-2">Jobber</span>
 			</SidebarHeader>
 			<SidebarContent>
