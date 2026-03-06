@@ -1,3 +1,8 @@
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router";
+import { getClients } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import {
 	Table,
 	TableBody,
@@ -7,40 +12,58 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 
-const clients = [
-	{ id: 1, name: "John Smith", email: "john@example.com", phone: "(555) 123-4567", status: "Active" },
-	{ id: 2, name: "Jane Doe", email: "jane@example.com", phone: "(555) 234-5678", status: "Active" },
-	{ id: 3, name: "Bob Johnson", email: "bob@example.com", phone: "(555) 345-6789", status: "Inactive" },
-	{ id: 4, name: "Alice Williams", email: "alice@example.com", phone: "(555) 456-7890", status: "Active" },
-	{ id: 5, name: "Charlie Brown", email: "charlie@example.com", phone: "(555) 567-8901", status: "Lead" },
-];
-
 const ClientsPage = () => {
+	const navigate = useNavigate();
+	const { data: clients, isLoading, isError, error } = useQuery({
+		queryKey: ["clients"],
+		queryFn: getClients,
+	});
+
 	return (
 		<div>
-			<h2 className="text-2xl font-semibold mb-4">Clients</h2>
-			<div className="rounded-lg border">
-			<Table>
-				<TableHeader>
-					<TableRow>
-						<TableHead>Name</TableHead>
-						<TableHead>Email</TableHead>
-						<TableHead>Phone</TableHead>
-						<TableHead>Status</TableHead>
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{clients.map((client) => (
-						<TableRow key={client.id}>
-							<TableCell className="font-medium">{client.name}</TableCell>
-							<TableCell>{client.email}</TableCell>
-							<TableCell>{client.phone}</TableCell>
-							<TableCell>{client.status}</TableCell>
-						</TableRow>
-					))}
-				</TableBody>
-			</Table>
+			<div className="flex items-center justify-between mb-4">
+				<h2 className="text-2xl font-semibold">Clients</h2>
+				<Button onClick={() => navigate("/clients/create")}>
+					<Plus className="h-4 w-4 mr-1" />
+					New Client
+				</Button>
 			</div>
+			{isLoading && <p className="text-muted-foreground">Loading...</p>}
+			{isError && <p className="text-sm text-destructive">{error.message}</p>}
+			{clients && (
+				<div className="rounded-lg border">
+					<Table>
+						<TableHeader>
+							<TableRow>
+								<TableHead>Name</TableHead>
+								<TableHead>Company</TableHead>
+								<TableHead>Email</TableHead>
+								<TableHead>Phone</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{clients.length === 0 && (
+								<TableRow>
+									<TableCell colSpan={4} className="text-center text-muted-foreground">
+										No clients yet
+									</TableCell>
+								</TableRow>
+							)}
+							{clients.map((client) => (
+								<TableRow key={client.id}>
+									<TableCell className="font-medium">
+										{client.title !== "none" ? `${client.title} ` : ""}
+										{client.firstName} {client.lastName}
+									</TableCell>
+									<TableCell>{client.companyName ?? "—"}</TableCell>
+									<TableCell>{client.emails[0]?.value ?? "—"}</TableCell>
+									<TableCell>{client.phones[0]?.number ?? "—"}</TableCell>
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
+				</div>
+			)}
 		</div>
 	);
 };

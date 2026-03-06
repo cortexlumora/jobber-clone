@@ -1,7 +1,9 @@
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClientSchema, type CreateClientForm } from "@repo/zod/client";
+import { createClient } from "@/lib/api";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +19,16 @@ import {
 
 const CreateClientPage = () => {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
+
+	const mutation = useMutation({
+		mutationFn: createClient,
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["clients"] });
+			navigate("/clients");
+		},
+	});
+
 	const {
 		register,
 		handleSubmit,
@@ -51,8 +63,7 @@ const CreateClientPage = () => {
 	} = useFieldArray({ control, name: "emails" });
 
 	const onSubmit = (data: CreateClientForm) => {
-		console.log(data);
-		navigate("/clients");
+		mutation.mutate(data);
 	};
 
 	return (
@@ -319,8 +330,13 @@ const CreateClientPage = () => {
 					)}
 				</div>
 
+				{mutation.isError && (
+					<p className="text-sm text-destructive">{mutation.error.message}</p>
+				)}
 				<div className="flex gap-2 pt-2">
-					<Button type="submit">Create Client</Button>
+					<Button type="submit" disabled={mutation.isPending}>
+						{mutation.isPending ? "Creating..." : "Create Client"}
+					</Button>
 					<Button type="button" variant="outline" onClick={() => navigate("/clients")}>
 						Cancel
 					</Button>
