@@ -14,6 +14,7 @@ import TimesheetsPage from "./pages/timesheets/page";
 import CommunityPage from "./pages/community/page";
 import AppsPage from "./pages/apps/page";
 import CreateClientPage from "./pages/clients/create/page";
+import CreateRequestPage from "./pages/requests/create/page";
 import AppLayout from "./pages/app-layout";
 
 const routes = createBrowserRouter([
@@ -26,6 +27,7 @@ const routes = createBrowserRouter([
 			{ path: "/clients", element: <ClientsPage /> },
 			{ path: "/clients/create", element: <CreateClientPage /> },
 			{ path: "/requests", element: <RequestsPage /> },
+			{ path: "/requests/create", element: <CreateRequestPage /> },
 			{ path: "/quotes", element: <QuotesPage /> },
 			{ path: "/jobs", element: <JobsPage /> },
 			{ path: "/invoices", element: <InvoicesPage /> },
