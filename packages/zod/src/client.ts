@@ -35,6 +35,12 @@ export const createClientSchema = z.object({
 		zip: z.string().optional(),
 		country: z.string().optional(),
 	}).optional(),
+	notifications: z.object({
+		quoteFollowUp: z.boolean(),
+		appointmentReminders: z.boolean(),
+		jobFollowUp: z.boolean(),
+		invoiceFollowUp: z.boolean(),
+	}),
 });
 
 export type CreateClientForm = z.infer<typeof createClientSchema>;

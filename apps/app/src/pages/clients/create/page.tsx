@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
 	Select,
 	SelectContent,
@@ -45,6 +46,12 @@ const CreateClientPage = () => {
 			propertyAddress: {},
 			billingSameAsProperty: true,
 			billingAddress: {},
+			notifications: {
+				quoteFollowUp: true,
+				appointmentReminders: true,
+				jobFollowUp: true,
+				invoiceFollowUp: true,
+			},
 		},
 	});
 
@@ -242,6 +249,35 @@ const CreateClientPage = () => {
 							Add Email
 						</Button>
 					</div>
+				</div>
+
+				{/* Automated Notifications */}
+				<div className="space-y-4">
+					<h3 className="text-lg font-medium">Automated Notifications</h3>
+					{([
+						{ name: "notifications.quoteFollowUp" as const, label: "Quote follow-up" },
+						{ name: "notifications.appointmentReminders" as const, label: "Appointment reminders" },
+						{ name: "notifications.jobFollowUp" as const, label: "Job follow-up" },
+						{ name: "notifications.invoiceFollowUp" as const, label: "Invoice follow-up" },
+					]).map((item) => (
+						<Controller
+							key={item.name}
+							control={control}
+							name={item.name}
+							render={({ field }) => (
+								<div className="flex items-center justify-between">
+									<Label htmlFor={item.name} className="font-normal">
+										{item.label}
+									</Label>
+									<Switch
+										id={item.name}
+										checked={field.value}
+										onCheckedChange={field.onChange}
+									/>
+								</div>
+							)}
+						/>
+					))}
 				</div>
 
 				{/* Property Details */}

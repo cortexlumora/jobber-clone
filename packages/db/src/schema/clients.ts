@@ -24,6 +24,12 @@ const clientsSchema = pgTable("clients", {
 		zip?: string;
 		country?: string;
 	}>(),
+	notifications: jsonb("notifications").$type<{
+		quoteFollowUp: boolean;
+		appointmentReminders: boolean;
+		jobFollowUp: boolean;
+		invoiceFollowUp: boolean;
+	}>().notNull().default({ quoteFollowUp: true, appointmentReminders: true, jobFollowUp: true, invoiceFollowUp: true }),
 	billingSameAsProperty: boolean("billing_same_as_property").notNull().default(true),
 	billingAddress: jsonb("billing_address").$type<{
 		street1?: string;

@@ -28,6 +28,12 @@ export interface ClientDTO {
 	phones: Phone[];
 	emails: Email[];
 	propertyAddress: Address | null;
+	notifications: {
+		quoteFollowUp: boolean;
+		appointmentReminders: boolean;
+		jobFollowUp: boolean;
+		invoiceFollowUp: boolean;
+	};
 	billingSameAsProperty: boolean;
 	billingAddress: Address | null;
 	createdAt: Date;

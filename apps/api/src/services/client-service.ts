@@ -15,6 +15,7 @@ export async function createClient(userId: string, data: CreateClientForm) {
 			phones: data.phones,
 			emails: data.emails,
 			propertyAddress: data.propertyAddress,
+			notifications: data.notifications,
 			billingSameAsProperty: data.billingSameAsProperty,
 			billingAddress: data.billingSameAsProperty ? undefined : data.billingAddress,
 		})
