@@ -6,3 +6,4 @@ export {
 	phoneTypeEnum,
 	emailTypeEnum,
 } from "./clients";
+export { default as filesSchema } from "./files";
