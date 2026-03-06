@@ -9,7 +9,9 @@ import appRoutes from "./routes";
 export function createApp() {
 	const app = new Hono();
 	app.use(logger());
-	app.use("*", cors());
+	app.use("*", cors({
+		origin: ["https://workpulse-dev.cortexlumora.com", "http://localhost:5173"],
+	}));
 
 	app.onError((err, c) => {
 		if (err instanceof APIError) {
