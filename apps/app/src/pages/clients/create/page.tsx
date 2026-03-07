@@ -805,7 +805,7 @@ const CreateClientPage = () => {
 
 				{/* Property Details */}
 				<div className="space-y-4">
-					<h3 className="text-lg font-medium">Property Details</h3>
+					<h3 className="text-lg font-medium">Property Address</h3>
 					<div className="space-y-2">
 						<Label htmlFor="propertyStreet1">Street 1</Label>
 						<Input id="propertyStreet1" placeholder="123 Main St" {...register("propertyAddress.street1")} />
@@ -834,6 +834,59 @@ const CreateClientPage = () => {
 							<Input id="propertyCountry" placeholder="United States" {...register("propertyAddress.country")} />
 						</div>
 					</div>
+				</div>
+
+				{/* Billing Address */}
+				<div className="space-y-4">
+					<h3 className="text-lg font-medium">Billing Address</h3>
+					<Controller
+						control={control}
+						name="billingSameAsProperty"
+						render={({ field }) => (
+							<div className="flex items-center gap-2">
+								<Checkbox
+									id="billingSameAsProperty"
+									checked={field.value}
+									onCheckedChange={field.onChange}
+								/>
+								<Label htmlFor="billingSameAsProperty" className="font-normal">
+									Billing address is the same as property address
+								</Label>
+							</div>
+						)}
+					/>
+					{!billingSameAsProperty && (
+						<div className="space-y-4">
+							<div className="space-y-2">
+								<Label htmlFor="billingStreet1">Street 1</Label>
+								<Input id="billingStreet1" placeholder="123 Main St" {...register("billingAddress.street1")} />
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="billingStreet2">Street 2</Label>
+								<Input id="billingStreet2" placeholder="Apt 4B" {...register("billingAddress.street2")} />
+							</div>
+							<div className="grid grid-cols-2 gap-4">
+								<div className="space-y-2">
+									<Label htmlFor="billingCity">City</Label>
+									<Input id="billingCity" placeholder="New York" {...register("billingAddress.city")} />
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="billingState">State</Label>
+									<Input id="billingState" placeholder="NY" {...register("billingAddress.state")} />
+								</div>
+							</div>
+							<div className="grid grid-cols-2 gap-4">
+								<div className="space-y-2">
+									<Label htmlFor="billingZip">Zip Code</Label>
+									<Input id="billingZip" placeholder="10001" {...register("billingAddress.zip")} />
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="billingCountry">Country</Label>
+									<Input id="billingCountry" placeholder="United States" {...register("billingAddress.country")} />
+								</div>
+							</div>
+						</div>
+					)}
 				</div>
 
 				{/* Property Custom Fields */}
@@ -922,59 +975,6 @@ const CreateClientPage = () => {
 						<Plus className="h-4 w-4 mr-1" />
 						Add Contact
 					</Button>
-				</div>
-
-				{/* Billing Address */}
-				<div className="space-y-4">
-					<h3 className="text-lg font-medium">Billing Address</h3>
-					<Controller
-						control={control}
-						name="billingSameAsProperty"
-						render={({ field }) => (
-							<div className="flex items-center gap-2">
-								<Checkbox
-									id="billingSameAsProperty"
-									checked={field.value}
-									onCheckedChange={field.onChange}
-								/>
-								<Label htmlFor="billingSameAsProperty" className="font-normal">
-									Billing address is the same as property address
-								</Label>
-							</div>
-						)}
-					/>
-					{!billingSameAsProperty && (
-						<div className="space-y-4">
-							<div className="space-y-2">
-								<Label htmlFor="billingStreet1">Street 1</Label>
-								<Input id="billingStreet1" placeholder="123 Main St" {...register("billingAddress.street1")} />
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="billingStreet2">Street 2</Label>
-								<Input id="billingStreet2" placeholder="Apt 4B" {...register("billingAddress.street2")} />
-							</div>
-							<div className="grid grid-cols-2 gap-4">
-								<div className="space-y-2">
-									<Label htmlFor="billingCity">City</Label>
-									<Input id="billingCity" placeholder="New York" {...register("billingAddress.city")} />
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="billingState">State</Label>
-									<Input id="billingState" placeholder="NY" {...register("billingAddress.state")} />
-								</div>
-							</div>
-							<div className="grid grid-cols-2 gap-4">
-								<div className="space-y-2">
-									<Label htmlFor="billingZip">Zip Code</Label>
-									<Input id="billingZip" placeholder="10001" {...register("billingAddress.zip")} />
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="billingCountry">Country</Label>
-									<Input id="billingCountry" placeholder="United States" {...register("billingAddress.country")} />
-								</div>
-							</div>
-						</div>
-					)}
 				</div>
 
 				{mutation.isError && (
