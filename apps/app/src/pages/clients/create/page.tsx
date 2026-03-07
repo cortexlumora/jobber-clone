@@ -88,7 +88,6 @@ const CreateClientPage = () => {
 		mutationFn: createClient,
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["clients"] });
-			navigate("/clients");
 		},
 	});
 
@@ -115,6 +114,7 @@ const CreateClientPage = () => {
 		control,
 		watch,
 		setValue,
+		reset,
 		formState: { errors },
 	} = useForm<CreateClientForm>({
 		resolver: zodResolver(createClientSchema),
@@ -170,13 +170,29 @@ const CreateClientPage = () => {
 		invoiceFollowUp: true,
 	});
 
-	const onSubmit = (data: CreateClientForm) => {
+	const submitClient = (data: CreateClientForm, createAnother: boolean) => {
 		const allContacts = [...additionalContacts, ...propertyContacts];
-		mutation.mutate({
-			...data,
-			additionalContacts: allContacts.length > 0 ? allContacts : undefined,
-		});
+		mutation.mutate(
+			{
+				...data,
+				additionalContacts: allContacts.length > 0 ? allContacts : undefined,
+			},
+			{
+				onSuccess: () => {
+					if (createAnother) {
+						reset();
+						setAdditionalContacts([]);
+						setPropertyContacts([]);
+					} else {
+						navigate("/clients");
+					}
+				},
+			}
+		);
 	};
+
+	const onSubmit = (data: CreateClientForm) => submitClient(data, false);
+	const onSubmitAndCreateAnother = (data: CreateClientForm) => submitClient(data, true);
 
 	const handleAddCustomField = () => {
 		if (!customFieldName || !customFieldType) return;
@@ -1028,13 +1044,19 @@ const CreateClientPage = () => {
 			</Dialog>
 		</StickyFooter.Content>
 		<StickyFooter.Bar
+			className="max-w-5xl"
+			left={
+				<Button variant="outline" onClick={() => navigate("/clients")}>
+					Cancel
+				</Button>
+			}
 			right={
 				<>
-					<Button variant="outline" onClick={() => navigate("/clients")}>
-						Cancel
+					<Button variant="outline" disabled={mutation.isPending} onClick={handleSubmit(onSubmitAndCreateAnother)}>
+						Save & Create Another
 					</Button>
 					<Button disabled={mutation.isPending} onClick={handleSubmit(onSubmit)}>
-						{mutation.isPending ? "Creating..." : "Create Client"}
+						{mutation.isPending ? "Saving..." : "Save Client"}
 					</Button>
 				</>
 			}

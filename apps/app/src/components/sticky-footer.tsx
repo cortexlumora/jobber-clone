@@ -41,13 +41,13 @@ function Content({ children, className }: { children: React.ReactNode; className
 	);
 }
 
-function Bar({ left, right }: { left?: React.ReactNode; right?: React.ReactNode }) {
+function Bar({ left, right, className }: { left?: React.ReactNode; right?: React.ReactNode; className?: string }) {
 	const ctx = useContext(StickyFooterContext);
 	const isAtBottom = ctx?.isAtBottom ?? false;
 
 	return (
 		<div className={`sticky bottom-0 bg-background py-4 px-4 transition-shadow ${isAtBottom ? "" : "shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]"}`}>
-			<div className="max-w-2xl mx-auto flex items-center justify-between">
+			<div className={`mx-auto flex items-center justify-between ${className ?? "max-w-2xl"}`}>
 				<div className="flex gap-2">{left}</div>
 				<div className="flex gap-2">{right}</div>
 			</div>
