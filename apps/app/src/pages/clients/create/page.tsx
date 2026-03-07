@@ -190,6 +190,12 @@ const CreateClientPage = () => {
 			<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 				{/* Name Section */}
 				<div className="space-y-4">
+					<div>
+						<h3 className="text-lg font-medium">Primary contact details</h3>
+						<p className="text-sm text-muted-foreground">
+							Provide the main point of contact to ensure smooth communication and reliable client records.
+						</p>
+					</div>
 					<div className="grid grid-cols-[120px_1fr_1fr] gap-4">
 						<div className="space-y-2">
 							<Label>Title</Label>
@@ -796,9 +802,14 @@ const CreateClientPage = () => {
 						{/* Property Address */}
 						<div className="space-y-4">
 							<div className="flex items-center justify-between">
-								<h3 className="text-lg font-medium">
-									{propertyFields.length > 1 ? `Property ${propIndex + 1} Address` : "Property Address"}
-								</h3>
+								<div>
+									<h3 className="text-lg font-medium">
+										{propertyFields.length > 1 ? `Property ${propIndex + 1} Address` : "Property Address"}
+									</h3>
+									<p className="text-sm text-muted-foreground">
+										Enter the primary service address, billing address, or any additional locations where services may take place.
+									</p>
+								</div>
 								{propIndex > 0 && (
 									<Button
 										type="button"
