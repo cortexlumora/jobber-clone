@@ -1,7 +1,8 @@
-import type { APIResponse, ClientDTO, ClientStatsDTO, CompanySettingsDTO, PresignUploadDTO, RequestDTO } from "@repo/dto";
+import type { APIResponse, ClientDTO, ClientStatsDTO, CompanySettingsDTO, CustomFieldDefinitionDTO, PresignUploadDTO, RequestDTO } from "@repo/dto";
 import type { CreateClientForm } from "@repo/zod/client";
 import type { CreateRequestForm } from "@repo/zod/request";
 import type { UpdateCompanySettingsForm } from "@repo/zod/company-settings";
+import type { CreateCustomFieldForm } from "@repo/zod/custom-field";
 import axios from "axios";
 import { http } from "./http";
 
@@ -61,5 +62,22 @@ export async function getCompanySettings() {
 
 export async function updateCompanySettings(data: UpdateCompanySettingsForm) {
 	const res = await http.put<APIResponse<CompanySettingsDTO>>("/api/v1/company-settings", data);
+	return res.data.data;
+}
+
+// Custom Fields
+export async function getCustomFieldDefinitions(appliesTo?: string) {
+	const params = appliesTo ? `?appliesTo=${appliesTo}` : "";
+	const res = await http.get<APIResponse<CustomFieldDefinitionDTO[]>>(`/api/v1/custom-fields/definitions${params}`);
+	return res.data.data;
+}
+
+export async function createCustomFieldDefinition(data: CreateCustomFieldForm) {
+	const res = await http.post<APIResponse<CustomFieldDefinitionDTO>>("/api/v1/custom-fields/definitions", data);
+	return res.data.data;
+}
+
+export async function deleteCustomFieldDefinition(id: string) {
+	const res = await http.delete<APIResponse<CustomFieldDefinitionDTO>>(`/api/v1/custom-fields/definitions/${id}`);
 	return res.data.data;
 }

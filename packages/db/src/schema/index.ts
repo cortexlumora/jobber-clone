@@ -12,3 +12,6 @@ export { default as requestsSchema } from "./requests";
 export { preferredArrivalEnum, requestStatusEnum } from "./requests";
 export { default as requestFilesSchema } from "./request-files";
 export { default as companySettingsSchema } from "./company-settings";
+export { default as customFieldDefinitionsSchema } from "./custom-fields";
+export { fieldTypeEnum, appliesToEnum } from "./custom-fields";
+export { default as customFieldValuesSchema } from "./custom-field-values";

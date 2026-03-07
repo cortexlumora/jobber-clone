@@ -1,15 +1,23 @@
+import { useState } from "react";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClientSchema, type CreateClientForm } from "@repo/zod/client";
-import { createClient } from "@/lib/api";
+import { createClient, getCustomFieldDefinitions, createCustomFieldDefinition } from "@/lib/api";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import {
 	Select,
 	SelectContent,
@@ -27,6 +35,18 @@ const CreateClientPage = () => {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["clients"] });
 			navigate("/clients");
+		},
+	});
+
+	const { data: customFields = [] } = useQuery({
+		queryKey: ["custom-field-definitions", "client"],
+		queryFn: () => getCustomFieldDefinitions("client"),
+	});
+
+	const createFieldMutation = useMutation({
+		mutationFn: createCustomFieldDefinition,
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["custom-field-definitions", "client"] });
 		},
 	});
 
@@ -56,6 +76,10 @@ const CreateClientPage = () => {
 	});
 
 	const billingSameAsProperty = watch("billingSameAsProperty");
+	const [customFieldDialogOpen, setCustomFieldDialogOpen] = useState(false);
+	const [customFieldName, setCustomFieldName] = useState("");
+	const [customFieldType, setCustomFieldType] = useState<string>("");
+	const [customFieldDefault, setCustomFieldDefault] = useState("");
 
 	const {
 		fields: phoneFields,
@@ -71,6 +95,26 @@ const CreateClientPage = () => {
 
 	const onSubmit = (data: CreateClientForm) => {
 		mutation.mutate(data);
+	};
+
+	const handleAddCustomField = () => {
+		if (!customFieldName || !customFieldType) return;
+		createFieldMutation.mutate(
+			{
+				name: customFieldName,
+				fieldType: customFieldType as "text" | "number" | "dropdown" | "checkbox" | "date",
+				appliesTo: "client",
+				defaultValue: customFieldDefault || undefined,
+			},
+			{
+				onSuccess: () => {
+					setCustomFieldDialogOpen(false);
+					setCustomFieldName("");
+					setCustomFieldType("");
+					setCustomFieldDefault("");
+				},
+			}
+		);
 	};
 
 	return (
@@ -307,6 +351,115 @@ const CreateClientPage = () => {
 						/>
 					</div>
 				</div>
+
+				{/* Additional Client Details */}
+				<div className="rounded-lg border p-4 space-y-4">
+					<div>
+						<h3 className="text-lg font-medium">Additional client details</h3>
+						<p className="text-sm text-muted-foreground">
+							Create custom fields to track additional details
+						</p>
+					</div>
+					{customFields.length > 0 && (
+						<div className="space-y-3">
+							{customFields.map((cf) => (
+								<div key={cf.id} className="space-y-1">
+									<Label>{cf.name}</Label>
+									{cf.fieldType === "checkbox" ? (
+										<div className="flex items-center gap-2">
+											<Checkbox defaultChecked={cf.defaultValue === "true"} />
+											<span className="text-sm text-muted-foreground">{cf.name}</span>
+										</div>
+									) : (
+										<Input
+											type={cf.fieldType === "number" ? "number" : cf.fieldType === "date" ? "date" : "text"}
+											placeholder={cf.defaultValue ?? ""}
+											defaultValue={cf.defaultValue ?? ""}
+										/>
+									)}
+								</div>
+							))}
+						</div>
+					)}
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={() => setCustomFieldDialogOpen(true)}
+					>
+						<Plus className="h-4 w-4 mr-1" />
+						Add Custom Field
+					</Button>
+				</div>
+
+				<Dialog open={customFieldDialogOpen} onOpenChange={setCustomFieldDialogOpen}>
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle>New custom field</DialogTitle>
+						</DialogHeader>
+						<div className="space-y-4 py-2">
+							<div className="space-y-1">
+								<Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+									Applies to
+								</Label>
+								<p className="text-sm font-medium">All clients</p>
+							</div>
+							<p className="text-sm text-muted-foreground">
+								Transferable fields appear in multiple places and follow your workflow
+							</p>
+							<div className="space-y-2">
+								<Label>Custom field name</Label>
+								<Input
+									placeholder="Serial Number"
+									value={customFieldName}
+									onChange={(e) => setCustomFieldName(e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Field type</Label>
+								<Select value={customFieldType} onValueChange={setCustomFieldType}>
+									<SelectTrigger className="w-full">
+										<SelectValue placeholder="Select field type" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="text">Text</SelectItem>
+										<SelectItem value="number">Number</SelectItem>
+										<SelectItem value="dropdown">Dropdown</SelectItem>
+										<SelectItem value="checkbox">Checkbox</SelectItem>
+										<SelectItem value="date">Date</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="space-y-2">
+								<Label>Default value</Label>
+								<Input
+									placeholder="54A17-HEX"
+									value={customFieldDefault}
+									onChange={(e) => setCustomFieldDefault(e.target.value)}
+								/>
+							</div>
+							<p className="text-xs text-muted-foreground">
+								All custom fields can be edited and reordered in Settings &gt; Custom Fields
+							</p>
+						</div>
+						<DialogFooter>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => setCustomFieldDialogOpen(false)}
+							>
+								Cancel
+							</Button>
+							<Button
+								type="button"
+								disabled={!customFieldName || !customFieldType || createFieldMutation.isPending}
+								onClick={handleAddCustomField}
+							>
+								{createFieldMutation.isPending ? "Adding..." : "Add Custom Field"}
+							</Button>
+						</DialogFooter>
+					</DialogContent>
+				</Dialog>
 
 				{/* Property Details */}
 				<div className="space-y-4">

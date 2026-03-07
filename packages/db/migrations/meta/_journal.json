@@ -50,6 +50,13 @@
       "when": 1772889244354,
       "tag": "0006_clear_war_machine",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1772910812682,
+      "tag": "0007_easy_albert_cleary",
+      "breakpoints": true
     }
   ]
 }
