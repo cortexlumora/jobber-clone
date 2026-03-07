@@ -36,7 +36,7 @@ const settingsNav = [
 const SettingsLayout = () => {
 	return (
 		<div className="flex">
-			<aside className="w-64 shrink-0 border-r min-h-[calc(100vh-3.5rem)] p-4 space-y-6">
+			<aside className="w-64 shrink-0 border-r min-h-[calc(100vh-3.5rem)] p-4 space-y-6 sticky top-14 overflow-y-auto max-h-[calc(100vh-3.5rem)]">
 				<h2 className="text-lg font-semibold">Settings</h2>
 				{settingsNav.map((section) => (
 					<div key={section.group} className="space-y-1">
