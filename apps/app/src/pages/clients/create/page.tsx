@@ -60,7 +60,7 @@ const defaultContact: ContactEntry = {
 function FormSection({ title, description, action, children }: { title: string; description?: string; action?: React.ReactNode; children: React.ReactNode }) {
 	return (
 		<div className="grid md:grid-cols-[280px_1fr] gap-x-8 gap-y-4">
-			<div className="space-y-3">
+			<div className="space-y-3 md:sticky md:top-18 self-start">
 				<div className="space-y-1">
 					<h3 className="text-lg font-medium">{title}</h3>
 					{description && <p className="text-sm text-muted-foreground">{description}</p>}
