@@ -4,6 +4,7 @@ import type { APIResponse, ClientDTO, ClientStatsDTO } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
+	archiveClient,
 	createClient,
 	deleteClient,
 	getClientById,
@@ -35,6 +36,12 @@ const clientRoute = new Hono()
 
 		const client = await getClientById(clientId);
 		return c.json<APIResponse<ClientDTO | null>>({ data: client ?? null });
+	})
+	.patch("/:id/archive", async (c) => {
+		const clientId = c.req.param("id");
+
+		const client = await archiveClient(clientId);
+		return c.json<APIResponse<ClientDTO>>({ data: client });
 	})
 	.delete("/:id", async (c) => {
 		const clientId = c.req.param("id");

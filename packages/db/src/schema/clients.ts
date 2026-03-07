@@ -27,6 +27,7 @@ const clientsSchema = pgTable("clients", {
 	}>().notNull().default({ quoteFollowUp: true, appointmentReminders: true, jobFollowUp: true, invoiceFollowUp: true }),
 	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+	archivedAt: timestamp("archived_at", { withTimezone: true }),
 	deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 

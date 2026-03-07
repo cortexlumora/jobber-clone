@@ -1,9 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { getClients, getClientStats } from "@/lib/api";
+import { getClients, getClientStats, archiveClient, deleteClient } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, TrendingUp, TrendingDown } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, MoreHorizontal, Phone, Mail, Archive, Trash2, ExternalLink } from "lucide-react";
 import {
 	Table,
 	TableBody,
@@ -12,9 +12,16 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const ClientsPage = () => {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const { data: clients, isLoading, isError, error } = useQuery({
 		queryKey: ["clients"],
 		queryFn: getClients,
@@ -23,6 +30,22 @@ const ClientsPage = () => {
 	const { data: stats } = useQuery({
 		queryKey: ["client-stats"],
 		queryFn: getClientStats,
+	});
+
+	const archiveMutation = useMutation({
+		mutationFn: archiveClient,
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["clients"] });
+			queryClient.invalidateQueries({ queryKey: ["client-stats"] });
+		},
+	});
+
+	const deleteMutation = useMutation({
+		mutationFn: deleteClient,
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["clients"] });
+			queryClient.invalidateQueries({ queryKey: ["client-stats"] });
+		},
 	});
 
 	const renderChange = (change: number) => {
@@ -101,12 +124,13 @@ const ClientsPage = () => {
 								<TableHead>Company</TableHead>
 								<TableHead>Email</TableHead>
 								<TableHead>Phone</TableHead>
+								<TableHead className="w-10"></TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
 							{clients.length === 0 && (
 								<TableRow>
-									<TableCell colSpan={4} className="text-center text-muted-foreground">
+									<TableCell colSpan={5} className="text-center text-muted-foreground">
 										No clients yet
 									</TableCell>
 								</TableRow>
@@ -120,6 +144,48 @@ const ClientsPage = () => {
 									<TableCell>{client.companyName ?? "—"}</TableCell>
 									<TableCell>{client.emails[0]?.value ?? "—"}</TableCell>
 									<TableCell>{client.phones[0]?.number ?? "—"}</TableCell>
+									<TableCell>
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button variant="ghost" size="icon" className="h-8 w-8">
+													<MoreHorizontal className="h-4 w-4" />
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align="end">
+												{client.phones[0]?.number && (
+													<DropdownMenuItem asChild>
+														<a href={`tel:${client.phones[0].number}`}>
+															<Phone className="h-4 w-4 mr-2" />
+															Call
+														</a>
+													</DropdownMenuItem>
+												)}
+												{client.emails[0]?.value && (
+													<DropdownMenuItem asChild>
+														<a href={`mailto:${client.emails[0].value}`}>
+															<Mail className="h-4 w-4 mr-2" />
+															Email
+														</a>
+													</DropdownMenuItem>
+												)}
+												<DropdownMenuItem onClick={() => archiveMutation.mutate(client.id)}>
+													<Archive className="h-4 w-4 mr-2" />
+													Archive
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													className="text-destructive"
+													onClick={() => deleteMutation.mutate(client.id)}
+												>
+													<Trash2 className="h-4 w-4 mr-2" />
+													Delete
+												</DropdownMenuItem>
+												<DropdownMenuItem onClick={() => window.open(`/clients/${client.id}`, "_blank")}>
+													<ExternalLink className="h-4 w-4 mr-2" />
+													Open in new tab
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
+									</TableCell>
 								</TableRow>
 							))}
 						</TableBody>

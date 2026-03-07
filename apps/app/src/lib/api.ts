@@ -27,6 +27,11 @@ export async function getClientStats() {
 	return res.data.data;
 }
 
+export async function archiveClient(id: string) {
+	const res = await http.patch<APIResponse<ClientDTO>>(`/api/v1/clients/${id}/archive`);
+	return res.data.data;
+}
+
 export async function deleteClient(id: string) {
 	const res = await http.delete<APIResponse<ClientDTO>>(`/api/v1/clients/${id}`);
 	return res.data.data;

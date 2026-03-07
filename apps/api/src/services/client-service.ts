@@ -110,6 +110,16 @@ export async function getClientStats(userId: string) {
 	};
 }
 
+export async function archiveClient(clientId: string) {
+	const [client] = await db
+		.update(clientsSchema)
+		.set({ archivedAt: new Date() })
+		.where(eq(clientsSchema.id, clientId))
+		.returning();
+
+	return client;
+}
+
 export async function deleteClient(clientId: string) {
 	const [client] = await db
 		.update(clientsSchema)

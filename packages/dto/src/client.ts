@@ -65,5 +65,6 @@ export interface ClientDTO {
 	};
 	createdAt: Date;
 	updatedAt: Date;
+	archivedAt: Date | null;
 	deletedAt: Date | null;
 }
