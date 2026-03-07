@@ -11,3 +11,4 @@ export { default as filesSchema } from "./files";
 export { default as requestsSchema } from "./requests";
 export { preferredArrivalEnum, requestStatusEnum } from "./requests";
 export { default as requestFilesSchema } from "./request-files";
+export { default as companySettingsSchema } from "./company-settings";

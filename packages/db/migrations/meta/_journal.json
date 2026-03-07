@@ -43,6 +43,13 @@
       "when": 1772882944921,
       "tag": "0005_material_ultimatum",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1772889244354,
+      "tag": "0006_clear_war_machine",
+      "breakpoints": true
     }
   ]
 }

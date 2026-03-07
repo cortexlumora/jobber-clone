@@ -1,9 +1,18 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getCompanySettings, updateCompanySettings } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 interface BusinessDay {
 	enabled: boolean;
@@ -11,7 +20,7 @@ interface BusinessDay {
 	close: string;
 }
 
-interface SettingsFormData {
+interface FormData {
 	companyName: string;
 	phone: string;
 	websiteUrl: string;
@@ -21,6 +30,13 @@ interface SettingsFormData {
 	city: string;
 	state: string;
 	zip: string;
+	taxIdName: string;
+	taxIdNumber: string;
+	country: string;
+	timezone: string;
+	dateFormat: string;
+	timeFormat: string;
+	firstDayOfWeek: string;
 }
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
@@ -44,11 +60,24 @@ const formatTime = (time: string) => {
 };
 
 const CompanySettingsPage = () => {
+	const queryClient = useQueryClient();
 	const [businessHours, setBusinessHours] = useState(DEFAULT_HOURS);
 	const [editingHours, setEditingHours] = useState(false);
 	const [showBusinessHours, setShowBusinessHours] = useState(true);
 
-	const { register, handleSubmit } = useForm<SettingsFormData>({
+	const { data: settings } = useQuery({
+		queryKey: ["company-settings"],
+		queryFn: getCompanySettings,
+	});
+
+	const mutation = useMutation({
+		mutationFn: updateCompanySettings,
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["company-settings"] });
+		},
+	});
+
+	const { register, handleSubmit, control, reset } = useForm<FormData>({
 		defaultValues: {
 			companyName: "",
 			phone: "",
@@ -59,11 +88,49 @@ const CompanySettingsPage = () => {
 			city: "",
 			state: "",
 			zip: "",
+			taxIdName: "",
+			taxIdNumber: "",
+			country: "",
+			timezone: "",
+			dateFormat: "MM/DD/YYYY",
+			timeFormat: "12h",
+			firstDayOfWeek: "sunday",
 		},
 	});
 
-	const onSubmit = (data: SettingsFormData) => {
-		console.log("Settings:", data, "Hours:", businessHours);
+	useEffect(() => {
+		if (settings) {
+			reset({
+				companyName: settings.companyName ?? "",
+				phone: settings.phone ?? "",
+				websiteUrl: settings.websiteUrl ?? "",
+				email: settings.email ?? "",
+				street1: settings.street1 ?? "",
+				street2: settings.street2 ?? "",
+				city: settings.city ?? "",
+				state: settings.state ?? "",
+				zip: settings.zip ?? "",
+				taxIdName: settings.taxIdName ?? "",
+				taxIdNumber: settings.taxIdNumber ?? "",
+				country: settings.country ?? "",
+				timezone: settings.timezone ?? "",
+				dateFormat: settings.dateFormat,
+				timeFormat: settings.timeFormat,
+				firstDayOfWeek: settings.firstDayOfWeek,
+			});
+			if (settings.businessHours) {
+				setBusinessHours(settings.businessHours);
+			}
+			setShowBusinessHours(settings.showBusinessHours);
+		}
+	}, [settings, reset]);
+
+	const onSubmit = (data: FormData) => {
+		mutation.mutate({
+			...data,
+			businessHours,
+			showBusinessHours,
+		});
 	};
 
 	const toggleDay = (day: string) => {
@@ -204,8 +271,152 @@ const CompanySettingsPage = () => {
 					</div>
 				</div>
 
+				{/* Tax Settings */}
+				<div className="space-y-4">
+					<h3 className="text-lg font-medium">Tax Settings</h3>
+					<div className="grid grid-cols-2 gap-4">
+						<div className="space-y-2">
+							<Label htmlFor="taxIdName">Tax ID Name (e.g. GST)</Label>
+							<Input id="taxIdName" placeholder="GST" {...register("taxIdName")} />
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="taxIdNumber">Tax ID Number</Label>
+							<Input id="taxIdNumber" placeholder="123456789" {...register("taxIdNumber")} />
+						</div>
+					</div>
+					<p className="text-xs text-muted-foreground">
+						Tax ID name and number will appear on invoices.
+					</p>
+
+					<div className="rounded-lg border p-4">
+						<p className="text-sm text-muted-foreground mb-3">
+							No tax rates. Create one or more tax rates to apply them to quotes and invoices.
+						</p>
+						<div className="flex gap-2">
+							<Button type="button" variant="outline" size="sm">Create Tax Rate</Button>
+							<Button type="button" variant="outline" size="sm">Create Tax Group</Button>
+						</div>
+					</div>
+				</div>
+
+				{/* Regional Settings */}
+				<div className="space-y-4">
+					<h3 className="text-lg font-medium">Regional Settings</h3>
+					<div className="space-y-2">
+						<Label>Country</Label>
+						<Controller
+							control={control}
+							name="country"
+							render={({ field }) => (
+								<Select onValueChange={field.onChange} value={field.value}>
+									<SelectTrigger className="w-full">
+										<SelectValue placeholder="Select country" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="US">United States</SelectItem>
+										<SelectItem value="CA">Canada</SelectItem>
+										<SelectItem value="GB">United Kingdom</SelectItem>
+										<SelectItem value="AU">Australia</SelectItem>
+										<SelectItem value="IN">India</SelectItem>
+										<SelectItem value="DE">Germany</SelectItem>
+										<SelectItem value="FR">France</SelectItem>
+									</SelectContent>
+								</Select>
+							)}
+						/>
+					</div>
+					<div className="space-y-2">
+						<Label>Timezone</Label>
+						<Controller
+							control={control}
+							name="timezone"
+							render={({ field }) => (
+								<Select onValueChange={field.onChange} value={field.value}>
+									<SelectTrigger className="w-full">
+										<SelectValue placeholder="Select timezone" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
+										<SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
+										<SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
+										<SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
+										<SelectItem value="America/Toronto">Toronto (ET)</SelectItem>
+										<SelectItem value="Europe/London">London (GMT)</SelectItem>
+										<SelectItem value="Europe/Berlin">Berlin (CET)</SelectItem>
+										<SelectItem value="Asia/Kolkata">India (IST)</SelectItem>
+										<SelectItem value="Australia/Sydney">Sydney (AEST)</SelectItem>
+									</SelectContent>
+								</Select>
+							)}
+						/>
+					</div>
+					<div className="grid grid-cols-2 gap-4">
+						<div className="space-y-2">
+							<Label>Date Format</Label>
+							<Controller
+								control={control}
+								name="dateFormat"
+								render={({ field }) => (
+									<Select onValueChange={field.onChange} value={field.value}>
+										<SelectTrigger className="w-full">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+											<SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+											<SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+										</SelectContent>
+									</Select>
+								)}
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label>Time Format</Label>
+							<Controller
+								control={control}
+								name="timeFormat"
+								render={({ field }) => (
+									<Select onValueChange={field.onChange} value={field.value}>
+										<SelectTrigger className="w-full">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="12h">12-hour (1:00 PM)</SelectItem>
+											<SelectItem value="24h">24-hour (13:00)</SelectItem>
+										</SelectContent>
+									</Select>
+								)}
+							/>
+						</div>
+					</div>
+					<div className="space-y-2">
+						<Label>First Day of the Week</Label>
+						<Controller
+							control={control}
+							name="firstDayOfWeek"
+							render={({ field }) => (
+								<Select onValueChange={field.onChange} value={field.value}>
+									<SelectTrigger className="w-full">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="sunday">Sunday</SelectItem>
+										<SelectItem value="monday">Monday</SelectItem>
+										<SelectItem value="saturday">Saturday</SelectItem>
+									</SelectContent>
+								</Select>
+							)}
+						/>
+					</div>
+				</div>
+
+				{mutation.isError && (
+					<p className="text-sm text-destructive">{mutation.error.message}</p>
+				)}
 				<div className="flex gap-2 pt-2 pb-8">
-					<Button type="submit">Save Settings</Button>
+					<Button type="submit" disabled={mutation.isPending}>
+						{mutation.isPending ? "Saving..." : "Save Settings"}
+					</Button>
 				</div>
 			</form>
 		</div>
