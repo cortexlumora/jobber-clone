@@ -93,8 +93,8 @@ const CreateRequestPage = () => {
 	};
 
 	return (
-		<div className="max-w-2xl">
-			<h2 className="text-2xl font-semibold mb-6">New Request</h2>
+		<div className="max-w-2xl mx-auto">
+			<h2 className="text-2xl font-semibold mt-8 mb-8">New Request</h2>
 			<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 				{/* Client */}
 				<div className="space-y-2">
