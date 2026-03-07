@@ -3,6 +3,7 @@ export { default as clientsSchema } from "./clients";
 export {
 	clientTitleEnum,
 	clientStatusEnum,
+	leadSourceEnum,
 	phoneTypeEnum,
 	emailTypeEnum,
 } from "./clients";

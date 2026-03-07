@@ -3,6 +3,7 @@ import usersSchema from "./users";
 
 export const clientTitleEnum = pgEnum("client_title", ["none", "Mr.", "Ms.", "Mrs.", "Miss.", "Dr."]);
 export const clientStatusEnum = pgEnum("client_status", ["lead", "active", "inactive"]);
+export const leadSourceEnum = pgEnum("lead_source", ["facebook", "existing_client", "flyer", "google", "instagram", "referral", "other"]);
 export const phoneTypeEnum = pgEnum("phone_type", ["mobile", "landline"]);
 export const emailTypeEnum = pgEnum("email_type", ["primary", "secondary", "work", "other"]);
 
@@ -14,6 +15,7 @@ const clientsSchema = pgTable("clients", {
 	lastName: varchar("last_name", { length: 255 }).notNull(),
 	companyName: varchar("company_name", { length: 255 }),
 	status: clientStatusEnum("status").notNull().default("lead"),
+	leadSource: leadSourceEnum("lead_source"),
 	useCompanyAsPrimary: boolean("use_company_as_primary").notNull().default(false),
 	phones: jsonb("phones").$type<{ type: "mobile" | "landline"; number: string }[]>().notNull().default([]),
 	emails: jsonb("emails").$type<{ type: "primary" | "secondary" | "work" | "other"; value: string }[]>().notNull().default([]),

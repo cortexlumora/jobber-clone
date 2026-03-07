@@ -1,0 +1,2 @@
+CREATE TYPE "public"."lead_source" AS ENUM('facebook', 'existing_client', 'flyer', 'google', 'instagram', 'referral', 'other');--> statement-breakpoint
+ALTER TABLE "clients" ADD COLUMN "lead_source" "lead_source";

@@ -35,6 +35,7 @@ export const createClientSchema = z.object({
 		zip: z.string().optional(),
 		country: z.string().optional(),
 	}).optional(),
+	leadSource: z.enum(["facebook", "existing_client", "flyer", "google", "instagram", "referral", "other"]).optional(),
 	notifications: z.object({
 		quoteFollowUp: z.boolean(),
 		appointmentReminders: z.boolean(),

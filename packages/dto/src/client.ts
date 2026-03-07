@@ -30,6 +30,7 @@ export interface ClientDTO {
 	userId: string;
 	title: "none" | "Mr." | "Ms." | "Mrs." | "Miss." | "Dr.";
 	status: "lead" | "active" | "inactive";
+	leadSource: "facebook" | "existing_client" | "flyer" | "google" | "instagram" | "referral" | "other" | null;
 	firstName: string;
 	lastName: string;
 	companyName: string | null;

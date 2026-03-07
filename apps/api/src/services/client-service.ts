@@ -11,6 +11,7 @@ export async function createClient(userId: string, data: CreateClientForm) {
 			firstName: data.firstName,
 			lastName: data.lastName,
 			companyName: data.companyName,
+			leadSource: data.leadSource,
 			useCompanyAsPrimary: data.useCompanyAsPrimary,
 			phones: data.phones,
 			emails: data.emails,

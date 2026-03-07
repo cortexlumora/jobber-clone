@@ -280,6 +280,34 @@ const CreateClientPage = () => {
 					))}
 				</div>
 
+				{/* Lead Information */}
+				<div className="space-y-4">
+					<h3 className="text-lg font-medium">Lead Information</h3>
+					<div className="space-y-2">
+						<Label>Lead Source</Label>
+						<Controller
+							control={control}
+							name="leadSource"
+							render={({ field }) => (
+								<Select onValueChange={field.onChange} value={field.value}>
+									<SelectTrigger className="w-full">
+										<SelectValue placeholder="Select a source" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="facebook">Facebook</SelectItem>
+										<SelectItem value="existing_client">Existing Client</SelectItem>
+										<SelectItem value="flyer">Flyer</SelectItem>
+										<SelectItem value="google">Google</SelectItem>
+										<SelectItem value="instagram">Instagram</SelectItem>
+										<SelectItem value="referral">Referral</SelectItem>
+										<SelectItem value="other">Other</SelectItem>
+									</SelectContent>
+								</Select>
+							)}
+						/>
+					</div>
+				</div>
+
 				{/* Property Details */}
 				<div className="space-y-4">
 					<h3 className="text-lg font-medium">Property Details</h3>
