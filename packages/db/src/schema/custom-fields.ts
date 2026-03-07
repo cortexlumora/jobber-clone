@@ -2,7 +2,7 @@ import { integer, jsonb, pgEnum, pgTable, text, timestamp, uuid, varchar } from 
 import usersSchema from "./users";
 
 export const fieldTypeEnum = pgEnum("field_type", ["text", "number", "dropdown", "checkbox", "date"]);
-export const appliesToEnum = pgEnum("applies_to", ["client", "request", "job"]);
+export const appliesToEnum = pgEnum("applies_to", ["client", "property", "request", "job"]);
 
 const customFieldDefinitionsSchema = pgTable("custom_field_definitions", {
 	id: uuid("id").primaryKey().defaultRandom(),

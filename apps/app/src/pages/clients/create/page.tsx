@@ -44,7 +44,9 @@ const CreateClientPage = () => {
 			jobFollowUp: boolean;
 		};
 	}>>([]);
+	const [propertyContacts, setPropertyContacts] = useState<typeof additionalContacts>([]);
 	const [contactDialogOpen, setContactDialogOpen] = useState(false);
+	const [contactTarget, setContactTarget] = useState<"additional" | "property">("additional");
 	const [contactForm, setContactForm] = useState<{
 		title: "none" | "Mr." | "Ms." | "Mrs." | "Miss." | "Dr.";
 		firstName: string;
@@ -101,10 +103,15 @@ const CreateClientPage = () => {
 		queryFn: () => getCustomFieldDefinitions("client"),
 	});
 
+	const { data: propertyCustomFields = [] } = useQuery({
+		queryKey: ["custom-field-definitions", "property"],
+		queryFn: () => getCustomFieldDefinitions("property"),
+	});
+
 	const createFieldMutation = useMutation({
 		mutationFn: createCustomFieldDefinition,
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["custom-field-definitions", "client"] });
+			queryClient.invalidateQueries({ queryKey: ["custom-field-definitions"] });
 		},
 	});
 
@@ -136,6 +143,7 @@ const CreateClientPage = () => {
 
 	const billingSameAsProperty = watch("billingSameAsProperty");
 	const [customFieldDialogOpen, setCustomFieldDialogOpen] = useState(false);
+	const [customFieldTarget, setCustomFieldTarget] = useState<"client" | "property">("client");
 	const [customFieldName, setCustomFieldName] = useState("");
 	const [customFieldType, setCustomFieldType] = useState<string>("");
 	const [customFieldDefault, setCustomFieldDefault] = useState("");
@@ -160,9 +168,10 @@ const CreateClientPage = () => {
 	} = useFieldArray({ control, name: "emails" });
 
 	const onSubmit = (data: CreateClientForm) => {
+		const allContacts = [...additionalContacts, ...propertyContacts];
 		mutation.mutate({
 			...data,
-			additionalContacts: additionalContacts.length > 0 ? additionalContacts : undefined,
+			additionalContacts: allContacts.length > 0 ? allContacts : undefined,
 		});
 	};
 
@@ -172,7 +181,7 @@ const CreateClientPage = () => {
 			{
 				name: customFieldName,
 				fieldType: customFieldType as "text" | "number" | "dropdown" | "checkbox" | "date",
-				appliesTo: "client",
+				appliesTo: customFieldTarget,
 				defaultValue: customFieldDefault || undefined,
 			},
 			{
@@ -512,7 +521,10 @@ const CreateClientPage = () => {
 						type="button"
 						variant="outline"
 						size="sm"
-						onClick={() => setCustomFieldDialogOpen(true)}
+						onClick={() => {
+							setCustomFieldTarget("client");
+							setCustomFieldDialogOpen(true);
+						}}
 					>
 						<Plus className="h-4 w-4 mr-1" />
 						Add Custom Field
@@ -529,7 +541,7 @@ const CreateClientPage = () => {
 								<Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
 									Applies to
 								</Label>
-								<p className="text-sm font-medium">All clients</p>
+								<p className="text-sm font-medium">{customFieldTarget === "client" ? "All clients" : "All properties"}</p>
 							</div>
 							<p className="text-sm text-muted-foreground">
 								Transferable fields appear in multiple places and follow your workflow
@@ -624,6 +636,7 @@ const CreateClientPage = () => {
 						size="sm"
 						onClick={() => {
 							resetContactForm();
+							setContactTarget("additional");
 							setContactDialogOpen(true);
 						}}
 					>
@@ -774,7 +787,11 @@ const CreateClientPage = () => {
 								type="button"
 								disabled={!contactForm.firstName || !contactForm.lastName}
 								onClick={() => {
-									setAdditionalContacts((prev) => [...prev, contactForm]);
+									if (contactTarget === "additional") {
+										setAdditionalContacts((prev) => [...prev, contactForm]);
+									} else {
+										setPropertyContacts((prev) => [...prev, contactForm]);
+									}
 									setContactDialogOpen(false);
 								}}
 							>
@@ -815,6 +832,94 @@ const CreateClientPage = () => {
 							<Input id="propertyCountry" placeholder="United States" {...register("propertyAddress.country")} />
 						</div>
 					</div>
+				</div>
+
+				{/* Property Custom Fields */}
+				<div className="rounded-lg border p-4 space-y-4">
+					<div>
+						<h3 className="text-lg font-medium">Property details</h3>
+						<p className="text-sm text-muted-foreground">
+							Create custom fields to track additional details
+						</p>
+					</div>
+					{propertyCustomFields.length > 0 && (
+						<div className="space-y-3">
+							{propertyCustomFields.map((cf) => (
+								<div key={cf.id} className="space-y-1">
+									<Label>{cf.name}</Label>
+									{cf.fieldType === "checkbox" ? (
+										<div className="flex items-center gap-2">
+											<Checkbox defaultChecked={cf.defaultValue === "true"} />
+											<span className="text-sm text-muted-foreground">{cf.name}</span>
+										</div>
+									) : (
+										<Input
+											type={cf.fieldType === "number" ? "number" : cf.fieldType === "date" ? "date" : "text"}
+											placeholder={cf.defaultValue ?? ""}
+											defaultValue={cf.defaultValue ?? ""}
+										/>
+									)}
+								</div>
+							))}
+						</div>
+					)}
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={() => {
+							setCustomFieldTarget("property");
+							setCustomFieldDialogOpen(true);
+						}}
+					>
+						<Plus className="h-4 w-4 mr-1" />
+						Add Custom Field
+					</Button>
+				</div>
+
+				{/* Property Contacts */}
+				<div className="rounded-lg border p-4 space-y-4">
+					<div>
+						<h3 className="text-lg font-medium">Property contacts</h3>
+						<p className="text-sm text-muted-foreground">
+							For contacts with access limited to this property
+						</p>
+					</div>
+					{propertyContacts.length > 0 && (
+						<div className="space-y-2">
+							{propertyContacts.map((contact, index) => (
+								<div key={index} className="flex items-center justify-between rounded-md border px-3 py-2">
+									<div>
+										<p className="text-sm font-medium">
+											{contact.title !== "none" ? `${contact.title} ` : ""}{contact.firstName} {contact.lastName}
+										</p>
+										{contact.role && <p className="text-xs text-muted-foreground">{contact.role}</p>}
+									</div>
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										onClick={() => setPropertyContacts((prev) => prev.filter((_, i) => i !== index))}
+									>
+										<Trash2 className="h-4 w-4" />
+									</Button>
+								</div>
+							))}
+						</div>
+					)}
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={() => {
+							resetContactForm();
+							setContactTarget("property");
+							setContactDialogOpen(true);
+						}}
+					>
+						<Plus className="h-4 w-4 mr-1" />
+						Add Contact
+					</Button>
 				</div>
 
 				{/* Billing Address */}

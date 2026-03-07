@@ -3,7 +3,7 @@ export interface CustomFieldDefinitionDTO {
 	userId: string;
 	name: string;
 	fieldType: "text" | "number" | "dropdown" | "checkbox" | "date";
-	appliesTo: "client" | "request" | "job";
+	appliesTo: "client" | "property" | "request" | "job";
 	defaultValue: string | null;
 	options: string[] | null;
 	sortOrder: number;
