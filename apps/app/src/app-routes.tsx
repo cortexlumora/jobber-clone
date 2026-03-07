@@ -21,6 +21,7 @@ import TimesheetsPage from "./pages/timesheets/page";
 import CommunityPage from "./pages/community/page";
 import AppsPage from "./pages/apps/page";
 import CreateClientPage from "./pages/clients/create/page";
+import ClientDetailPage from "./pages/clients/detail/page";
 import CreateRequestPage from "./pages/requests/create/page";
 import SettingsLayout from "./pages/settings/layout";
 import CompanySettingsPage from "./pages/settings/company/page";
@@ -35,6 +36,7 @@ const routes = createBrowserRouter([
 			{ path: "/schedule", element: <SchedulePage /> },
 			{ path: "/clients", element: <ClientsPage /> },
 			{ path: "/clients/create", element: <CreateClientPage /> },
+			{ path: "/clients/:id", element: <ClientDetailPage /> },
 			{ path: "/requests", element: <RequestsPage /> },
 			{ path: "/requests/create", element: <CreateRequestPage /> },
 			{ path: "/quotes", element: <QuotesPage /> },

@@ -136,7 +136,7 @@ const ClientsPage = () => {
 								</TableRow>
 							)}
 							{clients.map((client) => (
-								<TableRow key={client.id}>
+								<TableRow key={client.id} className="cursor-pointer" onClick={() => navigate(`/clients/${client.id}`)}>
 									<TableCell className="font-medium">
 										{client.title !== "none" ? `${client.title} ` : ""}
 										{client.firstName} {client.lastName}
@@ -144,7 +144,7 @@ const ClientsPage = () => {
 									<TableCell>{client.companyName ?? "—"}</TableCell>
 									<TableCell>{client.emails[0]?.value ?? "—"}</TableCell>
 									<TableCell>{client.phones[0]?.number ?? "—"}</TableCell>
-									<TableCell>
+									<TableCell onClick={(e) => e.stopPropagation()}>
 										<DropdownMenu>
 											<DropdownMenuTrigger asChild>
 												<Button variant="ghost" size="icon" className="h-8 w-8">

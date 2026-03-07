@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import { createClientSchema } from "@repo/zod/client";
-import type { APIResponse, ClientDTO, ClientStatsDTO } from "@repo/dto";
+import type { APIResponse, ClientDTO, ClientStatsDTO, PropertyDTO } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
@@ -8,6 +8,7 @@ import {
 	createClient,
 	deleteClient,
 	getClientById,
+	getClientProperties,
 	getClientsByUser,
 	getClientStats,
 } from "../services/client-service";
@@ -36,6 +37,12 @@ const clientRoute = new Hono()
 
 		const client = await getClientById(clientId);
 		return c.json<APIResponse<ClientDTO | null>>({ data: client ?? null });
+	})
+	.get("/:id/properties", async (c) => {
+		const clientId = c.req.param("id");
+
+		const properties = await getClientProperties(clientId);
+		return c.json<APIResponse<PropertyDTO[]>>({ data: properties });
 	})
 	.patch("/:id/archive", async (c) => {
 		const clientId = c.req.param("id");

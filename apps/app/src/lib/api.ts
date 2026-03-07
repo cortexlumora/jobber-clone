@@ -1,4 +1,4 @@
-import type { APIResponse, ClientDTO, ClientStatsDTO, ClientContactDTO, CompanySettingsDTO, CustomFieldDefinitionDTO, PresignUploadDTO, RequestDTO } from "@repo/dto";
+import type { APIResponse, ClientDTO, ClientStatsDTO, ClientContactDTO, CompanySettingsDTO, CustomFieldDefinitionDTO, PropertyDTO, PresignUploadDTO, RequestDTO } from "@repo/dto";
 import type { CreateClientForm } from "@repo/zod/client";
 import type { CreateRequestForm } from "@repo/zod/request";
 import type { UpdateCompanySettingsForm } from "@repo/zod/company-settings";
@@ -24,6 +24,11 @@ export async function getClientById(id: string) {
 
 export async function getClientStats() {
 	const res = await http.get<APIResponse<ClientStatsDTO>>("/api/v1/clients/stats");
+	return res.data.data;
+}
+
+export async function getClientProperties(id: string) {
+	const res = await http.get<APIResponse<PropertyDTO[]>>(`/api/v1/clients/${id}/properties`);
 	return res.data.data;
 }
 
