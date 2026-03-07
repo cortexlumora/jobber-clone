@@ -15,6 +15,7 @@ import CommunityPage from "./pages/community/page";
 import AppsPage from "./pages/apps/page";
 import CreateClientPage from "./pages/clients/create/page";
 import CreateRequestPage from "./pages/requests/create/page";
+import SettingsPage from "./pages/settings/page";
 import AppLayout from "./pages/app-layout";
 
 const routes = createBrowserRouter([
@@ -37,6 +38,7 @@ const routes = createBrowserRouter([
 			{ path: "/timesheets", element: <TimesheetsPage /> },
 			{ path: "/community", element: <CommunityPage /> },
 			{ path: "/apps", element: <AppsPage /> },
+			{ path: "/settings", element: <SettingsPage /> },
 		],
 	},
 ]);
