@@ -42,6 +42,20 @@ export const createClientSchema = z.object({
 		jobFollowUp: z.boolean(),
 		invoiceFollowUp: z.boolean(),
 	}),
+	additionalContacts: z.array(z.object({
+		title: z.enum(["none", "Mr.", "Ms.", "Mrs.", "Miss.", "Dr."]),
+		firstName: z.string().min(1),
+		lastName: z.string().min(1),
+		role: z.string().optional(),
+		phone: z.string().optional(),
+		email: z.string().optional(),
+		notifications: z.object({
+			quoteFollowUp: z.boolean(),
+			invoiceFollowUp: z.boolean(),
+			appointmentReminders: z.boolean(),
+			jobFollowUp: z.boolean(),
+		}),
+	})).optional(),
 });
 
 export type CreateClientForm = z.infer<typeof createClientSchema>;

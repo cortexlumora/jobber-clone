@@ -30,6 +30,64 @@ const CreateClientPage = () => {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
+	const [additionalContacts, setAdditionalContacts] = useState<Array<{
+		title: "none" | "Mr." | "Ms." | "Mrs." | "Miss." | "Dr.";
+		firstName: string;
+		lastName: string;
+		role: string;
+		phone: string;
+		email: string;
+		notifications: {
+			quoteFollowUp: boolean;
+			invoiceFollowUp: boolean;
+			appointmentReminders: boolean;
+			jobFollowUp: boolean;
+		};
+	}>>([]);
+	const [contactDialogOpen, setContactDialogOpen] = useState(false);
+	const [contactForm, setContactForm] = useState<{
+		title: "none" | "Mr." | "Ms." | "Mrs." | "Miss." | "Dr.";
+		firstName: string;
+		lastName: string;
+		role: string;
+		phone: string;
+		email: string;
+		notifications: {
+			quoteFollowUp: boolean;
+			invoiceFollowUp: boolean;
+			appointmentReminders: boolean;
+			jobFollowUp: boolean;
+		};
+	}>({
+		title: "none",
+		firstName: "",
+		lastName: "",
+		role: "",
+		phone: "",
+		email: "",
+		notifications: {
+			quoteFollowUp: true,
+			invoiceFollowUp: true,
+			appointmentReminders: true,
+			jobFollowUp: true,
+		},
+	});
+
+	const resetContactForm = () => setContactForm({
+		title: "none" as const,
+		firstName: "",
+		lastName: "",
+		role: "",
+		phone: "",
+		email: "",
+		notifications: {
+			quoteFollowUp: true,
+			invoiceFollowUp: true,
+			appointmentReminders: true,
+			jobFollowUp: true,
+		},
+	});
+
 	const mutation = useMutation({
 		mutationFn: createClient,
 		onSuccess: () => {
@@ -102,7 +160,10 @@ const CreateClientPage = () => {
 	} = useFieldArray({ control, name: "emails" });
 
 	const onSubmit = (data: CreateClientForm) => {
-		mutation.mutate(data);
+		mutation.mutate({
+			...data,
+			additionalContacts: additionalContacts.length > 0 ? additionalContacts : undefined,
+		});
 	};
 
 	const handleAddCustomField = () => {
@@ -522,6 +583,202 @@ const CreateClientPage = () => {
 								onClick={handleAddCustomField}
 							>
 								{createFieldMutation.isPending ? "Adding..." : "Add Custom Field"}
+							</Button>
+						</DialogFooter>
+					</DialogContent>
+				</Dialog>
+
+				{/* Additional Contacts */}
+				<div className="rounded-lg border p-4 space-y-4">
+					<div>
+						<h3 className="text-lg font-medium">Additional contacts</h3>
+						<p className="text-sm text-muted-foreground">
+							For contacts with access to all properties, e.g., spouse or family for residential, or property or regional managers for commercial.
+						</p>
+					</div>
+					{additionalContacts.length > 0 && (
+						<div className="space-y-2">
+							{additionalContacts.map((contact, index) => (
+								<div key={index} className="flex items-center justify-between rounded-md border px-3 py-2">
+									<div>
+										<p className="text-sm font-medium">
+											{contact.title !== "none" ? `${contact.title} ` : ""}{contact.firstName} {contact.lastName}
+										</p>
+										{contact.role && <p className="text-xs text-muted-foreground">{contact.role}</p>}
+									</div>
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										onClick={() => setAdditionalContacts((prev) => prev.filter((_, i) => i !== index))}
+									>
+										<Trash2 className="h-4 w-4" />
+									</Button>
+								</div>
+							))}
+						</div>
+					)}
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={() => {
+							resetContactForm();
+							setContactDialogOpen(true);
+						}}
+					>
+						<Plus className="h-4 w-4 mr-1" />
+						Add Contact
+					</Button>
+				</div>
+
+				<Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
+					<DialogContent className="max-h-[85vh] overflow-y-auto">
+						<DialogHeader>
+							<DialogTitle>Add contact</DialogTitle>
+						</DialogHeader>
+						<div className="space-y-6 py-2">
+							<div className="space-y-4">
+								<h4 className="text-sm font-semibold">Details</h4>
+								<div className="space-y-2">
+									<Label>Title</Label>
+									<Select
+										value={contactForm.title}
+										onValueChange={(v) => setContactForm((s) => ({ ...s, title: v as typeof s.title }))}
+									>
+										<SelectTrigger className="w-full">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="none">None</SelectItem>
+											<SelectItem value="Mr.">Mr.</SelectItem>
+											<SelectItem value="Ms.">Ms.</SelectItem>
+											<SelectItem value="Mrs.">Mrs.</SelectItem>
+											<SelectItem value="Miss.">Miss.</SelectItem>
+											<SelectItem value="Dr.">Dr.</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="grid grid-cols-2 gap-4">
+									<div className="space-y-2">
+										<Label>First name</Label>
+										<Input
+											value={contactForm.firstName}
+											onChange={(e) => setContactForm((s) => ({ ...s, firstName: e.target.value }))}
+										/>
+									</div>
+									<div className="space-y-2">
+										<Label>Last name</Label>
+										<Input
+											value={contactForm.lastName}
+											onChange={(e) => setContactForm((s) => ({ ...s, lastName: e.target.value }))}
+										/>
+									</div>
+								</div>
+								<div className="space-y-2">
+									<Label>Role</Label>
+									<Input
+										placeholder="e.g., Spouse, Property Manager"
+										value={contactForm.role}
+										onChange={(e) => setContactForm((s) => ({ ...s, role: e.target.value }))}
+									/>
+								</div>
+							</div>
+
+							<div className="space-y-4">
+								<h4 className="text-sm font-semibold">Communication</h4>
+								<div className="space-y-2">
+									<Label>Phone number</Label>
+									<Input
+										placeholder="(555) 123-4567"
+										value={contactForm.phone}
+										onChange={(e) => setContactForm((s) => ({ ...s, phone: e.target.value }))}
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label>Email</Label>
+									<Input
+										type="email"
+										placeholder="contact@example.com"
+										value={contactForm.email}
+										onChange={(e) => setContactForm((s) => ({ ...s, email: e.target.value }))}
+									/>
+								</div>
+							</div>
+
+							<div className="space-y-4">
+								<h4 className="text-sm font-semibold">Communication settings</h4>
+								<div className="space-y-3">
+									<div className="flex items-center justify-between">
+										<span className="text-sm font-medium">Quotes &amp; Invoices</span>
+										<span className="text-xs text-muted-foreground">Configure</span>
+									</div>
+									<div className="flex items-center justify-between">
+										<Label className="font-normal">Outstanding quote follow-ups</Label>
+										<Switch
+											checked={contactForm.notifications.quoteFollowUp}
+											onCheckedChange={(v) => setContactForm((s) => ({
+												...s,
+												notifications: { ...s.notifications, quoteFollowUp: v },
+											}))}
+										/>
+									</div>
+									<div className="flex items-center justify-between">
+										<Label className="font-normal">Overdue invoice follow-ups</Label>
+										<Switch
+											checked={contactForm.notifications.invoiceFollowUp}
+											onCheckedChange={(v) => setContactForm((s) => ({
+												...s,
+												notifications: { ...s.notifications, invoiceFollowUp: v },
+											}))}
+										/>
+									</div>
+								</div>
+								<div className="space-y-3">
+									<div className="flex items-center justify-between">
+										<span className="text-sm font-medium">Jobs &amp; Visits</span>
+										<span className="text-xs text-muted-foreground">Configure</span>
+									</div>
+									<div className="flex items-center justify-between">
+										<Label className="font-normal">Upcoming assessment or visit reminders</Label>
+										<Switch
+											checked={contactForm.notifications.appointmentReminders}
+											onCheckedChange={(v) => setContactForm((s) => ({
+												...s,
+												notifications: { ...s.notifications, appointmentReminders: v },
+											}))}
+										/>
+									</div>
+									<div className="flex items-center justify-between">
+										<Label className="font-normal">Job closure follow-ups</Label>
+										<Switch
+											checked={contactForm.notifications.jobFollowUp}
+											onCheckedChange={(v) => setContactForm((s) => ({
+												...s,
+												notifications: { ...s.notifications, jobFollowUp: v },
+											}))}
+										/>
+									</div>
+								</div>
+							</div>
+						</div>
+						<DialogFooter>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => setContactDialogOpen(false)}
+							>
+								Cancel
+							</Button>
+							<Button
+								type="button"
+								disabled={!contactForm.firstName || !contactForm.lastName}
+								onClick={() => {
+									setAdditionalContacts((prev) => [...prev, contactForm]);
+									setContactDialogOpen(false);
+								}}
+							>
+								Add Contact
 							</Button>
 						</DialogFooter>
 					</DialogContent>

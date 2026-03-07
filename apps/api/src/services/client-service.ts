@@ -1,26 +1,37 @@
-import db, { clientsSchema } from "@repo/db";
+import db, { clientsSchema, clientContactsSchema } from "@repo/db";
 import type { CreateClientForm } from "@repo/zod/client";
 import { and, eq, gte, isNull, sql } from "drizzle-orm";
 
 export async function createClient(userId: string, data: CreateClientForm) {
+	const { additionalContacts, ...clientData } = data;
+
 	const [client] = await db
 		.insert(clientsSchema)
 		.values({
 			userId,
-			title: data.title,
-			firstName: data.firstName,
-			lastName: data.lastName,
-			companyName: data.companyName,
-			leadSource: data.leadSource,
-			useCompanyAsPrimary: data.useCompanyAsPrimary,
-			phones: data.phones,
-			emails: data.emails,
-			propertyAddress: data.propertyAddress,
-			notifications: data.notifications,
-			billingSameAsProperty: data.billingSameAsProperty,
-			billingAddress: data.billingSameAsProperty ? undefined : data.billingAddress,
+			title: clientData.title,
+			firstName: clientData.firstName,
+			lastName: clientData.lastName,
+			companyName: clientData.companyName,
+			leadSource: clientData.leadSource,
+			useCompanyAsPrimary: clientData.useCompanyAsPrimary,
+			phones: clientData.phones,
+			emails: clientData.emails,
+			propertyAddress: clientData.propertyAddress,
+			notifications: clientData.notifications,
+			billingSameAsProperty: clientData.billingSameAsProperty,
+			billingAddress: clientData.billingSameAsProperty ? undefined : clientData.billingAddress,
 		})
 		.returning();
+
+	if (additionalContacts && additionalContacts.length > 0) {
+		await db.insert(clientContactsSchema).values(
+			additionalContacts.map((contact) => ({
+				clientId: client.id,
+				...contact,
+			}))
+		);
+	}
 
 	return client;
 }

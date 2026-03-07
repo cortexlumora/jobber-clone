@@ -57,6 +57,13 @@
       "when": 1772910812682,
       "tag": "0007_easy_albert_cleary",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1772911992849,
+      "tag": "0008_fat_alex_power",
+      "breakpoints": true
     }
   ]
 }

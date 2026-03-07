@@ -9,7 +9,8 @@
 		"./file": "./src/file.ts",
 		"./request": "./src/request.ts",
 		"./company-settings": "./src/company-settings.ts",
-		"./custom-field": "./src/custom-field.ts"
+		"./custom-field": "./src/custom-field.ts",
+		"./client-contact": "./src/client-contact.ts"
 	},
 	"dependencies": {
 		"zod": "^4.3.6"

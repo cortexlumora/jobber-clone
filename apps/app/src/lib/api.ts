@@ -1,8 +1,9 @@
-import type { APIResponse, ClientDTO, ClientStatsDTO, CompanySettingsDTO, CustomFieldDefinitionDTO, PresignUploadDTO, RequestDTO } from "@repo/dto";
+import type { APIResponse, ClientDTO, ClientStatsDTO, ClientContactDTO, CompanySettingsDTO, CustomFieldDefinitionDTO, PresignUploadDTO, RequestDTO } from "@repo/dto";
 import type { CreateClientForm } from "@repo/zod/client";
 import type { CreateRequestForm } from "@repo/zod/request";
 import type { UpdateCompanySettingsForm } from "@repo/zod/company-settings";
 import type { CreateCustomFieldForm } from "@repo/zod/custom-field";
+import type { CreateClientContactForm } from "@repo/zod/client-contact";
 import axios from "axios";
 import { http } from "./http";
 
@@ -79,5 +80,21 @@ export async function createCustomFieldDefinition(data: CreateCustomFieldForm) {
 
 export async function deleteCustomFieldDefinition(id: string) {
 	const res = await http.delete<APIResponse<CustomFieldDefinitionDTO>>(`/api/v1/custom-fields/definitions/${id}`);
+	return res.data.data;
+}
+
+// Client Contacts
+export async function getClientContacts(clientId: string) {
+	const res = await http.get<APIResponse<ClientContactDTO[]>>(`/api/v1/client-contacts/${clientId}`);
+	return res.data.data;
+}
+
+export async function createClientContact(data: CreateClientContactForm) {
+	const res = await http.post<APIResponse<ClientContactDTO>>("/api/v1/client-contacts", data);
+	return res.data.data;
+}
+
+export async function deleteClientContact(clientId: string, id: string) {
+	const res = await http.delete<APIResponse<ClientContactDTO>>(`/api/v1/client-contacts/${clientId}/${id}`);
 	return res.data.data;
 }
