@@ -17,10 +17,19 @@ export interface Email {
 	value: string;
 }
 
+export interface ClientStatsDTO {
+	newLeads: number;
+	newLeadsChange: number;
+	newClients: number;
+	newClientsChange: number;
+	totalNewClients: number;
+}
+
 export interface ClientDTO {
 	id: string;
 	userId: string;
 	title: "none" | "Mr." | "Ms." | "Mrs." | "Miss." | "Dr.";
+	status: "lead" | "active" | "inactive";
 	firstName: string;
 	lastName: string;
 	companyName: string | null;

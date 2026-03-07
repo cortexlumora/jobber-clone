@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { getClients } from "@/lib/api";
+import { getClients, getClientStats } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, TrendingUp } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown } from "lucide-react";
 import {
 	Table,
 	TableBody,
@@ -19,6 +19,31 @@ const ClientsPage = () => {
 		queryKey: ["clients"],
 		queryFn: getClients,
 	});
+
+	const { data: stats } = useQuery({
+		queryKey: ["client-stats"],
+		queryFn: getClientStats,
+	});
+
+	const renderChange = (change: number) => {
+		if (change > 0) {
+			return (
+				<span className="text-xs text-green-600 flex items-center gap-1">
+					<TrendingUp className="h-3 w-3" />
+					{change}%
+				</span>
+			);
+		}
+		if (change < 0) {
+			return (
+				<span className="text-xs text-red-600 flex items-center gap-1">
+					<TrendingDown className="h-3 w-3" />
+					{change}%
+				</span>
+			);
+		}
+		return <span className="text-xs text-muted-foreground">0%</span>;
+	};
 
 	return (
 		<div>
@@ -37,11 +62,8 @@ const ClientsPage = () => {
 					</CardHeader>
 					<CardContent>
 						<div className="flex items-center gap-2">
-							<span className="text-2xl font-bold">1</span>
-							<span className="text-xs text-green-600 flex items-center gap-1">
-								<TrendingUp className="h-3 w-3" />
-								100%
-							</span>
+							<span className="text-2xl font-bold">{stats?.newLeads ?? 0}</span>
+							{stats && renderChange(stats.newLeadsChange)}
 						</div>
 					</CardContent>
 				</Card>
@@ -52,8 +74,8 @@ const ClientsPage = () => {
 					</CardHeader>
 					<CardContent>
 						<div className="flex items-center gap-2">
-							<span className="text-2xl font-bold">0</span>
-							<span className="text-xs text-muted-foreground">0%</span>
+							<span className="text-2xl font-bold">{stats?.newClients ?? 0}</span>
+							{stats && renderChange(stats.newClientsChange)}
 						</div>
 					</CardContent>
 				</Card>
@@ -63,7 +85,7 @@ const ClientsPage = () => {
 						<p className="text-xs text-muted-foreground">Year to date</p>
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold">0</div>
+						<div className="text-2xl font-bold">{stats?.totalNewClients ?? 0}</div>
 					</CardContent>
 				</Card>
 			</div>

@@ -13,6 +13,7 @@ const clientsSchema = pgTable("clients", {
 	firstName: varchar("first_name", { length: 255 }).notNull(),
 	lastName: varchar("last_name", { length: 255 }).notNull(),
 	companyName: varchar("company_name", { length: 255 }),
+	status: clientStatusEnum("status").notNull().default("lead"),
 	useCompanyAsPrimary: boolean("use_company_as_primary").notNull().default(false),
 	phones: jsonb("phones").$type<{ type: "mobile" | "landline"; number: string }[]>().notNull().default([]),
 	emails: jsonb("emails").$type<{ type: "primary" | "secondary" | "work" | "other"; value: string }[]>().notNull().default([]),

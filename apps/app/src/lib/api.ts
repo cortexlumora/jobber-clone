@@ -1,4 +1,4 @@
-import type { APIResponse, ClientDTO, PresignUploadDTO, RequestDTO } from "@repo/dto";
+import type { APIResponse, ClientDTO, ClientStatsDTO, PresignUploadDTO, RequestDTO } from "@repo/dto";
 import type { CreateClientForm } from "@repo/zod/client";
 import type { CreateRequestForm } from "@repo/zod/request";
 import axios from "axios";
@@ -16,6 +16,11 @@ export async function getClients() {
 
 export async function getClientById(id: string) {
 	const res = await http.get<APIResponse<ClientDTO>>(`/api/v1/clients/${id}`);
+	return res.data.data;
+}
+
+export async function getClientStats() {
+	const res = await http.get<APIResponse<ClientStatsDTO>>("/api/v1/clients/stats");
 	return res.data.data;
 }
 
