@@ -17,6 +17,26 @@ export interface Email {
 	value: string;
 }
 
+export interface PropertyDTO {
+	id: string;
+	clientId: string;
+	street1: string | null;
+	street2: string | null;
+	city: string | null;
+	state: string | null;
+	zip: string | null;
+	country: string | null;
+	billingSameAsProperty: boolean;
+	billingStreet1: string | null;
+	billingStreet2: string | null;
+	billingCity: string | null;
+	billingState: string | null;
+	billingZip: string | null;
+	billingCountry: string | null;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
 export interface ClientStatsDTO {
 	newLeads: number;
 	newLeadsChange: number;
@@ -37,15 +57,12 @@ export interface ClientDTO {
 	useCompanyAsPrimary: boolean;
 	phones: Phone[];
 	emails: Email[];
-	propertyAddress: Address | null;
 	notifications: {
 		quoteFollowUp: boolean;
 		appointmentReminders: boolean;
 		jobFollowUp: boolean;
 		invoiceFollowUp: boolean;
 	};
-	billingSameAsProperty: boolean;
-	billingAddress: Address | null;
 	createdAt: Date;
 	updatedAt: Date;
 	deletedAt: Date | null;

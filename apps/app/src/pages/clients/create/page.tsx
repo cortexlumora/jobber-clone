@@ -27,69 +27,47 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 
+type ContactEntry = {
+	title: "none" | "Mr." | "Ms." | "Mrs." | "Miss." | "Dr.";
+	firstName: string;
+	lastName: string;
+	role: string;
+	phone: string;
+	email: string;
+	notifications: {
+		quoteFollowUp: boolean;
+		invoiceFollowUp: boolean;
+		appointmentReminders: boolean;
+		jobFollowUp: boolean;
+	};
+};
+
+const defaultContact: ContactEntry = {
+	title: "none",
+	firstName: "",
+	lastName: "",
+	role: "",
+	phone: "",
+	email: "",
+	notifications: {
+		quoteFollowUp: true,
+		invoiceFollowUp: true,
+		appointmentReminders: true,
+		jobFollowUp: true,
+	},
+};
+
 const CreateClientPage = () => {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
-	const [additionalContacts, setAdditionalContacts] = useState<Array<{
-		title: "none" | "Mr." | "Ms." | "Mrs." | "Miss." | "Dr.";
-		firstName: string;
-		lastName: string;
-		role: string;
-		phone: string;
-		email: string;
-		notifications: {
-			quoteFollowUp: boolean;
-			invoiceFollowUp: boolean;
-			appointmentReminders: boolean;
-			jobFollowUp: boolean;
-		};
-	}>>([]);
-	const [propertyContacts, setPropertyContacts] = useState<typeof additionalContacts>([]);
+	const [additionalContacts, setAdditionalContacts] = useState<ContactEntry[]>([]);
+	const [propertyContacts, setPropertyContacts] = useState<ContactEntry[]>([]);
 	const [contactDialogOpen, setContactDialogOpen] = useState(false);
 	const [contactTarget, setContactTarget] = useState<"additional" | "property">("additional");
-	const [contactForm, setContactForm] = useState<{
-		title: "none" | "Mr." | "Ms." | "Mrs." | "Miss." | "Dr.";
-		firstName: string;
-		lastName: string;
-		role: string;
-		phone: string;
-		email: string;
-		notifications: {
-			quoteFollowUp: boolean;
-			invoiceFollowUp: boolean;
-			appointmentReminders: boolean;
-			jobFollowUp: boolean;
-		};
-	}>({
-		title: "none",
-		firstName: "",
-		lastName: "",
-		role: "",
-		phone: "",
-		email: "",
-		notifications: {
-			quoteFollowUp: true,
-			invoiceFollowUp: true,
-			appointmentReminders: true,
-			jobFollowUp: true,
-		},
-	});
+	const [contactForm, setContactForm] = useState<ContactEntry>({ ...defaultContact });
 
-	const resetContactForm = () => setContactForm({
-		title: "none" as const,
-		firstName: "",
-		lastName: "",
-		role: "",
-		phone: "",
-		email: "",
-		notifications: {
-			quoteFollowUp: true,
-			invoiceFollowUp: true,
-			appointmentReminders: true,
-			jobFollowUp: true,
-		},
-	});
+	const resetContactForm = () => setContactForm({ ...defaultContact });
 
 	const mutation = useMutation({
 		mutationFn: createClient,
@@ -130,64 +108,19 @@ const CreateClientPage = () => {
 			useCompanyAsPrimary: false,
 			phones: [{ type: "mobile", number: "" }],
 			emails: [{ type: "primary", value: "" }],
-			propertyAddress: {},
-			billingSameAsProperty: true,
-			billingAddress: {},
 			notifications: {
 				quoteFollowUp: true,
 				appointmentReminders: true,
 				jobFollowUp: true,
 				invoiceFollowUp: true,
 			},
+			properties: [
+				{
+					address: {},
+					billingSameAsProperty: true,
+				},
+			],
 		},
-	});
-
-	const billingSameAsProperty = watch("billingSameAsProperty");
-	const [customFieldDialogOpen, setCustomFieldDialogOpen] = useState(false);
-	const [customFieldTarget, setCustomFieldTarget] = useState<"client" | "property">("client");
-	const [customFieldName, setCustomFieldName] = useState("");
-	const [customFieldType, setCustomFieldType] = useState<string>("");
-	const [customFieldDefault, setCustomFieldDefault] = useState("");
-	const [additionalProperties, setAdditionalProperties] = useState<Array<{
-		address: { street1: string; street2: string; city: string; state: string; zip: string; country: string };
-		billingSameAsProperty: boolean;
-		billingAddress: { street1: string; street2: string; city: string; state: string; zip: string; country: string };
-	}>>([]);
-
-	const addProperty = () => {
-		setAdditionalProperties((prev) => [...prev, {
-			address: { street1: "", street2: "", city: "", state: "", zip: "", country: "" },
-			billingSameAsProperty: true,
-			billingAddress: { street1: "", street2: "", city: "", state: "", zip: "", country: "" },
-		}]);
-	};
-
-	const updateProperty = (index: number, updates: Partial<typeof additionalProperties[number]>) => {
-		setAdditionalProperties((prev) => prev.map((p, i) => i === index ? { ...p, ...updates } : p));
-	};
-
-	const updatePropertyAddress = (index: number, field: string, value: string) => {
-		setAdditionalProperties((prev) => prev.map((p, i) =>
-			i === index ? { ...p, address: { ...p.address, [field]: value } } : p
-		));
-	};
-
-	const updatePropertyBilling = (index: number, field: string, value: string) => {
-		setAdditionalProperties((prev) => prev.map((p, i) =>
-			i === index ? { ...p, billingAddress: { ...p.billingAddress, [field]: value } } : p
-		));
-	};
-
-	const removeProperty = (index: number) => {
-		setAdditionalProperties((prev) => prev.filter((_, i) => i !== index));
-	};
-
-	const [commDialogOpen, setCommDialogOpen] = useState(false);
-	const [commState, setCommState] = useState({
-		quoteFollowUp: true,
-		appointmentReminders: true,
-		jobFollowUp: true,
-		invoiceFollowUp: true,
 	});
 
 	const {
@@ -201,6 +134,26 @@ const CreateClientPage = () => {
 		append: appendEmail,
 		remove: removeEmail,
 	} = useFieldArray({ control, name: "emails" });
+
+	const {
+		fields: propertyFields,
+		append: appendProperty,
+		remove: removeProperty,
+	} = useFieldArray({ control, name: "properties" });
+
+	const [customFieldDialogOpen, setCustomFieldDialogOpen] = useState(false);
+	const [customFieldTarget, setCustomFieldTarget] = useState<"client" | "property">("client");
+	const [customFieldName, setCustomFieldName] = useState("");
+	const [customFieldType, setCustomFieldType] = useState<string>("");
+	const [customFieldDefault, setCustomFieldDefault] = useState("");
+
+	const [commDialogOpen, setCommDialogOpen] = useState(false);
+	const [commState, setCommState] = useState({
+		quoteFollowUp: true,
+		appointmentReminders: true,
+		jobFollowUp: true,
+		invoiceFollowUp: true,
+	});
 
 	const onSubmit = (data: CreateClientForm) => {
 		const allContacts = [...additionalContacts, ...propertyContacts];
@@ -837,266 +790,102 @@ const CreateClientPage = () => {
 					</DialogContent>
 				</Dialog>
 
-				{/* Property Details */}
-				<div className="space-y-4">
-					<h3 className="text-lg font-medium">Property Address</h3>
-					<div className="space-y-2">
-						<Label htmlFor="propertyStreet1">Street 1</Label>
-						<Input id="propertyStreet1" placeholder="123 Main St" {...register("propertyAddress.street1")} />
-					</div>
-					<div className="space-y-2">
-						<Label htmlFor="propertyStreet2">Street 2</Label>
-						<Input id="propertyStreet2" placeholder="Apt 4B" {...register("propertyAddress.street2")} />
-					</div>
-					<div className="grid grid-cols-2 gap-4">
-						<div className="space-y-2">
-							<Label htmlFor="propertyCity">City</Label>
-							<Input id="propertyCity" placeholder="New York" {...register("propertyAddress.city")} />
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="propertyState">State</Label>
-							<Input id="propertyState" placeholder="NY" {...register("propertyAddress.state")} />
-						</div>
-					</div>
-					<div className="grid grid-cols-2 gap-4">
-						<div className="space-y-2">
-							<Label htmlFor="propertyZip">Zip Code</Label>
-							<Input id="propertyZip" placeholder="10001" {...register("propertyAddress.zip")} />
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="propertyCountry">Country</Label>
-							<Input id="propertyCountry" placeholder="United States" {...register("propertyAddress.country")} />
-						</div>
-					</div>
-				</div>
-
-				{/* Billing Address */}
-				<div className="space-y-4">
-					<h3 className="text-lg font-medium">Billing Address</h3>
-					<Controller
-						control={control}
-						name="billingSameAsProperty"
-						render={({ field }) => (
-							<div className="flex items-center gap-2">
-								<Checkbox
-									id="billingSameAsProperty"
-									checked={field.value}
-									onCheckedChange={field.onChange}
-								/>
-								<Label htmlFor="billingSameAsProperty" className="font-normal">
-									Billing address is the same as property address
-								</Label>
-							</div>
-						)}
-					/>
-					{!billingSameAsProperty && (
+				{/* Properties */}
+				{propertyFields.map((field, propIndex) => (
+					<div key={field.id} className="space-y-6">
+						{/* Property Address */}
 						<div className="space-y-4">
-							<div className="space-y-2">
-								<Label htmlFor="billingStreet1">Street 1</Label>
-								<Input id="billingStreet1" placeholder="123 Main St" {...register("billingAddress.street1")} />
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="billingStreet2">Street 2</Label>
-								<Input id="billingStreet2" placeholder="Apt 4B" {...register("billingAddress.street2")} />
-							</div>
-							<div className="grid grid-cols-2 gap-4">
-								<div className="space-y-2">
-									<Label htmlFor="billingCity">City</Label>
-									<Input id="billingCity" placeholder="New York" {...register("billingAddress.city")} />
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="billingState">State</Label>
-									<Input id="billingState" placeholder="NY" {...register("billingAddress.state")} />
-								</div>
-							</div>
-							<div className="grid grid-cols-2 gap-4">
-								<div className="space-y-2">
-									<Label htmlFor="billingZip">Zip Code</Label>
-									<Input id="billingZip" placeholder="10001" {...register("billingAddress.zip")} />
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="billingCountry">Country</Label>
-									<Input id="billingCountry" placeholder="United States" {...register("billingAddress.country")} />
-								</div>
-							</div>
-						</div>
-					)}
-				</div>
-
-				{/* Property Custom Fields */}
-				<div className="rounded-lg border p-4 space-y-4">
-					<div>
-						<h3 className="text-lg font-medium">Property details</h3>
-						<p className="text-sm text-muted-foreground">
-							Create custom fields to track additional details
-						</p>
-					</div>
-					{propertyCustomFields.length > 0 && (
-						<div className="space-y-3">
-							{propertyCustomFields.map((cf) => (
-								<div key={cf.id} className="space-y-1">
-									<Label>{cf.name}</Label>
-									{cf.fieldType === "checkbox" ? (
-										<div className="flex items-center gap-2">
-											<Checkbox defaultChecked={cf.defaultValue === "true"} />
-											<span className="text-sm text-muted-foreground">{cf.name}</span>
-										</div>
-									) : (
-										<Input
-											type={cf.fieldType === "number" ? "number" : cf.fieldType === "date" ? "date" : "text"}
-											placeholder={cf.defaultValue ?? ""}
-											defaultValue={cf.defaultValue ?? ""}
-										/>
-									)}
-								</div>
-							))}
-						</div>
-					)}
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						onClick={() => {
-							setCustomFieldTarget("property");
-							setCustomFieldDialogOpen(true);
-						}}
-					>
-						<Plus className="h-4 w-4 mr-1" />
-						Add Custom Field
-					</Button>
-				</div>
-
-				{/* Property Contacts */}
-				<div className="rounded-lg border p-4 space-y-4">
-					<div>
-						<h3 className="text-lg font-medium">Property contacts</h3>
-						<p className="text-sm text-muted-foreground">
-							For contacts with access limited to this property
-						</p>
-					</div>
-					{propertyContacts.length > 0 && (
-						<div className="space-y-2">
-							{propertyContacts.map((contact, index) => (
-								<div key={index} className="flex items-center justify-between rounded-md border px-3 py-2">
-									<div>
-										<p className="text-sm font-medium">
-											{contact.title !== "none" ? `${contact.title} ` : ""}{contact.firstName} {contact.lastName}
-										</p>
-										{contact.role && <p className="text-xs text-muted-foreground">{contact.role}</p>}
-									</div>
+							<div className="flex items-center justify-between">
+								<h3 className="text-lg font-medium">
+									{propertyFields.length > 1 ? `Property ${propIndex + 1} Address` : "Property Address"}
+								</h3>
+								{propIndex > 0 && (
 									<Button
 										type="button"
 										variant="ghost"
 										size="icon"
-										onClick={() => setPropertyContacts((prev) => prev.filter((_, i) => i !== index))}
+										onClick={() => removeProperty(propIndex)}
 									>
 										<Trash2 className="h-4 w-4" />
 									</Button>
-								</div>
-							))}
-						</div>
-					)}
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						onClick={() => {
-							resetContactForm();
-							setContactTarget("property");
-							setContactDialogOpen(true);
-						}}
-					>
-						<Plus className="h-4 w-4 mr-1" />
-						Add Contact
-					</Button>
-				</div>
-
-				{/* Additional Properties */}
-				{additionalProperties.map((prop, index) => (
-					<div key={index} className="space-y-6 rounded-lg border p-4">
-						<div className="flex items-center justify-between">
-							<h3 className="text-lg font-medium">Property {index + 2}</h3>
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon"
-								onClick={() => removeProperty(index)}
-							>
-								<Trash2 className="h-4 w-4" />
-							</Button>
-						</div>
-
-						{/* Address */}
-						<div className="space-y-4">
-							<h4 className="text-sm font-semibold">Property Address</h4>
+								)}
+							</div>
 							<div className="space-y-2">
 								<Label>Street 1</Label>
-								<Input placeholder="123 Main St" value={prop.address.street1} onChange={(e) => updatePropertyAddress(index, "street1", e.target.value)} />
+								<Input placeholder="123 Main St" {...register(`properties.${propIndex}.address.street1`)} />
 							</div>
 							<div className="space-y-2">
 								<Label>Street 2</Label>
-								<Input placeholder="Apt 4B" value={prop.address.street2} onChange={(e) => updatePropertyAddress(index, "street2", e.target.value)} />
+								<Input placeholder="Apt 4B" {...register(`properties.${propIndex}.address.street2`)} />
 							</div>
 							<div className="grid grid-cols-2 gap-4">
 								<div className="space-y-2">
 									<Label>City</Label>
-									<Input placeholder="New York" value={prop.address.city} onChange={(e) => updatePropertyAddress(index, "city", e.target.value)} />
+									<Input placeholder="New York" {...register(`properties.${propIndex}.address.city`)} />
 								</div>
 								<div className="space-y-2">
 									<Label>State</Label>
-									<Input placeholder="NY" value={prop.address.state} onChange={(e) => updatePropertyAddress(index, "state", e.target.value)} />
+									<Input placeholder="NY" {...register(`properties.${propIndex}.address.state`)} />
 								</div>
 							</div>
 							<div className="grid grid-cols-2 gap-4">
 								<div className="space-y-2">
 									<Label>Zip Code</Label>
-									<Input placeholder="10001" value={prop.address.zip} onChange={(e) => updatePropertyAddress(index, "zip", e.target.value)} />
+									<Input placeholder="10001" {...register(`properties.${propIndex}.address.zip`)} />
 								</div>
 								<div className="space-y-2">
 									<Label>Country</Label>
-									<Input placeholder="United States" value={prop.address.country} onChange={(e) => updatePropertyAddress(index, "country", e.target.value)} />
+									<Input placeholder="United States" {...register(`properties.${propIndex}.address.country`)} />
 								</div>
 							</div>
 						</div>
 
-						{/* Billing */}
+						{/* Billing Address */}
 						<div className="space-y-4">
-							<h4 className="text-sm font-semibold">Billing Address</h4>
-							<div className="flex items-center gap-2">
-								<Checkbox
-									checked={prop.billingSameAsProperty}
-									onCheckedChange={(v) => updateProperty(index, { billingSameAsProperty: !!v })}
-								/>
-								<Label className="font-normal">Billing address is the same as property address</Label>
-							</div>
-							{!prop.billingSameAsProperty && (
+							<h3 className="text-lg font-medium">Billing Address</h3>
+							<Controller
+								control={control}
+								name={`properties.${propIndex}.billingSameAsProperty`}
+								render={({ field }) => (
+									<div className="flex items-center gap-2">
+										<Checkbox
+											checked={field.value}
+											onCheckedChange={field.onChange}
+										/>
+										<Label className="font-normal">
+											Billing address is the same as property address
+										</Label>
+									</div>
+								)}
+							/>
+							{!watch(`properties.${propIndex}.billingSameAsProperty`) && (
 								<div className="space-y-4">
 									<div className="space-y-2">
 										<Label>Street 1</Label>
-										<Input placeholder="123 Main St" value={prop.billingAddress.street1} onChange={(e) => updatePropertyBilling(index, "street1", e.target.value)} />
+										<Input placeholder="123 Main St" {...register(`properties.${propIndex}.billingAddress.street1`)} />
 									</div>
 									<div className="space-y-2">
 										<Label>Street 2</Label>
-										<Input placeholder="Apt 4B" value={prop.billingAddress.street2} onChange={(e) => updatePropertyBilling(index, "street2", e.target.value)} />
+										<Input placeholder="Apt 4B" {...register(`properties.${propIndex}.billingAddress.street2`)} />
 									</div>
 									<div className="grid grid-cols-2 gap-4">
 										<div className="space-y-2">
 											<Label>City</Label>
-											<Input placeholder="New York" value={prop.billingAddress.city} onChange={(e) => updatePropertyBilling(index, "city", e.target.value)} />
+											<Input placeholder="New York" {...register(`properties.${propIndex}.billingAddress.city`)} />
 										</div>
 										<div className="space-y-2">
 											<Label>State</Label>
-											<Input placeholder="NY" value={prop.billingAddress.state} onChange={(e) => updatePropertyBilling(index, "state", e.target.value)} />
+											<Input placeholder="NY" {...register(`properties.${propIndex}.billingAddress.state`)} />
 										</div>
 									</div>
 									<div className="grid grid-cols-2 gap-4">
 										<div className="space-y-2">
 											<Label>Zip Code</Label>
-											<Input placeholder="10001" value={prop.billingAddress.zip} onChange={(e) => updatePropertyBilling(index, "zip", e.target.value)} />
+											<Input placeholder="10001" {...register(`properties.${propIndex}.billingAddress.zip`)} />
 										</div>
 										<div className="space-y-2">
 											<Label>Country</Label>
-											<Input placeholder="United States" value={prop.billingAddress.country} onChange={(e) => updatePropertyBilling(index, "country", e.target.value)} />
+											<Input placeholder="United States" {...register(`properties.${propIndex}.billingAddress.country`)} />
 										</div>
 									</div>
 								</div>
@@ -1104,35 +893,78 @@ const CreateClientPage = () => {
 						</div>
 
 						{/* Property Custom Fields */}
-						{propertyCustomFields.length > 0 && (
-							<div className="space-y-3">
-								<h4 className="text-sm font-semibold">Property details</h4>
-								{propertyCustomFields.map((cf) => (
-									<div key={cf.id} className="space-y-1">
-										<Label>{cf.name}</Label>
-										{cf.fieldType === "checkbox" ? (
-											<div className="flex items-center gap-2">
-												<Checkbox defaultChecked={cf.defaultValue === "true"} />
-												<span className="text-sm text-muted-foreground">{cf.name}</span>
-											</div>
-										) : (
-											<Input
-												type={cf.fieldType === "number" ? "number" : cf.fieldType === "date" ? "date" : "text"}
-												placeholder={cf.defaultValue ?? ""}
-												defaultValue={cf.defaultValue ?? ""}
-											/>
-										)}
-									</div>
-								))}
+						<div className="rounded-lg border p-4 space-y-4">
+							<div>
+								<h3 className="text-lg font-medium">Property details</h3>
+								<p className="text-sm text-muted-foreground">
+									Create custom fields to track additional details
+								</p>
 							</div>
-						)}
+							{propertyCustomFields.length > 0 && (
+								<div className="space-y-3">
+									{propertyCustomFields.map((cf) => (
+										<div key={cf.id} className="space-y-1">
+											<Label>{cf.name}</Label>
+											{cf.fieldType === "checkbox" ? (
+												<div className="flex items-center gap-2">
+													<Checkbox defaultChecked={cf.defaultValue === "true"} />
+													<span className="text-sm text-muted-foreground">{cf.name}</span>
+												</div>
+											) : (
+												<Input
+													type={cf.fieldType === "number" ? "number" : cf.fieldType === "date" ? "date" : "text"}
+													placeholder={cf.defaultValue ?? ""}
+													defaultValue={cf.defaultValue ?? ""}
+												/>
+											)}
+										</div>
+									))}
+								</div>
+							)}
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => {
+									setCustomFieldTarget("property");
+									setCustomFieldDialogOpen(true);
+								}}
+							>
+								<Plus className="h-4 w-4 mr-1" />
+								Add Custom Field
+							</Button>
+						</div>
 
 						{/* Property Contacts */}
-						<div className="space-y-3">
-							<h4 className="text-sm font-semibold">Property contacts</h4>
-							<p className="text-sm text-muted-foreground">
-								For contacts with access limited to this property
-							</p>
+						<div className="rounded-lg border p-4 space-y-4">
+							<div>
+								<h3 className="text-lg font-medium">Property contacts</h3>
+								<p className="text-sm text-muted-foreground">
+									For contacts with access limited to this property
+								</p>
+							</div>
+							{propertyContacts.length > 0 && (
+								<div className="space-y-2">
+									{propertyContacts.map((contact, index) => (
+										<div key={index} className="flex items-center justify-between rounded-md border px-3 py-2">
+											<div>
+												<p className="text-sm font-medium">
+													{contact.title !== "none" ? `${contact.title} ` : ""}{contact.firstName} {contact.lastName}
+												</p>
+												{contact.role && <p className="text-xs text-muted-foreground">{contact.role}</p>}
+											</div>
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon"
+												onClick={() => setPropertyContacts((prev) => prev.filter((_, i) => i !== index))}
+											>
+												<Trash2 className="h-4 w-4" />
+											</Button>
+										</div>
+									))}
+								</div>
+							)}
 							<Button
 								type="button"
 								variant="outline"
@@ -1147,13 +979,20 @@ const CreateClientPage = () => {
 								Add Contact
 							</Button>
 						</div>
+
+						{propIndex < propertyFields.length - 1 && (
+							<hr className="border-t" />
+						)}
 					</div>
 				))}
 
 				<Button
 					type="button"
 					variant="outline"
-					onClick={addProperty}
+					onClick={() => appendProperty({
+						address: {},
+						billingSameAsProperty: true,
+					})}
 				>
 					<Plus className="h-4 w-4 mr-1" />
 					Add Another Property

@@ -1,10 +1,12 @@
 import { jsonb, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import clientsSchema from "./clients";
 import { clientTitleEnum } from "./clients";
+import propertiesSchema from "./properties";
 
 const clientContactsSchema = pgTable("client_contacts", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	clientId: uuid("client_id").notNull().references(() => clientsSchema.id, { onDelete: "cascade" }),
+	propertyId: uuid("property_id").references(() => propertiesSchema.id, { onDelete: "cascade" }),
 	title: clientTitleEnum("title").notNull().default("none"),
 	firstName: varchar("first_name", { length: 255 }).notNull(),
 	lastName: varchar("last_name", { length: 255 }).notNull(),

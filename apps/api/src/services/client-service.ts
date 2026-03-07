@@ -1,9 +1,9 @@
-import db, { clientsSchema, clientContactsSchema } from "@repo/db";
+import db, { clientsSchema, clientContactsSchema, propertiesSchema } from "@repo/db";
 import type { CreateClientForm } from "@repo/zod/client";
-import { and, eq, gte, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 
 export async function createClient(userId: string, data: CreateClientForm) {
-	const { additionalContacts, ...clientData } = data;
+	const { additionalContacts, properties, ...clientData } = data;
 
 	const [client] = await db
 		.insert(clientsSchema)
@@ -17,12 +17,30 @@ export async function createClient(userId: string, data: CreateClientForm) {
 			useCompanyAsPrimary: clientData.useCompanyAsPrimary,
 			phones: clientData.phones,
 			emails: clientData.emails,
-			propertyAddress: clientData.propertyAddress,
 			notifications: clientData.notifications,
-			billingSameAsProperty: clientData.billingSameAsProperty,
-			billingAddress: clientData.billingSameAsProperty ? undefined : clientData.billingAddress,
 		})
 		.returning();
+
+	if (properties.length > 0) {
+		await db.insert(propertiesSchema).values(
+			properties.map((prop) => ({
+				clientId: client.id,
+				street1: prop.address.street1,
+				street2: prop.address.street2,
+				city: prop.address.city,
+				state: prop.address.state,
+				zip: prop.address.zip,
+				country: prop.address.country,
+				billingSameAsProperty: prop.billingSameAsProperty,
+				billingStreet1: prop.billingSameAsProperty ? undefined : prop.billingAddress?.street1,
+				billingStreet2: prop.billingSameAsProperty ? undefined : prop.billingAddress?.street2,
+				billingCity: prop.billingSameAsProperty ? undefined : prop.billingAddress?.city,
+				billingState: prop.billingSameAsProperty ? undefined : prop.billingAddress?.state,
+				billingZip: prop.billingSameAsProperty ? undefined : prop.billingAddress?.zip,
+				billingCountry: prop.billingSameAsProperty ? undefined : prop.billingAddress?.country,
+			}))
+		);
+	}
 
 	if (additionalContacts && additionalContacts.length > 0) {
 		await db.insert(clientContactsSchema).values(
@@ -50,6 +68,13 @@ export async function getClientById(clientId: string) {
 		.where(and(eq(clientsSchema.id, clientId), isNull(clientsSchema.deletedAt)));
 
 	return client;
+}
+
+export async function getClientProperties(clientId: string) {
+	return db
+		.select()
+		.from(propertiesSchema)
+		.where(eq(propertiesSchema.clientId, clientId));
 }
 
 export async function getClientStats(userId: string) {

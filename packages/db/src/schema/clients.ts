@@ -19,29 +19,12 @@ const clientsSchema = pgTable("clients", {
 	useCompanyAsPrimary: boolean("use_company_as_primary").notNull().default(false),
 	phones: jsonb("phones").$type<{ type: "mobile" | "landline"; number: string }[]>().notNull().default([]),
 	emails: jsonb("emails").$type<{ type: "primary" | "secondary" | "work" | "other"; value: string }[]>().notNull().default([]),
-	propertyAddress: jsonb("property_address").$type<{
-		street1?: string;
-		street2?: string;
-		city?: string;
-		state?: string;
-		zip?: string;
-		country?: string;
-	}>(),
 	notifications: jsonb("notifications").$type<{
 		quoteFollowUp: boolean;
 		appointmentReminders: boolean;
 		jobFollowUp: boolean;
 		invoiceFollowUp: boolean;
 	}>().notNull().default({ quoteFollowUp: true, appointmentReminders: true, jobFollowUp: true, invoiceFollowUp: true }),
-	billingSameAsProperty: boolean("billing_same_as_property").notNull().default(true),
-	billingAddress: jsonb("billing_address").$type<{
-		street1?: string;
-		street2?: string;
-		city?: string;
-		state?: string;
-		zip?: string;
-		country?: string;
-	}>(),
 	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 	deletedAt: timestamp("deleted_at", { withTimezone: true }),
