@@ -1,4 +1,11 @@
 import { createBrowserRouter } from "react-router";
+
+const PlaceholderPage = ({ title }: { title: string }) => (
+	<div>
+		<h2 className="text-2xl font-semibold mb-8">{title}</h2>
+		<p className="text-muted-foreground">Coming soon</p>
+	</div>
+);
 import CreatePage from "./pages/create/page";
 import HomePage from "./pages/home/page";
 import SchedulePage from "./pages/schedule/page";
@@ -15,7 +22,8 @@ import CommunityPage from "./pages/community/page";
 import AppsPage from "./pages/apps/page";
 import CreateClientPage from "./pages/clients/create/page";
 import CreateRequestPage from "./pages/requests/create/page";
-import SettingsPage from "./pages/settings/page";
+import SettingsLayout from "./pages/settings/layout";
+import CompanySettingsPage from "./pages/settings/company/page";
 import AppLayout from "./pages/app-layout";
 
 const routes = createBrowserRouter([
@@ -38,7 +46,28 @@ const routes = createBrowserRouter([
 			{ path: "/timesheets", element: <TimesheetsPage /> },
 			{ path: "/community", element: <CommunityPage /> },
 			{ path: "/apps", element: <AppsPage /> },
-			{ path: "/settings", element: <SettingsPage /> },
+			{
+				path: "/settings",
+				element: <SettingsLayout />,
+				children: [
+					{ index: true, element: <CompanySettingsPage /> },
+					{ path: "company", element: <CompanySettingsPage /> },
+					{ path: "business-profile", element: <PlaceholderPage title="Business Profile" /> },
+					{ path: "products-services", element: <PlaceholderPage title="Products & Services" /> },
+					{ path: "custom-fields", element: <PlaceholderPage title="Custom Fields" /> },
+					{ path: "payments", element: <PlaceholderPage title="Payments" /> },
+					{ path: "expense-tracking", element: <PlaceholderPage title="Expense Tracking" /> },
+					{ path: "automations", element: <PlaceholderPage title="Automations" /> },
+					{ path: "team", element: <PlaceholderPage title="Manage Team" /> },
+					{ path: "work-settings", element: <PlaceholderPage title="Work Settings" /> },
+					{ path: "schedule", element: <PlaceholderPage title="Schedule" /> },
+					{ path: "location-services", element: <PlaceholderPage title="Location Services" /> },
+					{ path: "job-forms", element: <PlaceholderPage title="Job Forms" /> },
+					{ path: "client-hub", element: <PlaceholderPage title="Client Hub" /> },
+					{ path: "emails", element: <PlaceholderPage title="Emails & Text Messages" /> },
+					{ path: "requests-bookings", element: <PlaceholderPage title="Requests & Bookings" /> },
+				],
+			},
 		],
 	},
 ]);

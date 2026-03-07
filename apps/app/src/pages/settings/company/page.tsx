@@ -43,7 +43,7 @@ const formatTime = (time: string) => {
 	return `${display}:${m} ${ampm}`;
 };
 
-const SettingsPage = () => {
+const CompanySettingsPage = () => {
 	const [businessHours, setBusinessHours] = useState(DEFAULT_HOURS);
 	const [editingHours, setEditingHours] = useState(false);
 	const [showBusinessHours, setShowBusinessHours] = useState(true);
@@ -81,8 +81,8 @@ const SettingsPage = () => {
 	};
 
 	return (
-		<div className="max-w-2xl mx-auto">
-			<h2 className="text-2xl font-semibold mt-8 mb-8">Settings</h2>
+		<div className="max-w-2xl">
+			<h2 className="text-2xl font-semibold mb-8">Company Settings</h2>
 			<form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
 				{/* Company Details */}
 				<div className="space-y-4">
@@ -212,4 +212,4 @@ const SettingsPage = () => {
 	);
 };
 
-export default SettingsPage;
+export default CompanySettingsPage;
