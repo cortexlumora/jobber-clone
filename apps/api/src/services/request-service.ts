@@ -10,6 +10,7 @@ export async function createRequest(userId: string, data: CreateRequestForm) {
 		.values({
 			userId,
 			clientId: requestData.clientId,
+			title: requestData.title,
 			serviceDescription: requestData.serviceDescription,
 			bestDay: requestData.bestDay,
 			alternateDay: requestData.alternateDay || null,

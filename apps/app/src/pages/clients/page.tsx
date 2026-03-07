@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { getClients } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, TrendingUp } from "lucide-react";
 import {
 	Table,
 	TableBody,
@@ -28,6 +29,45 @@ const ClientsPage = () => {
 					New Client
 				</Button>
 			</div>
+			<div className="grid grid-cols-3 gap-4 mb-6">
+				<Card>
+					<CardHeader className="pb-2">
+						<CardTitle className="text-sm font-medium text-muted-foreground">New leads</CardTitle>
+						<p className="text-xs text-muted-foreground">Past 30 days</p>
+					</CardHeader>
+					<CardContent>
+						<div className="flex items-center gap-2">
+							<span className="text-2xl font-bold">1</span>
+							<span className="text-xs text-green-600 flex items-center gap-1">
+								<TrendingUp className="h-3 w-3" />
+								100%
+							</span>
+						</div>
+					</CardContent>
+				</Card>
+				<Card>
+					<CardHeader className="pb-2">
+						<CardTitle className="text-sm font-medium text-muted-foreground">New clients</CardTitle>
+						<p className="text-xs text-muted-foreground">Past 30 days</p>
+					</CardHeader>
+					<CardContent>
+						<div className="flex items-center gap-2">
+							<span className="text-2xl font-bold">0</span>
+							<span className="text-xs text-muted-foreground">0%</span>
+						</div>
+					</CardContent>
+				</Card>
+				<Card>
+					<CardHeader className="pb-2">
+						<CardTitle className="text-sm font-medium text-muted-foreground">Total new clients</CardTitle>
+						<p className="text-xs text-muted-foreground">Year to date</p>
+					</CardHeader>
+					<CardContent>
+						<div className="text-2xl font-bold">0</div>
+					</CardContent>
+				</Card>
+			</div>
+
 			{isLoading && <p className="text-muted-foreground">Loading...</p>}
 			{isError && <p className="text-sm text-destructive">{error.message}</p>}
 			{clients && (

@@ -2,6 +2,7 @@ export interface RequestDTO {
 	id: string;
 	userId: string;
 	clientId: string;
+	title: string;
 	serviceDescription: string;
 	bestDay: string;
 	alternateDay: string | null;

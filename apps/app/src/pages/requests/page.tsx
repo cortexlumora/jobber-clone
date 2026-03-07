@@ -35,7 +35,7 @@ const RequestsPage = () => {
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead>Service</TableHead>
+								<TableHead>Title</TableHead>
 								<TableHead>Best Day</TableHead>
 								<TableHead>Arrival</TableHead>
 								<TableHead>Status</TableHead>
@@ -53,7 +53,7 @@ const RequestsPage = () => {
 							{requests.map((request) => (
 								<TableRow key={request.id}>
 									<TableCell className="font-medium max-w-xs truncate">
-										{request.serviceDescription}
+										{request.title}
 									</TableCell>
 									<TableCell>{request.bestDay}</TableCell>
 									<TableCell className="capitalize">{request.preferredArrival}</TableCell>

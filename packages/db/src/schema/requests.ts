@@ -1,4 +1,4 @@
-import { boolean, date, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, date, pgEnum, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import usersSchema from "./users";
 import clientsSchema from "./clients";
 
@@ -9,6 +9,7 @@ const requestsSchema = pgTable("requests", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	userId: uuid("user_id").notNull().references(() => usersSchema.id, { onDelete: "cascade" }),
 	clientId: uuid("client_id").notNull().references(() => clientsSchema.id, { onDelete: "cascade" }),
+	title: varchar("title", { length: 255 }).notNull(),
 	serviceDescription: text("service_description").notNull(),
 	bestDay: date("best_day").notNull(),
 	alternateDay: date("alternate_day"),

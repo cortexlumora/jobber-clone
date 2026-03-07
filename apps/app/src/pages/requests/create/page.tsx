@@ -74,6 +74,7 @@ const CreateRequestPage = () => {
 		formState: { errors },
 	} = useForm<CreateRequestForm>({
 		defaultValues: {
+			title: "",
 			clientId: "",
 			serviceDescription: "",
 			bestDay: "",
@@ -96,6 +97,19 @@ const CreateRequestPage = () => {
 		<div className="max-w-2xl mx-auto">
 			<h2 className="text-2xl font-semibold mt-8 mb-8">New Request</h2>
 			<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+				{/* Title */}
+				<div className="space-y-2">
+					<Label htmlFor="title">Title</Label>
+					<Input
+						id="title"
+						placeholder="e.g. Plumbing repair needed"
+						{...register("title", { required: "Title is required" })}
+					/>
+					{errors.title && (
+						<p className="text-sm text-destructive">{errors.title.message}</p>
+					)}
+				</div>
+
 				{/* Client */}
 				<div className="space-y-2">
 					<Label>Client</Label>
