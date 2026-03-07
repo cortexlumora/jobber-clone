@@ -9,9 +9,9 @@ const AppLayout = () => {
 		<TooltipProvider>
 			<SidebarProvider>
 				<AppSidebar />
-				<main className="flex-1">
+				<main className="flex-1 flex flex-col">
 					<AppHeader />
-					<div className="p-4">
+					<div className="flex-1 p-4">
 						<Outlet />
 					</div>
 				</main>

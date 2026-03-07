@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClientSchema, type CreateClientForm } from "@repo/zod/client";
 import { createClient, getCustomFieldDefinitions, createCustomFieldDefinition } from "@/lib/api";
 import { Plus, Trash2 } from "lucide-react";
+import { StickyFooter } from "@/components/sticky-footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -196,7 +197,8 @@ const CreateClientPage = () => {
 	};
 
 	return (
-		<div className="max-w-2xl mx-auto">
+		<StickyFooter.Root>
+		<StickyFooter.Content className="max-w-2xl mx-auto">
 			<h2 className="text-2xl font-semibold mt-8 mb-8">Create Client</h2>
 			<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 				{/* Name Section */}
@@ -978,16 +980,21 @@ const CreateClientPage = () => {
 				{mutation.isError && (
 					<p className="text-sm text-destructive">{mutation.error.message}</p>
 				)}
-				<div className="flex gap-2 pt-2">
-					<Button type="submit" disabled={mutation.isPending}>
-						{mutation.isPending ? "Creating..." : "Create Client"}
-					</Button>
-					<Button type="button" variant="outline" onClick={() => navigate("/clients")}>
+			</form>
+		</StickyFooter.Content>
+		<StickyFooter.Bar
+			right={
+				<>
+					<Button variant="outline" onClick={() => navigate("/clients")}>
 						Cancel
 					</Button>
-				</div>
-			</form>
-		</div>
+					<Button disabled={mutation.isPending} onClick={handleSubmit(onSubmit)}>
+						{mutation.isPending ? "Creating..." : "Create Client"}
+					</Button>
+				</>
+			}
+		/>
+		</StickyFooter.Root>
 	);
 };
 
