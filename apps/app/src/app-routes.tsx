@@ -22,6 +22,7 @@ import CommunityPage from "./pages/community/page";
 import AppsPage from "./pages/apps/page";
 import CreateClientPage from "./pages/clients/create/page";
 import ClientDetailPage from "./pages/clients/detail/page";
+import EditClientPage from "./pages/clients/edit/page";
 import CreateRequestPage from "./pages/requests/create/page";
 import SettingsLayout from "./pages/settings/layout";
 import CompanySettingsPage from "./pages/settings/company/page";
@@ -37,6 +38,7 @@ const routes = createBrowserRouter([
 			{ path: "/clients", element: <ClientsPage /> },
 			{ path: "/clients/create", element: <CreateClientPage /> },
 			{ path: "/clients/:id", element: <ClientDetailPage /> },
+			{ path: "/clients/:id/edit", element: <EditClientPage /> },
 			{ path: "/requests", element: <RequestsPage /> },
 			{ path: "/requests/create", element: <CreateRequestPage /> },
 			{ path: "/quotes", element: <QuotesPage /> },

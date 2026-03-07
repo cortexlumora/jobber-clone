@@ -27,6 +27,11 @@ export async function getClientStats() {
 	return res.data.data;
 }
 
+export async function updateClient(id: string, data: CreateClientForm) {
+	const res = await http.put<APIResponse<ClientDTO>>(`/api/v1/clients/${id}`, data);
+	return res.data.data;
+}
+
 export async function getClientProperties(id: string) {
 	const res = await http.get<APIResponse<PropertyDTO[]>>(`/api/v1/clients/${id}/properties`);
 	return res.data.data;

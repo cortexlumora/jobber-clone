@@ -11,6 +11,7 @@ import {
 	getClientProperties,
 	getClientsByUser,
 	getClientStats,
+	updateClient,
 } from "../services/client-service";
 
 const clientRoute = new Hono()
@@ -37,6 +38,13 @@ const clientRoute = new Hono()
 
 		const client = await getClientById(clientId);
 		return c.json<APIResponse<ClientDTO | null>>({ data: client ?? null });
+	})
+	.put("/:id", zValidator("json", createClientSchema), async (c) => {
+		const clientId = c.req.param("id");
+		const data = c.req.valid("json");
+
+		const client = await updateClient(clientId, data);
+		return c.json<APIResponse<ClientDTO>>({ data: client });
 	})
 	.get("/:id/properties", async (c) => {
 		const clientId = c.req.param("id");
