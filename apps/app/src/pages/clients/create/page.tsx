@@ -55,6 +55,7 @@ const CreateClientPage = () => {
 		handleSubmit,
 		control,
 		watch,
+		setValue,
 		formState: { errors },
 	} = useForm<CreateClientForm>({
 		resolver: zodResolver(createClientSchema),
@@ -80,6 +81,13 @@ const CreateClientPage = () => {
 	const [customFieldName, setCustomFieldName] = useState("");
 	const [customFieldType, setCustomFieldType] = useState<string>("");
 	const [customFieldDefault, setCustomFieldDefault] = useState("");
+	const [commDialogOpen, setCommDialogOpen] = useState(false);
+	const [commState, setCommState] = useState({
+		quoteFollowUp: true,
+		appointmentReminders: true,
+		jobFollowUp: true,
+		invoiceFollowUp: true,
+	});
 
 	const {
 		fields: phoneFields,
@@ -295,34 +303,92 @@ const CreateClientPage = () => {
 					</div>
 				</div>
 
-				{/* Automated Notifications */}
-				<div className="space-y-4">
-					<h3 className="text-lg font-medium">Automated Notifications</h3>
-					{([
-						{ name: "notifications.quoteFollowUp" as const, label: "Quote follow-up" },
-						{ name: "notifications.appointmentReminders" as const, label: "Appointment reminders" },
-						{ name: "notifications.jobFollowUp" as const, label: "Job follow-up" },
-						{ name: "notifications.invoiceFollowUp" as const, label: "Invoice follow-up" },
-					]).map((item) => (
-						<Controller
-							key={item.name}
-							control={control}
-							name={item.name}
-							render={({ field }) => (
+				{/* Communication Settings */}
+				<Button
+					type="button"
+					variant="link"
+					className="p-0 h-auto text-base font-medium underline"
+					onClick={() => {
+						setCommState({
+							quoteFollowUp: watch("notifications.quoteFollowUp"),
+							appointmentReminders: watch("notifications.appointmentReminders"),
+							jobFollowUp: watch("notifications.jobFollowUp"),
+							invoiceFollowUp: watch("notifications.invoiceFollowUp"),
+						});
+						setCommDialogOpen(true);
+					}}
+				>
+					Communication Settings
+				</Button>
+
+				<Dialog open={commDialogOpen} onOpenChange={setCommDialogOpen}>
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle>Communication Settings</DialogTitle>
+						</DialogHeader>
+						<div className="space-y-6 py-2">
+							<p className="text-sm text-muted-foreground">
+								Automated communications send emails and SMS to the client for key updates. They can be toggled on or off per client.
+							</p>
+
+							<div className="space-y-3">
 								<div className="flex items-center justify-between">
-									<Label htmlFor={item.name} className="font-normal">
-										{item.label}
-									</Label>
+									<h4 className="text-sm font-semibold">Quotes &amp; Invoices</h4>
+									<span className="text-xs text-muted-foreground">Configure</span>
+								</div>
+								<div className="flex items-center justify-between">
+									<Label className="font-normal">Outstanding quote follow-ups</Label>
 									<Switch
-										id={item.name}
-										checked={field.value}
-										onCheckedChange={field.onChange}
+										checked={commState.quoteFollowUp}
+										onCheckedChange={(v) => setCommState((s) => ({ ...s, quoteFollowUp: v }))}
 									/>
 								</div>
-							)}
-						/>
-					))}
-				</div>
+								<div className="flex items-center justify-between">
+									<Label className="font-normal">Overdue invoice follow-ups</Label>
+									<Switch
+										checked={commState.invoiceFollowUp}
+										onCheckedChange={(v) => setCommState((s) => ({ ...s, invoiceFollowUp: v }))}
+									/>
+								</div>
+							</div>
+
+							<div className="space-y-3">
+								<div className="flex items-center justify-between">
+									<h4 className="text-sm font-semibold">Jobs &amp; Visits</h4>
+									<span className="text-xs text-muted-foreground">Configure</span>
+								</div>
+								<div className="flex items-center justify-between">
+									<Label className="font-normal">Upcoming assessment or visit reminders</Label>
+									<Switch
+										checked={commState.appointmentReminders}
+										onCheckedChange={(v) => setCommState((s) => ({ ...s, appointmentReminders: v }))}
+									/>
+								</div>
+								<div className="flex items-center justify-between">
+									<Label className="font-normal">Job closure follow-ups</Label>
+									<Switch
+										checked={commState.jobFollowUp}
+										onCheckedChange={(v) => setCommState((s) => ({ ...s, jobFollowUp: v }))}
+									/>
+								</div>
+							</div>
+						</div>
+						<DialogFooter>
+							<Button
+								type="button"
+								onClick={() => {
+									setValue("notifications.quoteFollowUp", commState.quoteFollowUp);
+									setValue("notifications.appointmentReminders", commState.appointmentReminders);
+									setValue("notifications.jobFollowUp", commState.jobFollowUp);
+									setValue("notifications.invoiceFollowUp", commState.invoiceFollowUp);
+									setCommDialogOpen(false);
+								}}
+							>
+								Save
+							</Button>
+						</DialogFooter>
+					</DialogContent>
+				</Dialog>
 
 				{/* Lead Information */}
 				<div className="space-y-4">
