@@ -3,7 +3,7 @@ import { z } from "zod";
 export const createCustomFieldSchema = z.object({
 	name: z.string().min(1, "Field name is required"),
 	fieldType: z.enum(["text", "number", "dropdown", "checkbox", "date"]),
-	appliesTo: z.enum(["client", "property", "request", "job"]),
+	appliesTo: z.enum(["client", "property", "request", "job", "quote"]),
 	defaultValue: z.string().optional(),
 	options: z.array(z.string()).optional(),
 });

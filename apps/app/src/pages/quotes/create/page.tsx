@@ -5,7 +5,16 @@ import { getClients, presignUpload, uploadFileToS3 } from "@/lib/api";
 import { useDropzone } from "react-dropzone";
 import { Plus, X, Upload, Loader2, Image as ImageIcon } from "lucide-react";
 import { StickyFooter } from "@/components/sticky-footer";
+import { CustomFieldDialog } from "@/components/custom-field-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,10 +29,14 @@ import {
 } from "@/components/ui/select";
 
 interface LineItemUI {
+	type: "line_item" | "text";
 	name: string;
 	description: string;
 	qty: number;
 	unitPrice: number;
+	imageFileId: string | null;
+	imagePreview: string | null;
+	imageUploading: boolean;
 }
 
 interface UploadedFile {
@@ -43,10 +56,28 @@ const CreateQuotePage = () => {
 	const [introImage, setIntroImage] = useState<UploadedFile | null>(null);
 	const [uploadingIntroImage, setUploadingIntroImage] = useState(false);
 	const [showIntroduction, setShowIntroduction] = useState(false);
+	const [customFieldDialogOpen, setCustomFieldDialogOpen] = useState(false);
 	const [lineItems, setLineItems] = useState<LineItemUI[]>([]);
 	const [discount, setDiscount] = useState("");
 	const [tax, setTax] = useState("");
-	const [depositNote, setDepositNote] = useState("");
+	const [depositDialogOpen, setDepositDialogOpen] = useState(false);
+	const [depositType, setDepositType] = useState<"none" | "deposit" | "schedule">("none");
+	const [depositMode, setDepositMode] = useState<"%" | "$">("%");
+	const [depositValue, setDepositValue] = useState("");
+	const [payments, setPayments] = useState<{ label: string; amount: string; description: string }[]>([
+		{ label: "Payment 1", amount: "", description: "" },
+		{ label: "Payment 2", amount: "", description: "" },
+	]);
+	const [scheduleMode, setScheduleMode] = useState<"%" | "$">("%");
+	// Dialog temp state
+	const [dialogDepositType, setDialogDepositType] = useState<"deposit" | "schedule">("deposit");
+	const [dialogDepositMode, setDialogDepositMode] = useState<"%" | "$">("%");
+	const [dialogDepositValue, setDialogDepositValue] = useState("");
+	const [dialogPayments, setDialogPayments] = useState<{ label: string; amount: string; description: string }[]>([
+		{ label: "Payment 1", amount: "", description: "" },
+		{ label: "Payment 2", amount: "", description: "" },
+	]);
+	const [dialogScheduleMode, setDialogScheduleMode] = useState<"%" | "$">("%");
 	const [attachments, setAttachments] = useState<UploadedFile[]>([]);
 	const [uploadingAttachments, setUploadingAttachments] = useState(false);
 	const [images, setImages] = useState<UploadedFile[]>([]);
@@ -67,7 +98,11 @@ const CreateQuotePage = () => {
 	});
 
 	const addLineItem = () => {
-		setLineItems((prev) => [...prev, { name: "", description: "", qty: 1, unitPrice: 0 }]);
+		setLineItems((prev) => [...prev, { type: "line_item", name: "", description: "", qty: 1, unitPrice: 0, imageFileId: null, imagePreview: null, imageUploading: false }]);
+	};
+
+	const addTextItem = () => {
+		setLineItems((prev) => [...prev, { type: "text", name: "", description: "", qty: 0, unitPrice: 0, imageFileId: null, imagePreview: null, imageUploading: false }]);
 	};
 
 	const updateLineItem = (index: number, updates: Partial<LineItemUI>) => {
@@ -143,12 +178,24 @@ const CreateQuotePage = () => {
 		setter((prev) => prev.filter((_, i) => i !== index));
 	};
 
-	const subtotal = lineItems.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
+	const handleLineItemImage = async (index: number, file: File) => {
+		updateLineItem(index, { imageUploading: true });
+		try {
+			const { fileId, uploadUrl } = await presignUpload(file.name, file.type);
+			await uploadFileToS3(uploadUrl, file);
+			updateLineItem(index, { imageFileId: fileId, imagePreview: URL.createObjectURL(file), imageUploading: false });
+		} catch {
+			updateLineItem(index, { imageUploading: false });
+		}
+	};
+
+	const subtotal = lineItems.filter((i) => i.type === "line_item").reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
 	const discountAmount = discount ? Number(discount) : 0;
 	const taxAmount = tax ? Number(tax) : 0;
 	const total = subtotal - discountAmount + taxAmount;
 
 	return (
+		<>
 		<StickyFooter.Root>
 			<StickyFooter.Content className="max-w-4xl mx-auto">
 				<h2 className="text-2xl font-semibold mt-8 mb-8">New Quote</h2>
@@ -207,15 +254,14 @@ const CreateQuotePage = () => {
 					</div>
 
 					{/* Customize */}
-					<div className="flex gap-2">
-						<Button type="button" variant="outline" size="sm">
-							<Plus className="h-4 w-4 mr-1" />
+					<div className="flex flex-col gap-2">
+						<Button type="button" variant="outline" size="sm" className="w-fit" onClick={() => setCustomFieldDialogOpen(true)}>
 							Add field
 						</Button>
 						{!showIntroduction && (
-							<Button type="button" variant="outline" size="sm" onClick={() => setShowIntroduction(true)}>
+							<Button type="button" variant="outline" size="sm" className="w-fit" onClick={() => setShowIntroduction(true)}>
 								<Plus className="h-4 w-4 mr-1" />
-								Add section
+								Introduction
 							</Button>
 						)}
 					</div>
@@ -307,65 +353,134 @@ const CreateQuotePage = () => {
 						<CardContent className="space-y-4">
 							{lineItems.length > 0 && (
 								<div className="space-y-4">
-									{lineItems.map((item, index) => (
-										<div key={index} className="rounded-lg border p-4 space-y-3">
-											<div className="flex items-start gap-3">
-												<div className="grid grid-cols-[1fr_80px_100px_80px] gap-3 flex-1">
-													<div className="space-y-1">
+									{lineItems.map((item, index) =>
+										item.type === "line_item" ? (
+											<div key={index} className="rounded-lg border p-4 space-y-3">
+												<div className="flex items-start gap-3">
+													<div className="grid grid-cols-[1fr_80px_100px_80px] gap-3 flex-1">
+														<div className="space-y-1">
+															<Label className="text-xs">Name</Label>
+															<Input
+																placeholder="Product or service name"
+																value={item.name}
+																onChange={(e) => updateLineItem(index, { name: e.target.value })}
+															/>
+														</div>
+														<div className="space-y-1">
+															<Label className="text-xs">Quantity</Label>
+															<Input
+																type="number"
+																min={1}
+																value={item.qty}
+																onChange={(e) => updateLineItem(index, { qty: Number(e.target.value) })}
+															/>
+														</div>
+														<div className="space-y-1">
+															<Label className="text-xs">Unit price</Label>
+															<Input
+																type="number"
+																min={0}
+																step="0.01"
+																value={item.unitPrice}
+																onChange={(e) => updateLineItem(index, { unitPrice: Number(e.target.value) })}
+															/>
+														</div>
+														<div className="space-y-1">
+															<Label className="text-xs">Total</Label>
+															<div className="flex items-center h-9 px-3 text-sm border rounded-md bg-muted/50">
+																${(item.qty * item.unitPrice).toFixed(2)}
+															</div>
+														</div>
+													</div>
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														className="mt-5 h-9 w-9 shrink-0"
+														onClick={() => removeLineItem(index)}
+													>
+														<X className="h-4 w-4" />
+													</Button>
+												</div>
+												<div className="space-y-1">
+													<Label className="text-xs">Description</Label>
+													<Textarea
+														placeholder="Line item description"
+														rows={2}
+														value={item.description}
+														onChange={(e) => updateLineItem(index, { description: e.target.value })}
+													/>
+												</div>
+											</div>
+										) : (
+											<div key={index} className="rounded-lg border p-4 space-y-3">
+												<div className="flex items-start gap-3">
+													<div className="flex-1 space-y-1">
 														<Label className="text-xs">Name</Label>
 														<Input
-															placeholder="Product or service name"
+															placeholder="Text item name"
 															value={item.name}
 															onChange={(e) => updateLineItem(index, { name: e.target.value })}
 														/>
 													</div>
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														className="mt-5 h-9 w-9 shrink-0"
+														onClick={() => removeLineItem(index)}
+													>
+														<X className="h-4 w-4" />
+													</Button>
+												</div>
+												<div className="grid grid-cols-[1fr_auto] gap-3">
 													<div className="space-y-1">
-														<Label className="text-xs">Quantity</Label>
-														<Input
-															type="number"
-															min={1}
-															value={item.qty}
-															onChange={(e) => updateLineItem(index, { qty: Number(e.target.value) })}
+														<Label className="text-xs">Description</Label>
+														<Textarea
+															placeholder="Add text..."
+															rows={2}
+															value={item.description}
+															onChange={(e) => updateLineItem(index, { description: e.target.value })}
 														/>
 													</div>
-													<div className="space-y-1">
-														<Label className="text-xs">Unit price</Label>
-														<Input
-															type="number"
-															min={0}
-															step="0.01"
-															value={item.unitPrice}
-															onChange={(e) => updateLineItem(index, { unitPrice: Number(e.target.value) })}
-														/>
-													</div>
-													<div className="space-y-1">
-														<Label className="text-xs">Total</Label>
-														<div className="flex items-center h-9 px-3 text-sm border rounded-md bg-muted/50">
-															${(item.qty * item.unitPrice).toFixed(2)}
-														</div>
+													<div className="self-end">
+														<Label className="text-xs mb-1 block">Image</Label>
+														{item.imageUploading ? (
+															<div className="flex items-center justify-center h-[60px] w-[60px] rounded border">
+																<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+															</div>
+														) : item.imagePreview ? (
+															<div className="relative group h-[60px] w-[60px]">
+																<img src={item.imagePreview} alt="" className="h-full w-full rounded object-cover border" />
+																<Button
+																	type="button"
+																	variant="destructive"
+																	size="icon"
+																	className="absolute -top-1 -right-1 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
+																	onClick={() => updateLineItem(index, { imageFileId: null, imagePreview: null })}
+																>
+																	<X className="h-2.5 w-2.5" />
+																</Button>
+															</div>
+														) : (
+															<label className="flex items-center justify-center h-[60px] w-[60px] rounded border border-dashed cursor-pointer hover:bg-muted/50 transition-colors">
+																<Plus className="h-4 w-4 text-muted-foreground" />
+																<input
+																	type="file"
+																	accept="image/*"
+																	className="hidden"
+																	onChange={(e) => {
+																		const file = e.target.files?.[0];
+																		if (file) handleLineItemImage(index, file);
+																	}}
+																/>
+															</label>
+														)}
 													</div>
 												</div>
-												<Button
-													type="button"
-													variant="ghost"
-													size="icon"
-													className="mt-5 h-9 w-9 shrink-0"
-													onClick={() => removeLineItem(index)}
-												>
-													<X className="h-4 w-4" />
-												</Button>
 											</div>
-											<div className="space-y-1">
-												<Label className="text-xs">Description</Label>
-												<Textarea
-													placeholder="Line item description"
-													rows={2}
-													value={item.description}
-													onChange={(e) => updateLineItem(index, { description: e.target.value })}
-												/>
-											</div>
-										</div>
-									))}
+										),
+									)}
 								</div>
 							)}
 							<div className="flex gap-2">
@@ -373,7 +488,7 @@ const CreateQuotePage = () => {
 									<Plus className="h-4 w-4 mr-1" />
 									Add Line Item
 								</Button>
-								<Button type="button" variant="outline" size="sm">
+								<Button type="button" variant="outline" size="sm" onClick={addTextItem}>
 									<Plus className="h-4 w-4 mr-1" />
 									Add Text
 								</Button>
@@ -465,43 +580,72 @@ const CreateQuotePage = () => {
 							</div>
 
 							{/* Deposit / Payment Schedule */}
-							{depositNote !== "" ? (
+							{depositType !== "none" ? (
 								<div className="space-y-2 pt-2">
 									<div className="flex items-center justify-between">
-										<Label className="text-sm">Deposit / Payment schedule</Label>
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											className="h-6 w-6"
-											onClick={() => setDepositNote("")}
-										>
-											<X className="h-3 w-3" />
-										</Button>
+										<Label className="text-sm font-medium">
+											{depositType === "deposit" ? "Deposit" : "Payment Schedule"}
+										</Label>
+										<div className="flex items-center gap-1">
+											<Button
+												type="button"
+												variant="ghost"
+												size="sm"
+												className="h-auto p-0 text-xs text-muted-foreground underline"
+												onClick={() => {
+													setDialogDepositType(depositType);
+													setDialogDepositMode(depositMode);
+													setDialogDepositValue(depositValue);
+													setDialogPayments([...payments]);
+													setDialogScheduleMode(scheduleMode);
+													setDepositDialogOpen(true);
+												}}
+											>
+												Edit
+											</Button>
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon"
+												className="h-6 w-6"
+												onClick={() => { setDepositType("none"); setDepositValue(""); }}
+											>
+												<X className="h-3 w-3" />
+											</Button>
+										</div>
 									</div>
-									<Textarea
-										placeholder="e.g. 50% deposit required before work begins"
-										rows={2}
-										value={depositNote}
-										onChange={(e) => setDepositNote(e.target.value)}
-									/>
+									{depositType === "deposit" && (
+										<p className="text-sm text-muted-foreground">
+											{depositValue}{depositMode === "%" ? "%" : "$"} deposit on approval
+										</p>
+									)}
+									{depositType === "schedule" && (
+										<div className="space-y-1">
+											{payments.map((p, i) => (
+												<p key={i} className="text-sm text-muted-foreground">{p.label}</p>
+											))}
+										</div>
+									)}
 								</div>
 							) : (
 								<Button
 									type="button"
-									variant="outline"
+									variant="link"
 									size="sm"
-									onClick={() => setDepositNote(" ")}
+									className="h-auto p-0 text-sm underline"
+									onClick={() => {
+										setDialogDepositType("deposit");
+										setDialogDepositMode("%");
+										setDialogDepositValue("");
+										setDialogPayments([{ label: "Payment 1", amount: "", description: "" }, { label: "Payment 2", amount: "", description: "" }]);
+										setDialogScheduleMode("%");
+										setDepositDialogOpen(true);
+									}}
 								>
-									<Plus className="h-4 w-4 mr-1" />
 									Add Deposit or Payment Schedule
 								</Button>
 							)}
 
-							<Button type="button" variant="outline" size="sm">
-								<Plus className="h-4 w-4 mr-1" />
-								Add section
-							</Button>
 						</CardContent>
 					</Card>
 
@@ -780,6 +924,216 @@ const CreateQuotePage = () => {
 				}
 			/>
 		</StickyFooter.Root>
+
+		<CustomFieldDialog
+			open={customFieldDialogOpen}
+			onOpenChange={setCustomFieldDialogOpen}
+			appliesTo="quote"
+			appliesToLabel="All quotes"
+		/>
+
+		{/* Deposit / Payment Schedule Dialog */}
+		<Dialog open={depositDialogOpen} onOpenChange={setDepositDialogOpen}>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Deposit or Payment Schedule</DialogTitle>
+				</DialogHeader>
+				<div className="space-y-4 py-2">
+					<RadioGroup
+						value={dialogDepositType}
+						onValueChange={(v) => setDialogDepositType(v as "deposit" | "schedule")}
+						className="space-y-4"
+					>
+						<div className="flex items-start gap-3">
+							<RadioGroupItem value="deposit" id="deposit-only" className="mt-1" />
+							<div>
+								<Label htmlFor="deposit-only" className="font-medium">Deposit only</Label>
+								<p className="text-sm text-muted-foreground">Collect an upfront payment on quote approval</p>
+							</div>
+						</div>
+
+						{dialogDepositType === "deposit" && (
+							<div className="ml-7 flex items-center gap-2">
+								<div className="flex items-center rounded-md border">
+									<button
+										type="button"
+										className={`px-3 py-1.5 text-sm font-medium rounded-l-md transition-colors ${dialogDepositMode === "%" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+										onClick={() => setDialogDepositMode("%")}
+									>
+										%
+									</button>
+									<button
+										type="button"
+										className={`px-3 py-1.5 text-sm font-medium rounded-r-md transition-colors ${dialogDepositMode === "$" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+										onClick={() => setDialogDepositMode("$")}
+									>
+										$
+									</button>
+								</div>
+								<Input
+									type="number"
+									min={0}
+									step="0.01"
+									placeholder={dialogDepositMode === "%" ? "e.g. 50" : "e.g. 500"}
+									className="w-32"
+									value={dialogDepositValue}
+									onChange={(e) => setDialogDepositValue(e.target.value)}
+								/>
+							</div>
+						)}
+
+						<div className="flex items-start gap-3">
+							<RadioGroupItem value="schedule" id="payment-schedule" className="mt-1" />
+							<div>
+								<Label htmlFor="payment-schedule" className="font-medium">Payment Schedule</Label>
+								<p className="text-sm text-muted-foreground">Split the job into multiple invoices</p>
+							</div>
+						</div>
+
+						{dialogDepositType === "schedule" && (
+							<div className="ml-7 space-y-4">
+								{/* Split by toggle */}
+								<div className="flex items-center gap-2">
+									<span className="text-sm text-muted-foreground">Split payments by</span>
+									<div className="flex items-center rounded-md border">
+										<button
+											type="button"
+											className={`px-3 py-1.5 text-sm font-medium rounded-l-md transition-colors ${dialogScheduleMode === "%" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+											onClick={() => setDialogScheduleMode("%")}
+										>
+											%
+										</button>
+										<button
+											type="button"
+											className={`px-3 py-1.5 text-sm font-medium rounded-r-md transition-colors ${dialogScheduleMode === "$" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+											onClick={() => setDialogScheduleMode("$")}
+										>
+											$
+										</button>
+									</div>
+								</div>
+
+								{/* Header */}
+								<div className="grid grid-cols-[1fr_100px_1fr_auto] gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+									<span />
+									<span>Amount</span>
+									<span>Description</span>
+									<span className="w-8" />
+								</div>
+
+								{/* Payment rows */}
+								{dialogPayments.map((p, i) => (
+									<div key={i} className="grid grid-cols-[1fr_100px_1fr_auto] gap-2 items-center">
+										<Input
+											value={p.label}
+											onChange={(e) => {
+												const updated = [...dialogPayments];
+												updated[i] = { ...updated[i], label: e.target.value };
+												setDialogPayments(updated);
+											}}
+										/>
+										<Input
+											type="number"
+											min={0}
+											step="0.01"
+											placeholder={dialogScheduleMode === "%" ? "%" : "$"}
+											value={p.amount}
+											onChange={(e) => {
+												const updated = [...dialogPayments];
+												updated[i] = { ...updated[i], amount: e.target.value };
+												setDialogPayments(updated);
+											}}
+										/>
+										<Input
+											placeholder="Description"
+											value={p.description}
+											onChange={(e) => {
+												const updated = [...dialogPayments];
+												updated[i] = { ...updated[i], description: e.target.value };
+												setDialogPayments(updated);
+											}}
+										/>
+										{dialogPayments.length > 2 && (
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon"
+												className="h-8 w-8 shrink-0"
+												onClick={() => setDialogPayments((prev) => prev.filter((_, idx) => idx !== i))}
+											>
+												<X className="h-4 w-4" />
+											</Button>
+										)}
+										{dialogPayments.length <= 2 && <div className="w-8" />}
+									</div>
+								))}
+
+								<Button
+									type="button"
+									variant="link"
+									size="sm"
+									className="h-auto p-0 text-sm underline"
+									onClick={() => setDialogPayments((prev) => [...prev, { label: `Payment ${prev.length + 1}`, amount: "", description: "" }])}
+								>
+									Add Invoice to Payment Schedule
+								</Button>
+
+								{/* Totals */}
+								<div className="space-y-1 pt-2 border-t">
+									<div className="flex items-center justify-between text-sm">
+										<span className="text-muted-foreground">Job Total</span>
+										<span className="font-medium">${total.toFixed(2)}</span>
+									</div>
+									<div className="flex items-center justify-between text-sm">
+										<span className="text-muted-foreground">Remaining</span>
+										<span className="font-medium">
+											{dialogScheduleMode === "%"
+												? `${Math.max(0, 100 - dialogPayments.reduce((s, p) => s + (Number(p.amount) || 0), 0))}%`
+												: `$${Math.max(0, total - dialogPayments.reduce((s, p) => s + (Number(p.amount) || 0), 0)).toFixed(2)}`
+											}
+										</span>
+									</div>
+								</div>
+							</div>
+						)}
+					</RadioGroup>
+				</div>
+				<DialogFooter className="flex justify-between sm:justify-between">
+					{depositType !== "none" && (
+						<Button
+							type="button"
+							variant="destructive"
+							onClick={() => {
+								setDepositType("none");
+								setDepositValue("");
+								setDepositDialogOpen(false);
+							}}
+						>
+							Delete
+						</Button>
+					)}
+					<div className="flex gap-2">
+						<Button type="button" variant="outline" onClick={() => setDepositDialogOpen(false)}>
+							Cancel
+						</Button>
+						<Button
+							type="button"
+							onClick={() => {
+								setDepositType(dialogDepositType);
+								setDepositMode(dialogDepositMode);
+								setDepositValue(dialogDepositValue);
+								setPayments([...dialogPayments]);
+								setScheduleMode(dialogScheduleMode);
+								setDepositDialogOpen(false);
+							}}
+						>
+							Save
+						</Button>
+					</div>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+		</>
 	);
 };
 

@@ -106,6 +106,13 @@
       "when": 1772945673059,
       "tag": "0014_noisy_rick_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1772948844464,
+      "tag": "0015_slim_arachne",
+      "breakpoints": true
     }
   ]
 }
