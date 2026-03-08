@@ -38,7 +38,11 @@ const CreateQuotePage = () => {
 	const [clientId, setClientId] = useState("");
 	const [quoteNumber, setQuoteNumber] = useState("1");
 	const [salesperson, setSalesperson] = useState("");
-	const [introduction, setIntroduction] = useState("");
+	const [introTitle, setIntroTitle] = useState("");
+	const [introDescription, setIntroDescription] = useState("");
+	const [introImage, setIntroImage] = useState<UploadedFile | null>(null);
+	const [uploadingIntroImage, setUploadingIntroImage] = useState(false);
+	const [showIntroduction, setShowIntroduction] = useState(false);
 	const [lineItems, setLineItems] = useState<LineItemUI[]>([]);
 	const [discount, setDiscount] = useState("");
 	const [tax, setTax] = useState("");
@@ -208,22 +212,92 @@ const CreateQuotePage = () => {
 							<Plus className="h-4 w-4 mr-1" />
 							Add field
 						</Button>
-						<Button type="button" variant="outline" size="sm">
-							<Plus className="h-4 w-4 mr-1" />
-							Add section
-						</Button>
+						{!showIntroduction && (
+							<Button type="button" variant="outline" size="sm" onClick={() => setShowIntroduction(true)}>
+								<Plus className="h-4 w-4 mr-1" />
+								Add section
+							</Button>
+						)}
 					</div>
 
 					{/* Introduction */}
-					<div className="space-y-2">
-						<h3 className="text-lg font-medium">Introduction</h3>
-						<Textarea
-							placeholder="Add an introduction for this quote..."
-							rows={3}
-							value={introduction}
-							onChange={(e) => setIntroduction(e.target.value)}
-						/>
-					</div>
+					{showIntroduction && (
+						<div className="space-y-3">
+							<div className="flex items-center justify-between">
+								<h3 className="text-lg font-medium">Introduction</h3>
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon"
+									className="h-6 w-6"
+									onClick={() => { setShowIntroduction(false); setIntroTitle(""); setIntroDescription(""); setIntroImage(null); }}
+								>
+									<X className="h-4 w-4" />
+								</Button>
+							</div>
+							<div className="space-y-1">
+								<Label className="text-sm">Image</Label>
+								{uploadingIntroImage ? (
+									<div className="flex items-center justify-center h-24 w-24 rounded border">
+										<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+									</div>
+								) : introImage ? (
+									<div className="relative group h-24 w-24">
+										<img src={introImage.preview} alt="" className="h-full w-full rounded object-cover border" />
+										<Button
+											type="button"
+											variant="destructive"
+											size="icon"
+											className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+											onClick={() => setIntroImage(null)}
+										>
+											<X className="h-3 w-3" />
+										</Button>
+									</div>
+								) : (
+									<label className="flex items-center justify-center h-24 w-24 rounded border border-dashed cursor-pointer hover:bg-muted/50 transition-colors">
+										<Plus className="h-5 w-5 text-muted-foreground" />
+										<input
+											type="file"
+											accept="image/*"
+											className="hidden"
+											onChange={async (e) => {
+												const file = e.target.files?.[0];
+												if (!file) return;
+												setUploadingIntroImage(true);
+												try {
+													const { fileId, uploadUrl } = await presignUpload(file.name, file.type);
+													await uploadFileToS3(uploadUrl, file);
+													setIntroImage({ fileId, name: file.name, preview: URL.createObjectURL(file) });
+												} catch (err) {
+													console.error("Upload failed:", err);
+												} finally {
+													setUploadingIntroImage(false);
+												}
+											}}
+										/>
+									</label>
+								)}
+							</div>
+							<div className="space-y-1">
+								<Label className="text-sm">Title</Label>
+								<Input
+									placeholder="Add a title..."
+									value={introTitle}
+									onChange={(e) => setIntroTitle(e.target.value)}
+								/>
+							</div>
+							<div className="space-y-1">
+								<Label className="text-sm">Description</Label>
+								<Textarea
+									placeholder="Add a description..."
+									rows={3}
+									value={introDescription}
+									onChange={(e) => setIntroDescription(e.target.value)}
+								/>
+							</div>
+						</div>
+					)}
 
 					{/* Product / Service */}
 					<Card>
