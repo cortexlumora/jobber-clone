@@ -26,6 +26,16 @@ interface UploadedFile {
 	preview: string;
 }
 
+interface LineItemUI {
+	name: string;
+	description: string;
+	qty: number;
+	unitPrice: number;
+	imageFileId: string | null;
+	imagePreview: string | null;
+	imageUploading: boolean;
+}
+
 const CreateRequestPage = () => {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
@@ -33,6 +43,7 @@ const CreateRequestPage = () => {
 	const [uploadingImages, setUploadingImages] = useState(false);
 	const [noteFiles, setNoteFiles] = useState<UploadedFile[]>([]);
 	const [uploadingNotes, setUploadingNotes] = useState(false);
+	const [lineItems, setLineItems] = useState<LineItemUI[]>([]);
 
 	const { data: clients } = useQuery({
 		queryKey: ["clients"],
@@ -96,26 +107,27 @@ const CreateRequestPage = () => {
 		setNoteFiles((prev) => prev.filter((_, i) => i !== index));
 	};
 
-	interface LineItem {
-		name: string;
-		description: string;
-		qty: number;
-		unitPrice: number;
-		image: string | null;
-	}
-
-	const [lineItems, setLineItems] = useState<LineItem[]>([]);
-
 	const addLineItem = () => {
-		setLineItems((prev) => [...prev, { name: "", description: "", qty: 1, unitPrice: 0, image: null }]);
+		setLineItems((prev) => [...prev, { name: "", description: "", qty: 1, unitPrice: 0, imageFileId: null, imagePreview: null, imageUploading: false }]);
 	};
 
-	const updateLineItem = (index: number, field: keyof LineItem, value: string | number | null) => {
-		setLineItems((prev) => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
+	const updateLineItem = (index: number, updates: Partial<LineItemUI>) => {
+		setLineItems((prev) => prev.map((item, i) => i === index ? { ...item, ...updates } : item));
 	};
 
 	const removeLineItem = (index: number) => {
 		setLineItems((prev) => prev.filter((_, i) => i !== index));
+	};
+
+	const handleLineItemImage = async (index: number, file: File) => {
+		updateLineItem(index, { imageUploading: true });
+		try {
+			const { fileId, uploadUrl } = await presignUpload(file.name, file.type);
+			await uploadFileToS3(uploadUrl, file);
+			updateLineItem(index, { imageFileId: fileId, imagePreview: URL.createObjectURL(file), imageUploading: false });
+		} catch {
+			updateLineItem(index, { imageUploading: false });
+		}
 	};
 
 	const subtotal = lineItems.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
@@ -130,8 +142,17 @@ const CreateRequestPage = () => {
 			title: "",
 			clientId: "",
 			serviceDescription: "",
+			assessmentInstructions: "",
+			assessmentStartDate: "",
+			assessmentEndDate: "",
+			assessmentStartTime: "",
+			assessmentEndTime: "",
+			scheduleLater: false,
+			anytime: false,
+			teamReminder: "none",
 			internalNotes: "",
 			fileIds: [],
+			lineItems: [],
 		},
 	});
 
@@ -143,10 +164,17 @@ const CreateRequestPage = () => {
 		mutation.mutate({
 			...data,
 			fileIds: allFileIds,
+			lineItems: lineItems.map((item) => ({
+				name: item.name,
+				description: item.description || undefined,
+				qty: item.qty,
+				unitPrice: item.unitPrice,
+				imageFileId: item.imageFileId || undefined,
+			})),
 		});
 	};
 
-	const isUploading = uploadingImages || uploadingNotes;
+	const isUploading = uploadingImages || uploadingNotes || lineItems.some((i) => i.imageUploading);
 
 	return (
 		<div className="max-w-2xl mx-auto">
@@ -269,6 +297,7 @@ const CreateRequestPage = () => {
 							id="assessmentInstructions"
 							placeholder="Add instructions for the assessment..."
 							rows={3}
+							{...register("assessmentInstructions")}
 						/>
 					</div>
 
@@ -279,31 +308,43 @@ const CreateRequestPage = () => {
 							<div className="grid grid-cols-2 gap-3">
 								<div className="space-y-2">
 									<Label>Start date</Label>
-									<Input type="date" />
+									<Input type="date" {...register("assessmentStartDate")} />
 								</div>
 								<div className="space-y-2">
 									<Label>End date</Label>
-									<Input type="date" />
+									<Input type="date" {...register("assessmentEndDate")} />
 								</div>
 							</div>
-							<div className="flex items-center gap-2">
-								<Checkbox id="scheduleLater" />
-								<Label htmlFor="scheduleLater" className="font-normal">Schedule later</Label>
-							</div>
+							<Controller
+								control={control}
+								name="scheduleLater"
+								render={({ field }) => (
+									<div className="flex items-center gap-2">
+										<Checkbox id="scheduleLater" checked={field.value} onCheckedChange={field.onChange} />
+										<Label htmlFor="scheduleLater" className="font-normal">Schedule later</Label>
+									</div>
+								)}
+							/>
 							<div className="grid grid-cols-2 gap-3">
 								<div className="space-y-2">
 									<Label>Start time</Label>
-									<Input type="time" />
+									<Input type="time" {...register("assessmentStartTime")} />
 								</div>
 								<div className="space-y-2">
 									<Label>End time</Label>
-									<Input type="time" />
+									<Input type="time" {...register("assessmentEndTime")} />
 								</div>
 							</div>
-							<div className="flex items-center gap-2">
-								<Checkbox id="anytime" />
-								<Label htmlFor="anytime" className="font-normal">Anytime</Label>
-							</div>
+							<Controller
+								control={control}
+								name="anytime"
+								render={({ field }) => (
+									<div className="flex items-center gap-2">
+										<Checkbox id="anytime" checked={field.value} onCheckedChange={field.onChange} />
+										<Label htmlFor="anytime" className="font-normal">Anytime</Label>
+									</div>
+								)}
+							/>
 						</div>
 
 						{/* Right Column - Team */}
@@ -330,20 +371,26 @@ const CreateRequestPage = () => {
 							<div className="space-y-2">
 								<h4 className="text-sm font-semibold">Team reminder</h4>
 								<Label>Remind team</Label>
-								<Select>
-									<SelectTrigger>
-										<SelectValue placeholder="No reminder set" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="none">No reminder set</SelectItem>
-										<SelectItem value="at_start">At start of task</SelectItem>
-										<SelectItem value="30min">30 minutes before</SelectItem>
-										<SelectItem value="1hour">1 hour before</SelectItem>
-										<SelectItem value="2hour">2 hours before</SelectItem>
-										<SelectItem value="5hour">5 hours before</SelectItem>
-										<SelectItem value="24hour">24 hours before</SelectItem>
-									</SelectContent>
-								</Select>
+								<Controller
+									control={control}
+									name="teamReminder"
+									render={({ field }) => (
+										<Select onValueChange={field.onChange} value={field.value}>
+											<SelectTrigger>
+												<SelectValue placeholder="No reminder set" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="none">No reminder set</SelectItem>
+												<SelectItem value="at_start">At start of task</SelectItem>
+												<SelectItem value="30min">30 minutes before</SelectItem>
+												<SelectItem value="1hour">1 hour before</SelectItem>
+												<SelectItem value="2hour">2 hours before</SelectItem>
+												<SelectItem value="5hour">5 hours before</SelectItem>
+												<SelectItem value="24hour">24 hours before</SelectItem>
+											</SelectContent>
+										</Select>
+									)}
+								/>
 							</div>
 						</div>
 					</div>
@@ -369,7 +416,7 @@ const CreateRequestPage = () => {
 													<Input
 														placeholder="Product or service name"
 														value={item.name}
-														onChange={(e) => updateLineItem(index, "name", e.target.value)}
+														onChange={(e) => updateLineItem(index, { name: e.target.value })}
 													/>
 												</div>
 												<div className="space-y-1">
@@ -378,7 +425,7 @@ const CreateRequestPage = () => {
 														type="number"
 														min={1}
 														value={item.qty}
-														onChange={(e) => updateLineItem(index, "qty", Number(e.target.value))}
+														onChange={(e) => updateLineItem(index, { qty: Number(e.target.value) })}
 													/>
 												</div>
 												<div className="space-y-1">
@@ -388,7 +435,7 @@ const CreateRequestPage = () => {
 														min={0}
 														step="0.01"
 														value={item.unitPrice}
-														onChange={(e) => updateLineItem(index, "unitPrice", Number(e.target.value))}
+														onChange={(e) => updateLineItem(index, { unitPrice: Number(e.target.value) })}
 													/>
 												</div>
 												<div className="space-y-1">
@@ -415,20 +462,24 @@ const CreateRequestPage = () => {
 													placeholder="Line item description"
 													rows={2}
 													value={item.description}
-													onChange={(e) => updateLineItem(index, "description", e.target.value)}
+													onChange={(e) => updateLineItem(index, { description: e.target.value })}
 												/>
 											</div>
 											<div className="self-end">
 												<Label className="text-xs mb-1 block">Image</Label>
-												{item.image ? (
+												{item.imageUploading ? (
+													<div className="flex items-center justify-center h-[60px] w-[60px] rounded border">
+														<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+													</div>
+												) : item.imagePreview ? (
 													<div className="relative group h-[60px] w-[60px]">
-														<img src={item.image} alt="" className="h-full w-full rounded object-cover border" />
+														<img src={item.imagePreview} alt="" className="h-full w-full rounded object-cover border" />
 														<Button
 															type="button"
 															variant="destructive"
 															size="icon"
 															className="absolute -top-1 -right-1 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
-															onClick={() => updateLineItem(index, "image", null)}
+															onClick={() => updateLineItem(index, { imageFileId: null, imagePreview: null })}
 														>
 															<X className="h-2.5 w-2.5" />
 														</Button>
@@ -442,9 +493,7 @@ const CreateRequestPage = () => {
 															className="hidden"
 															onChange={(e) => {
 																const file = e.target.files?.[0];
-																if (file) {
-																	updateLineItem(index, "image", URL.createObjectURL(file));
-																}
+																if (file) handleLineItemImage(index, file);
 															}}
 														/>
 													</label>

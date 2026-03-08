@@ -92,6 +92,13 @@
       "when": 1772942420777,
       "tag": "0012_true_celestials",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1772944881854,
+      "tag": "0013_happy_bastion",
+      "breakpoints": true
     }
   ]
 }
