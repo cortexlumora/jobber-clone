@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Select,
 	SelectContent,
@@ -47,8 +48,11 @@ const CreateQuotePage = () => {
 	const [images, setImages] = useState<UploadedFile[]>([]);
 	const [uploadingImages, setUploadingImages] = useState(false);
 	const [clientMessage, setClientMessage] = useState("");
+	const [showAttachments, setShowAttachments] = useState(false);
+	const [showImages, setShowImages] = useState(false);
+	const [showClientMessage, setShowClientMessage] = useState(false);
 	const [contract, setContract] = useState("");
-	const [description, setDescription] = useState("");
+	const [applyContractToAll, setApplyContractToAll] = useState(false);
 	const [notes, setNotes] = useState("");
 	const [noteFiles, setNoteFiles] = useState<UploadedFile[]>([]);
 	const [uploadingNotes, setUploadingNotes] = useState(false);
@@ -427,132 +431,206 @@ const CreateQuotePage = () => {
 						</CardContent>
 					</Card>
 
-					{/* Attachments */}
-					<div className="space-y-4">
-						<h3 className="text-lg font-medium">Attachments</h3>
-						<div
-							{...attachmentDropzone.getRootProps()}
-							className={`rounded-lg border-2 border-dashed p-6 text-center cursor-pointer transition-colors ${
-								attachmentDropzone.isDragActive ? "border-primary bg-primary/5" : "border-border"
-							}`}
-						>
-							<input {...attachmentDropzone.getInputProps()} />
-							{uploadingAttachments ? (
-								<>
-									<Loader2 className="mx-auto h-6 w-6 text-muted-foreground mb-1 animate-spin" />
-									<p className="text-sm text-muted-foreground">Uploading...</p>
-								</>
-							) : (
-								<>
-									<Upload className="mx-auto h-6 w-6 text-muted-foreground mb-1" />
-									<p className="text-sm text-muted-foreground">
-										{attachmentDropzone.isDragActive ? "Drop files here" : "Drag files here or click to browse"}
-									</p>
-								</>
+					{/* Optional sections */}
+					{showAttachments && (
+						<div className="space-y-3">
+							<div className="flex items-center justify-between">
+								<div>
+									<h3 className="text-lg font-medium">Attachments</h3>
+									<p className="text-sm text-muted-foreground">Include all attachments for your quote in one place</p>
+								</div>
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon"
+									className="h-6 w-6"
+									onClick={() => { setShowAttachments(false); setAttachments([]); }}
+								>
+									<X className="h-4 w-4" />
+								</Button>
+							</div>
+							<p className="text-xs text-muted-foreground">{attachments.length} of 10 uploaded</p>
+							{attachments.length > 0 && (
+								<div className="space-y-2">
+									{attachments.map((file, index) => (
+										<div
+											key={file.fileId}
+											className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+										>
+											<span className="truncate">{file.name}</span>
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon"
+												className="h-6 w-6"
+												onClick={() => removeFile(setAttachments, index)}
+											>
+												<X className="h-4 w-4" />
+											</Button>
+										</div>
+									))}
+								</div>
+							)}
+							{attachments.length < 10 && (
+								<div
+									{...attachmentDropzone.getRootProps()}
+									className={`rounded-lg border-2 border-dashed p-6 text-center cursor-pointer transition-colors ${
+										attachmentDropzone.isDragActive ? "border-primary bg-primary/5" : "border-border"
+									}`}
+								>
+									<input {...attachmentDropzone.getInputProps()} />
+									{uploadingAttachments ? (
+										<>
+											<Loader2 className="mx-auto h-6 w-6 text-muted-foreground mb-1 animate-spin" />
+											<p className="text-sm text-muted-foreground">Uploading...</p>
+										</>
+									) : (
+										<>
+											<Upload className="mx-auto h-6 w-6 text-muted-foreground mb-1" />
+											<p className="text-sm text-muted-foreground">
+												{attachmentDropzone.isDragActive ? "Drop files here" : "Drag files here or click to browse"}
+											</p>
+										</>
+									)}
+								</div>
 							)}
 						</div>
-						{attachments.length > 0 && (
-							<div className="space-y-2">
-								{attachments.map((file, index) => (
-									<div
-										key={file.fileId}
-										className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
-									>
-										<span className="truncate">{file.name}</span>
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											className="h-6 w-6"
-											onClick={() => removeFile(setAttachments, index)}
-										>
-											<X className="h-4 w-4" />
-										</Button>
-									</div>
-								))}
-							</div>
-						)}
-					</div>
+					)}
 
-					{/* Images */}
-					<div className="space-y-4">
-						<h3 className="text-lg font-medium">Images</h3>
-						{images.length > 0 && (
-							<div className="flex flex-wrap gap-3">
-								{images.map((file, index) => (
-									<div key={file.fileId} className="relative group">
-										<img
-											src={file.preview}
-											alt={file.name}
-											className="h-24 w-24 rounded-lg object-cover border"
-										/>
-										<Button
-											type="button"
-											variant="destructive"
-											size="icon"
-											className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-											onClick={() => removeFile(setImages, index)}
-										>
-											<X className="h-3 w-3" />
-										</Button>
-									</div>
-								))}
+					{showImages && (
+						<div className="space-y-3">
+							<div className="flex items-center justify-between">
+								<div>
+									<h3 className="text-lg font-medium">Images</h3>
+									<p className="text-sm text-muted-foreground">Add images to showcase your past work</p>
+								</div>
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon"
+									className="h-6 w-6"
+									onClick={() => { setShowImages(false); setImages([]); }}
+								>
+									<X className="h-4 w-4" />
+								</Button>
 							</div>
-						)}
-						<div
-							{...imageDropzone.getRootProps()}
-							className={`rounded-lg border-2 border-dashed p-6 text-center cursor-pointer transition-colors ${
-								imageDropzone.isDragActive ? "border-primary bg-primary/5" : "border-border"
-							}`}
-						>
-							<input {...imageDropzone.getInputProps()} />
-							{uploadingImages ? (
-								<>
-									<Loader2 className="mx-auto h-6 w-6 text-muted-foreground mb-1 animate-spin" />
-									<p className="text-sm text-muted-foreground">Uploading...</p>
-								</>
-							) : (
-								<>
-									<ImageIcon className="mx-auto h-6 w-6 text-muted-foreground mb-1" />
-									<p className="text-sm text-muted-foreground">
-										{imageDropzone.isDragActive ? "Drop images here" : "Drag images here or click to browse"}
-									</p>
-								</>
+							<p className="text-xs text-muted-foreground">{images.length} of 10 uploaded</p>
+							{images.length > 0 && (
+								<div className="flex flex-wrap gap-3">
+									{images.map((file, index) => (
+										<div key={file.fileId} className="relative group">
+											<img
+												src={file.preview}
+												alt={file.name}
+												className="h-24 w-24 rounded-lg object-cover border"
+											/>
+											<Button
+												type="button"
+												variant="destructive"
+												size="icon"
+												className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+												onClick={() => removeFile(setImages, index)}
+											>
+												<X className="h-3 w-3" />
+											</Button>
+										</div>
+									))}
+								</div>
+							)}
+							{images.length < 10 && (
+								<div
+									{...imageDropzone.getRootProps()}
+									className={`rounded-lg border-2 border-dashed p-6 text-center cursor-pointer transition-colors ${
+										imageDropzone.isDragActive ? "border-primary bg-primary/5" : "border-border"
+									}`}
+								>
+									<input {...imageDropzone.getInputProps()} />
+									{uploadingImages ? (
+										<>
+											<Loader2 className="mx-auto h-6 w-6 text-muted-foreground mb-1 animate-spin" />
+											<p className="text-sm text-muted-foreground">Uploading...</p>
+										</>
+									) : (
+										<>
+											<ImageIcon className="mx-auto h-6 w-6 text-muted-foreground mb-1" />
+											<p className="text-sm text-muted-foreground">
+												{imageDropzone.isDragActive ? "Drop images here" : "Drag images here or click to browse"}
+											</p>
+										</>
+									)}
+								</div>
 							)}
 						</div>
-					</div>
+					)}
 
-					{/* Client Message */}
-					<div className="space-y-2">
-						<h3 className="text-lg font-medium">Client message</h3>
-						<Textarea
-							placeholder="Add a message for your client..."
-							rows={3}
-							value={clientMessage}
-							onChange={(e) => setClientMessage(e.target.value)}
-						/>
-					</div>
+					{showClientMessage && (
+						<div className="space-y-2">
+							<div className="flex items-center justify-between">
+								<h3 className="text-lg font-medium">Client message</h3>
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon"
+									className="h-6 w-6"
+									onClick={() => { setShowClientMessage(false); setClientMessage(""); }}
+								>
+									<X className="h-4 w-4" />
+								</Button>
+							</div>
+							<Label className="text-sm">Description</Label>
+							<Textarea
+								placeholder="Add a message for your client..."
+								rows={3}
+								value={clientMessage}
+								onChange={(e) => setClientMessage(e.target.value)}
+							/>
+						</div>
+					)}
+
+					{/* Add section buttons */}
+					{(!showAttachments || !showImages || !showClientMessage) && (
+						<div className="flex flex-wrap gap-2">
+							{!showAttachments && (
+								<Button type="button" variant="outline" size="sm" onClick={() => setShowAttachments(true)}>
+									<Plus className="h-4 w-4 mr-1" />
+									Attachments
+								</Button>
+							)}
+							{!showImages && (
+								<Button type="button" variant="outline" size="sm" onClick={() => setShowImages(true)}>
+									<Plus className="h-4 w-4 mr-1" />
+									Images
+								</Button>
+							)}
+							{!showClientMessage && (
+								<Button type="button" variant="outline" size="sm" onClick={() => setShowClientMessage(true)}>
+									<Plus className="h-4 w-4 mr-1" />
+									Client message
+								</Button>
+							)}
+						</div>
+					)}
 
 					{/* Contract / Disclaimer */}
 					<div className="space-y-2">
 						<h3 className="text-lg font-medium">Contract / Disclaimer</h3>
+						<Label className="text-sm">Description</Label>
 						<Textarea
-							placeholder="Add contract terms or disclaimer..."
+							placeholder="Add a description..."
 							rows={3}
 							value={contract}
 							onChange={(e) => setContract(e.target.value)}
 						/>
-					</div>
-
-					{/* Description */}
-					<div className="space-y-2">
-						<h3 className="text-lg font-medium">Description</h3>
-						<Textarea
-							placeholder="Add a description..."
-							rows={3}
-							value={description}
-							onChange={(e) => setDescription(e.target.value)}
-						/>
+						<div className="flex items-center gap-2">
+							<Checkbox
+								id="applyContractToAll"
+								checked={applyContractToAll}
+								onCheckedChange={(checked) => setApplyContractToAll(checked === true)}
+							/>
+							<Label htmlFor="applyContractToAll" className="font-normal">
+								Apply to all future quotes
+							</Label>
+						</div>
 					</div>
 
 					{/* Notes */}
