@@ -1,9 +1,10 @@
-import type { APIResponse, ClientDTO, ClientStatsDTO, ClientContactDTO, CompanySettingsDTO, CustomFieldDefinitionDTO, PropertyDTO, PresignUploadDTO, RequestDTO } from "@repo/dto";
+import type { APIResponse, ClientDTO, ClientStatsDTO, ClientContactDTO, CompanySettingsDTO, CustomFieldDefinitionDTO, PropertyDTO, PresignUploadDTO, RequestDTO, TeamMemberDTO } from "@repo/dto";
 import type { CreateClientForm } from "@repo/zod/client";
 import type { CreateRequestForm } from "@repo/zod/request";
 import type { UpdateCompanySettingsForm } from "@repo/zod/company-settings";
 import type { CreateCustomFieldForm } from "@repo/zod/custom-field";
 import type { CreateClientContactForm } from "@repo/zod/client-contact";
+import type { InviteTeamMemberForm, AcceptInviteForm } from "@repo/zod/team";
 import axios from "axios";
 import { http } from "./http";
 
@@ -111,5 +112,26 @@ export async function createClientContact(data: CreateClientContactForm) {
 
 export async function deleteClientContact(clientId: string, id: string) {
 	const res = await http.delete<APIResponse<ClientContactDTO>>(`/api/v1/client-contacts/${clientId}/${id}`);
+	return res.data.data;
+}
+
+// Team
+export async function getTeamMembers() {
+	const res = await http.get<APIResponse<TeamMemberDTO[]>>("/api/v1/team");
+	return res.data.data;
+}
+
+export async function inviteTeamMember(data: InviteTeamMemberForm) {
+	const res = await http.post<APIResponse<{ user: TeamMemberDTO; inviteToken: string }>>("/api/v1/team/invite", data);
+	return res.data.data;
+}
+
+export async function getInviteByToken(token: string) {
+	const res = await http.get<APIResponse<{ id: string; name: string; email: string }>>(`/api/v1/team/invite/${token}`);
+	return res.data.data;
+}
+
+export async function acceptInvite(data: AcceptInviteForm) {
+	const res = await http.post<APIResponse<TeamMemberDTO>>("/api/v1/team/invite/accept", data);
 	return res.data.data;
 }

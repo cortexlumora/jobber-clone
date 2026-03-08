@@ -26,6 +26,7 @@ import EditClientPage from "./pages/clients/edit/page";
 import CreateRequestPage from "./pages/requests/create/page";
 import SettingsLayout from "./pages/settings/layout";
 import CompanySettingsPage from "./pages/settings/company/page";
+import TeamSettingsPage from "./pages/settings/team/page";
 import AppLayout from "./pages/app-layout";
 
 const routes = createBrowserRouter([
@@ -62,7 +63,7 @@ const routes = createBrowserRouter([
 					{ path: "payments", element: <PlaceholderPage title="Payments" /> },
 					{ path: "expense-tracking", element: <PlaceholderPage title="Expense Tracking" /> },
 					{ path: "automations", element: <PlaceholderPage title="Automations" /> },
-					{ path: "team", element: <PlaceholderPage title="Manage Team" /> },
+					{ path: "team", element: <TeamSettingsPage /> },
 					{ path: "work-settings", element: <PlaceholderPage title="Work Settings" /> },
 					{ path: "schedule", element: <PlaceholderPage title="Schedule" /> },
 					{ path: "location-services", element: <PlaceholderPage title="Location Services" /> },

@@ -5,6 +5,7 @@ import requestRoute from "./request-route";
 import companySettingsRoute from "./company-settings-route";
 import customFieldRoute from "./custom-field-route";
 import clientContactRoute from "./client-contact-route";
+import teamRoute from "./team-route";
 
 const appRoutes = new Hono();
 
@@ -14,5 +15,6 @@ appRoutes.route("/requests", requestRoute);
 appRoutes.route("/company-settings", companySettingsRoute);
 appRoutes.route("/custom-fields", customFieldRoute);
 appRoutes.route("/client-contacts", clientContactRoute);
+appRoutes.route("/team", teamRoute);
 
 export default appRoutes;

@@ -1,4 +1,5 @@
 export { default as usersSchema } from "./users";
+export { userRoleEnum, userStatusEnum } from "./users";
 export { default as clientsSchema } from "./clients";
 export {
 	clientTitleEnum,
