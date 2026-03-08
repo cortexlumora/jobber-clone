@@ -1,9 +1,12 @@
 import { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
-import { getClients, presignUpload, uploadFileToS3 } from "@/lib/api";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { getClients, presignUpload, uploadFileToS3, createQuote } from "@/lib/api";
 import { useDropzone } from "react-dropzone";
 import { Plus, X, Upload, Loader2, Image as ImageIcon } from "lucide-react";
+import { createQuoteSchema, type CreateQuoteForm } from "@repo/zod/quote";
 import { StickyFooter } from "@/components/sticky-footer";
 import { CustomFieldDialog } from "@/components/custom-field-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,28 +50,56 @@ interface UploadedFile {
 
 const CreateQuotePage = () => {
 	const navigate = useNavigate();
-	const [title, setTitle] = useState("");
-	const [clientId, setClientId] = useState("");
-	const [quoteNumber, setQuoteNumber] = useState("1");
-	const [salesperson, setSalesperson] = useState("");
-	const [introTitle, setIntroTitle] = useState("");
-	const [introDescription, setIntroDescription] = useState("");
+
+	const {
+		register,
+		handleSubmit,
+		control,
+		watch,
+		setValue,
+		formState: { errors },
+	} = useForm<CreateQuoteForm>({
+		resolver: zodResolver(createQuoteSchema),
+		defaultValues: {
+			title: "",
+			clientId: "",
+			quoteNumber: "1",
+			salesperson: "",
+			introTitle: "",
+			introDescription: "",
+			discount: "",
+			tax: "",
+			depositType: "none",
+			depositMode: "%",
+			depositValue: "",
+			scheduleMode: "%",
+			payments: [
+				{ label: "Payment 1", amount: "", description: "" },
+				{ label: "Payment 2", amount: "", description: "" },
+			],
+			clientMessage: "",
+			contract: "",
+			applyContractToAll: false,
+			notes: "",
+		},
+	});
+
+	// Watched form values
+	const depositType = watch("depositType");
+	const depositMode = watch("depositMode");
+	const depositValue = watch("depositValue");
+	const payments = watch("payments") ?? [];
+	const scheduleMode = watch("scheduleMode");
+	const discount = watch("discount");
+	const tax = watch("tax");
+
+	// UI-only state (not part of form schema)
 	const [introImage, setIntroImage] = useState<UploadedFile | null>(null);
 	const [uploadingIntroImage, setUploadingIntroImage] = useState(false);
 	const [showIntroduction, setShowIntroduction] = useState(false);
 	const [customFieldDialogOpen, setCustomFieldDialogOpen] = useState(false);
 	const [lineItems, setLineItems] = useState<LineItemUI[]>([]);
-	const [discount, setDiscount] = useState("");
-	const [tax, setTax] = useState("");
 	const [depositDialogOpen, setDepositDialogOpen] = useState(false);
-	const [depositType, setDepositType] = useState<"none" | "deposit" | "schedule">("none");
-	const [depositMode, setDepositMode] = useState<"%" | "$">("%");
-	const [depositValue, setDepositValue] = useState("");
-	const [payments, setPayments] = useState<{ label: string; amount: string; description: string }[]>([
-		{ label: "Payment 1", amount: "", description: "" },
-		{ label: "Payment 2", amount: "", description: "" },
-	]);
-	const [scheduleMode, setScheduleMode] = useState<"%" | "$">("%");
 	// Dialog temp state
 	const [dialogDepositType, setDialogDepositType] = useState<"deposit" | "schedule">("deposit");
 	const [dialogDepositMode, setDialogDepositMode] = useState<"%" | "$">("%");
@@ -82,13 +113,9 @@ const CreateQuotePage = () => {
 	const [uploadingAttachments, setUploadingAttachments] = useState(false);
 	const [images, setImages] = useState<UploadedFile[]>([]);
 	const [uploadingImages, setUploadingImages] = useState(false);
-	const [clientMessage, setClientMessage] = useState("");
 	const [showAttachments, setShowAttachments] = useState(false);
 	const [showImages, setShowImages] = useState(false);
 	const [showClientMessage, setShowClientMessage] = useState(false);
-	const [contract, setContract] = useState("");
-	const [applyContractToAll, setApplyContractToAll] = useState(false);
-	const [notes, setNotes] = useState("");
 	const [noteFiles, setNoteFiles] = useState<UploadedFile[]>([]);
 	const [uploadingNotes, setUploadingNotes] = useState(false);
 
@@ -194,12 +221,37 @@ const CreateQuotePage = () => {
 	const taxAmount = tax ? Number(tax) : 0;
 	const total = subtotal - discountAmount + taxAmount;
 
+	const mutation = useMutation({
+		mutationFn: createQuote,
+		onSuccess: () => {
+			navigate("/quotes");
+		},
+	});
+
+	const onSubmit = (data: CreateQuoteForm) => {
+		mutation.mutate({
+			...data,
+			introImageFileId: introImage?.fileId,
+			lineItems: lineItems.map((item) => ({
+				type: item.type,
+				name: item.name,
+				description: item.description || undefined,
+				qty: item.qty,
+				unitPrice: item.unitPrice,
+				imageFileId: item.imageFileId || undefined,
+			})),
+			attachmentFileIds: attachments.map((f) => f.fileId),
+			imageFileIds: images.map((f) => f.fileId),
+			noteFileIds: noteFiles.map((f) => f.fileId),
+		});
+	};
+
 	return (
 		<>
 		<StickyFooter.Root>
 			<StickyFooter.Content className="max-w-4xl mx-auto">
 				<h2 className="text-2xl font-semibold mt-8 mb-8">New Quote</h2>
-				<div className="space-y-6">
+				<form id="quote-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 					{/* Overview */}
 					<div className="space-y-4">
 						<div className="space-y-2">
@@ -207,26 +259,33 @@ const CreateQuotePage = () => {
 							<Input
 								id="title"
 								placeholder="e.g. Landscaping quote"
-								value={title}
-								onChange={(e) => setTitle(e.target.value)}
+								{...register("title")}
 							/>
+							{errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
 						</div>
 						<div className="space-y-2">
 							<Label>Client</Label>
-							<Select value={clientId} onValueChange={setClientId}>
-								<SelectTrigger>
-									<SelectValue placeholder="Select a client" />
-								</SelectTrigger>
-								<SelectContent>
-									{clients?.map((client) => (
-										<SelectItem key={client.id} value={client.id}>
-											{client.useCompanyAsPrimary && client.companyName
-												? client.companyName
-												: `${client.firstName} ${client.lastName}`}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+							<Controller
+								name="clientId"
+								control={control}
+								render={({ field }) => (
+									<Select value={field.value} onValueChange={field.onChange}>
+										<SelectTrigger>
+											<SelectValue placeholder="Select a client" />
+										</SelectTrigger>
+										<SelectContent>
+											{clients?.map((client) => (
+												<SelectItem key={client.id} value={client.id}>
+													{client.useCompanyAsPrimary && client.companyName
+														? client.companyName
+														: `${client.firstName} ${client.lastName}`}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								)}
+							/>
+							{errors.clientId && <p className="text-sm text-destructive">{errors.clientId.message}</p>}
 						</div>
 					</div>
 
@@ -236,20 +295,25 @@ const CreateQuotePage = () => {
 							<Label htmlFor="quoteNumber">Quote #</Label>
 							<Input
 								id="quoteNumber"
-								value={quoteNumber}
-								onChange={(e) => setQuoteNumber(e.target.value)}
+								{...register("quoteNumber")}
 							/>
 						</div>
 						<div className="space-y-2">
 							<Label>Salesperson</Label>
-							<Select value={salesperson} onValueChange={setSalesperson}>
-								<SelectTrigger>
-									<SelectValue placeholder="Select salesperson" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="unassigned">Unassigned</SelectItem>
-								</SelectContent>
-							</Select>
+							<Controller
+								name="salesperson"
+								control={control}
+								render={({ field }) => (
+									<Select value={field.value} onValueChange={field.onChange}>
+										<SelectTrigger>
+											<SelectValue placeholder="Select salesperson" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="unassigned">Unassigned</SelectItem>
+										</SelectContent>
+									</Select>
+								)}
+							/>
 						</div>
 					</div>
 
@@ -276,7 +340,7 @@ const CreateQuotePage = () => {
 									variant="ghost"
 									size="icon"
 									className="h-6 w-6"
-									onClick={() => { setShowIntroduction(false); setIntroTitle(""); setIntroDescription(""); setIntroImage(null); }}
+									onClick={() => { setShowIntroduction(false); setValue("introTitle", ""); setValue("introDescription", ""); setIntroImage(null); setValue("introImageFileId", undefined); }}
 								>
 									<X className="h-4 w-4" />
 								</Button>
@@ -315,6 +379,7 @@ const CreateQuotePage = () => {
 													const { fileId, uploadUrl } = await presignUpload(file.name, file.type);
 													await uploadFileToS3(uploadUrl, file);
 													setIntroImage({ fileId, name: file.name, preview: URL.createObjectURL(file) });
+													setValue("introImageFileId", fileId);
 												} catch (err) {
 													console.error("Upload failed:", err);
 												} finally {
@@ -329,8 +394,7 @@ const CreateQuotePage = () => {
 								<Label className="text-sm">Title</Label>
 								<Input
 									placeholder="Add a title..."
-									value={introTitle}
-									onChange={(e) => setIntroTitle(e.target.value)}
+									{...register("introTitle")}
 								/>
 							</div>
 							<div className="space-y-1">
@@ -338,8 +402,7 @@ const CreateQuotePage = () => {
 								<Textarea
 									placeholder="Add a description..."
 									rows={3}
-									value={introDescription}
-									onChange={(e) => setIntroDescription(e.target.value)}
+									{...register("introDescription")}
 								/>
 							</div>
 						</div>
@@ -511,15 +574,14 @@ const CreateQuotePage = () => {
 												min={0}
 												step="0.01"
 												className="w-28 h-8 text-sm"
-												value={discount}
-												onChange={(e) => setDiscount(e.target.value)}
+												{...register("discount")}
 											/>
 											<Button
 												type="button"
 												variant="ghost"
 												size="icon"
 												className="h-6 w-6"
-												onClick={() => setDiscount("")}
+												onClick={() => setValue("discount", "")}
 											>
 												<X className="h-3 w-3" />
 											</Button>
@@ -530,7 +592,7 @@ const CreateQuotePage = () => {
 											variant="link"
 											size="sm"
 											className="h-auto p-0 text-sm"
-											onClick={() => setDiscount("0")}
+											onClick={() => setValue("discount", "0")}
 										>
 											Add Discount
 										</Button>
@@ -547,15 +609,14 @@ const CreateQuotePage = () => {
 												min={0}
 												step="0.01"
 												className="w-28 h-8 text-sm"
-												value={tax}
-												onChange={(e) => setTax(e.target.value)}
+												{...register("tax")}
 											/>
 											<Button
 												type="button"
 												variant="ghost"
 												size="icon"
 												className="h-6 w-6"
-												onClick={() => setTax("")}
+												onClick={() => setValue("tax", "")}
 											>
 												<X className="h-3 w-3" />
 											</Button>
@@ -566,7 +627,7 @@ const CreateQuotePage = () => {
 											variant="link"
 											size="sm"
 											className="h-auto p-0 text-sm"
-											onClick={() => setTax("0")}
+											onClick={() => setValue("tax", "0")}
 										>
 											Add Tax
 										</Button>
@@ -593,9 +654,9 @@ const CreateQuotePage = () => {
 												size="sm"
 												className="h-auto p-0 text-xs text-muted-foreground underline"
 												onClick={() => {
-													setDialogDepositType(depositType);
+													setDialogDepositType(depositType as "deposit" | "schedule");
 													setDialogDepositMode(depositMode);
-													setDialogDepositValue(depositValue);
+													setDialogDepositValue(depositValue ?? "");
 													setDialogPayments([...payments]);
 													setDialogScheduleMode(scheduleMode);
 													setDepositDialogOpen(true);
@@ -608,7 +669,7 @@ const CreateQuotePage = () => {
 												variant="ghost"
 												size="icon"
 												className="h-6 w-6"
-												onClick={() => { setDepositType("none"); setDepositValue(""); }}
+												onClick={() => { setValue("depositType", "none"); setValue("depositValue", ""); }}
 											>
 												<X className="h-3 w-3" />
 											</Button>
@@ -620,10 +681,23 @@ const CreateQuotePage = () => {
 										</p>
 									)}
 									{depositType === "schedule" && (
-										<div className="space-y-1">
-											{payments.map((p, i) => (
-												<p key={i} className="text-sm text-muted-foreground">{p.label}</p>
-											))}
+										<div className="space-y-2">
+											<div className="grid grid-cols-3 gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+												<span>{scheduleMode === "%" ? "% of job" : "Amount"}</span>
+												<span>Description</span>
+												<span className="text-right">Total</span>
+											</div>
+											{payments.map((p, i) => {
+												const amt = Number(p.amount) || 0;
+												const paymentTotal = scheduleMode === "%" ? (total * amt) / 100 : amt;
+												return (
+													<div key={i} className="grid grid-cols-3 gap-2 text-sm">
+														<span>{p.amount}{scheduleMode === "%" ? "%" : ""}</span>
+														<span className="text-muted-foreground">{p.description || p.label}</span>
+														<span className="text-right">${paymentTotal.toFixed(2)}</span>
+													</div>
+												);
+											})}
 										</div>
 									)}
 								</div>
@@ -641,6 +715,7 @@ const CreateQuotePage = () => {
 										setDialogScheduleMode("%");
 										setDepositDialogOpen(true);
 									}}
+
 								>
 									Add Deposit or Payment Schedule
 								</Button>
@@ -790,7 +865,7 @@ const CreateQuotePage = () => {
 									variant="ghost"
 									size="icon"
 									className="h-6 w-6"
-									onClick={() => { setShowClientMessage(false); setClientMessage(""); }}
+									onClick={() => { setShowClientMessage(false); setValue("clientMessage", ""); }}
 								>
 									<X className="h-4 w-4" />
 								</Button>
@@ -799,8 +874,7 @@ const CreateQuotePage = () => {
 							<Textarea
 								placeholder="Add a message for your client..."
 								rows={3}
-								value={clientMessage}
-								onChange={(e) => setClientMessage(e.target.value)}
+								{...register("clientMessage")}
 							/>
 						</div>
 					)}
@@ -836,14 +910,19 @@ const CreateQuotePage = () => {
 						<Textarea
 							placeholder="Add a description..."
 							rows={3}
-							value={contract}
-							onChange={(e) => setContract(e.target.value)}
+							{...register("contract")}
 						/>
 						<div className="flex items-center gap-2">
-							<Checkbox
-								id="applyContractToAll"
-								checked={applyContractToAll}
-								onCheckedChange={(checked) => setApplyContractToAll(checked === true)}
+							<Controller
+								name="applyContractToAll"
+								control={control}
+								render={({ field }) => (
+									<Checkbox
+										id="applyContractToAll"
+										checked={field.value ?? false}
+										onCheckedChange={(checked) => field.onChange(checked === true)}
+									/>
+								)}
 							/>
 							<Label htmlFor="applyContractToAll" className="font-normal">
 								Apply to all future quotes
@@ -862,8 +941,7 @@ const CreateQuotePage = () => {
 						<Textarea
 							placeholder="Leave a note..."
 							rows={4}
-							value={notes}
-							onChange={(e) => setNotes(e.target.value)}
+							{...register("notes")}
 						/>
 						<div
 							{...noteDropzone.getRootProps()}
@@ -908,7 +986,7 @@ const CreateQuotePage = () => {
 							</div>
 						)}
 					</div>
-				</div>
+				</form>
 			</StickyFooter.Content>
 			<StickyFooter.Bar
 				className="max-w-4xl"
@@ -918,8 +996,8 @@ const CreateQuotePage = () => {
 					</Button>
 				}
 				right={
-					<Button>
-						Save Quote
+					<Button type="submit" form="quote-form" disabled={mutation.isPending}>
+						{mutation.isPending ? "Saving..." : "Save Quote"}
 					</Button>
 				}
 			/>
@@ -1104,8 +1182,8 @@ const CreateQuotePage = () => {
 							type="button"
 							variant="destructive"
 							onClick={() => {
-								setDepositType("none");
-								setDepositValue("");
+								setValue("depositType", "none");
+								setValue("depositValue", "");
 								setDepositDialogOpen(false);
 							}}
 						>
@@ -1119,11 +1197,11 @@ const CreateQuotePage = () => {
 						<Button
 							type="button"
 							onClick={() => {
-								setDepositType(dialogDepositType);
-								setDepositMode(dialogDepositMode);
-								setDepositValue(dialogDepositValue);
-								setPayments([...dialogPayments]);
-								setScheduleMode(dialogScheduleMode);
+								setValue("depositType", dialogDepositType);
+								setValue("depositMode", dialogDepositMode);
+								setValue("depositValue", dialogDepositValue);
+								setValue("payments", [...dialogPayments]);
+								setValue("scheduleMode", dialogScheduleMode);
 								setDepositDialogOpen(false);
 							}}
 						>

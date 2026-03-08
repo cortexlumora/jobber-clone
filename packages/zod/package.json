@@ -11,7 +11,8 @@
 		"./company-settings": "./src/company-settings.ts",
 		"./custom-field": "./src/custom-field.ts",
 		"./client-contact": "./src/client-contact.ts",
-		"./team": "./src/team.ts"
+		"./team": "./src/team.ts",
+		"./quote": "./src/quote.ts"
 	},
 	"dependencies": {
 		"zod": "^4.3.6"

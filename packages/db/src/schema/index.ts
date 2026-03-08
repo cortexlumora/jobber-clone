@@ -18,3 +18,6 @@ export { default as companySettingsSchema } from "./company-settings";
 export { default as customFieldDefinitionsSchema } from "./custom-fields";
 export { fieldTypeEnum, appliesToEnum } from "./custom-fields";
 export { default as customFieldValuesSchema } from "./custom-field-values";
+export { default as quotesSchema } from "./quotes";
+export { quoteStatusEnum, depositTypeEnum, depositModeEnum, quoteLineItemsSchema } from "./quotes";
+export { default as quoteFilesSchema } from "./quote-files";

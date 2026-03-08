@@ -1,10 +1,11 @@
-import type { APIResponse, ClientDTO, ClientStatsDTO, ClientContactDTO, CompanySettingsDTO, CustomFieldDefinitionDTO, PropertyDTO, PresignUploadDTO, RequestDTO, TeamMemberDTO } from "@repo/dto";
+import type { APIResponse, ClientDTO, ClientStatsDTO, ClientContactDTO, CompanySettingsDTO, CustomFieldDefinitionDTO, PropertyDTO, PresignUploadDTO, RequestDTO, TeamMemberDTO, QuoteDTO } from "@repo/dto";
 import type { CreateClientForm } from "@repo/zod/client";
 import type { CreateRequestForm } from "@repo/zod/request";
 import type { UpdateCompanySettingsForm } from "@repo/zod/company-settings";
 import type { CreateCustomFieldForm } from "@repo/zod/custom-field";
 import type { CreateClientContactForm } from "@repo/zod/client-contact";
 import type { InviteTeamMemberForm, AcceptInviteForm } from "@repo/zod/team";
+import type { CreateQuoteForm } from "@repo/zod/quote";
 import axios from "axios";
 import { http } from "./http";
 
@@ -133,5 +134,21 @@ export async function getInviteByToken(token: string) {
 
 export async function acceptInvite(data: AcceptInviteForm) {
 	const res = await http.post<APIResponse<TeamMemberDTO>>("/api/v1/team/invite/accept", data);
+	return res.data.data;
+}
+
+// Quotes
+export async function createQuote(data: CreateQuoteForm) {
+	const res = await http.post<APIResponse<QuoteDTO>>("/api/v1/quotes", data);
+	return res.data.data;
+}
+
+export async function getQuotes() {
+	const res = await http.get<APIResponse<QuoteDTO[]>>("/api/v1/quotes");
+	return res.data.data;
+}
+
+export async function getQuoteById(id: string) {
+	const res = await http.get<APIResponse<QuoteDTO | null>>(`/api/v1/quotes/${id}`);
 	return res.data.data;
 }

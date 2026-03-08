@@ -6,3 +6,4 @@ export * from "./company-settings";
 export * from "./custom-field";
 export * from "./client-contact";
 export * from "./team";
+export * from "./quote";
