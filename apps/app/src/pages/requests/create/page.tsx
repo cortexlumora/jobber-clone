@@ -21,13 +21,16 @@ import type { CreateRequestForm } from "@repo/zod/request";
 interface UploadedFile {
 	fileId: string;
 	name: string;
+	preview: string;
 }
 
 const CreateRequestPage = () => {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-	const [uploading, setUploading] = useState(false);
+	const [uploadedImages, setUploadedImages] = useState<UploadedFile[]>([]);
+	const [uploadingImages, setUploadingImages] = useState(false);
+	const [noteFiles, setNoteFiles] = useState<UploadedFile[]>([]);
+	const [uploadingNotes, setUploadingNotes] = useState(false);
 
 	const { data: clients } = useQuery({
 		queryKey: ["clients"],
@@ -42,28 +45,53 @@ const CreateRequestPage = () => {
 		},
 	});
 
-	const { getRootProps, getInputProps, isDragActive } = useDropzone({
+	const imageDropzone = useDropzone({
+		accept: { "image/*": [] },
 		onDrop: async (acceptedFiles) => {
-			setUploading(true);
+			setUploadingImages(true);
 			try {
 				const results = await Promise.all(
 					acceptedFiles.map(async (file) => {
 						const { fileId, uploadUrl } = await presignUpload(file.name, file.type);
 						await uploadFileToS3(uploadUrl, file);
-						return { fileId, name: file.name };
+						return { fileId, name: file.name, preview: URL.createObjectURL(file) };
 					}),
 				);
-				setUploadedFiles((prev) => [...prev, ...results]);
+				setUploadedImages((prev) => [...prev, ...results]);
 			} catch (err) {
-				console.error("File upload failed:", err);
+				console.error("Image upload failed:", err);
 			} finally {
-				setUploading(false);
+				setUploadingImages(false);
 			}
 		},
 	});
 
-	const removeFile = (index: number) => {
-		setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+	const noteDropzone = useDropzone({
+		onDrop: async (acceptedFiles) => {
+			setUploadingNotes(true);
+			try {
+				const results = await Promise.all(
+					acceptedFiles.map(async (file) => {
+						const { fileId, uploadUrl } = await presignUpload(file.name, file.type);
+						await uploadFileToS3(uploadUrl, file);
+						return { fileId, name: file.name, preview: "" };
+					}),
+				);
+				setNoteFiles((prev) => [...prev, ...results]);
+			} catch (err) {
+				console.error("File upload failed:", err);
+			} finally {
+				setUploadingNotes(false);
+			}
+		},
+	});
+
+	const removeImage = (index: number) => {
+		setUploadedImages((prev) => prev.filter((_, i) => i !== index));
+	};
+
+	const removeNoteFile = (index: number) => {
+		setNoteFiles((prev) => prev.filter((_, i) => i !== index));
 	};
 
 	const {
@@ -82,70 +110,128 @@ const CreateRequestPage = () => {
 	});
 
 	const onSubmit = (data: CreateRequestForm) => {
+		const allFileIds = [
+			...uploadedImages.map((f) => f.fileId),
+			...noteFiles.map((f) => f.fileId),
+		];
 		mutation.mutate({
 			...data,
-			fileIds: uploadedFiles.map((f) => f.fileId),
+			fileIds: allFileIds,
 		});
 	};
+
+	const isUploading = uploadingImages || uploadingNotes;
 
 	return (
 		<div className="max-w-2xl mx-auto">
 			<h2 className="text-2xl font-semibold mt-8 mb-8">New Request</h2>
 			<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-				{/* Title */}
-				<div className="space-y-2">
-					<Label htmlFor="title">Title</Label>
-					<Input
-						id="title"
-						placeholder="e.g. Plumbing repair needed"
-						{...register("title", { required: "Title is required" })}
-					/>
-					{errors.title && (
-						<p className="text-sm text-destructive">{errors.title.message}</p>
-					)}
-				</div>
-
-				{/* Client */}
-				<div className="space-y-2">
-					<Label>Client</Label>
-					<Controller
-						control={control}
-						name="clientId"
-						rules={{ required: "Client is required" }}
-						render={({ field }) => (
-							<Select onValueChange={field.onChange} value={field.value}>
-								<SelectTrigger>
-									<SelectValue placeholder="Select a client" />
-								</SelectTrigger>
-								<SelectContent>
-									{clients?.map((client) => (
-										<SelectItem key={client.id} value={client.id}>
-											{client.useCompanyAsPrimary && client.companyName
-												? client.companyName
-												: `${client.firstName} ${client.lastName}`}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+				{/* Overview */}
+				<div className="space-y-4">
+					<h3 className="text-lg font-medium">Overview</h3>
+					<div className="space-y-2">
+						<Label htmlFor="title">Title</Label>
+						<Input
+							id="title"
+							placeholder="e.g. Plumbing repair needed"
+							{...register("title", { required: "Title is required" })}
+						/>
+						{errors.title && (
+							<p className="text-sm text-destructive">{errors.title.message}</p>
 						)}
-					/>
-					{errors.clientId && (
-						<p className="text-sm text-destructive">{errors.clientId.message}</p>
-					)}
+					</div>
+					<div className="space-y-2">
+						<Label>Client</Label>
+						<Controller
+							control={control}
+							name="clientId"
+							rules={{ required: "Client is required" }}
+							render={({ field }) => (
+								<Select onValueChange={field.onChange} value={field.value}>
+									<SelectTrigger>
+										<SelectValue placeholder="Select a client" />
+									</SelectTrigger>
+									<SelectContent>
+										{clients?.map((client) => (
+											<SelectItem key={client.id} value={client.id}>
+												{client.useCompanyAsPrimary && client.companyName
+													? client.companyName
+													: `${client.firstName} ${client.lastName}`}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							)}
+						/>
+						{errors.clientId && (
+							<p className="text-sm text-destructive">{errors.clientId.message}</p>
+						)}
+					</div>
 				</div>
 
-				{/* Service Description */}
-				<div className="space-y-2">
-					<Label htmlFor="serviceDescription">Service Description</Label>
+				{/* Service Details */}
+				<div className="space-y-4">
+					<div>
+						<Label htmlFor="serviceDescription">Service details</Label>
+						<p className="text-sm text-muted-foreground">Please provide as much information as you can</p>
+					</div>
 					<Textarea
 						id="serviceDescription"
 						placeholder="Describe the service needed..."
 						rows={4}
-						{...register("serviceDescription", { required: "Service description is required" })}
+						{...register("serviceDescription", { required: "Service details are required" })}
 					/>
 					{errors.serviceDescription && (
 						<p className="text-sm text-destructive">{errors.serviceDescription.message}</p>
 					)}
+
+					{/* Image Upload */}
+					<div className="space-y-3">
+						<p className="text-sm text-muted-foreground">Share images of the work to be done</p>
+						{uploadedImages.length > 0 && (
+							<div className="flex flex-wrap gap-3">
+								{uploadedImages.map((file, index) => (
+									<div key={file.fileId} className="relative group">
+										<img
+											src={file.preview}
+											alt={file.name}
+											className="h-24 w-24 rounded-lg object-cover border"
+										/>
+										<Button
+											type="button"
+											variant="destructive"
+											size="icon"
+											className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+											onClick={() => removeImage(index)}
+										>
+											<X className="h-3 w-3" />
+										</Button>
+									</div>
+								))}
+							</div>
+						)}
+						<div
+							{...imageDropzone.getRootProps()}
+							className={`rounded-lg border-2 border-dashed p-6 text-center cursor-pointer transition-colors ${
+								imageDropzone.isDragActive ? "border-primary bg-primary/5" : "border-border"
+							}`}
+						>
+							<input {...imageDropzone.getInputProps()} />
+							{uploadingImages ? (
+								<>
+									<Loader2 className="mx-auto h-6 w-6 text-muted-foreground mb-1 animate-spin" />
+									<p className="text-sm text-muted-foreground">Uploading...</p>
+								</>
+							) : (
+								<>
+									<Upload className="mx-auto h-6 w-6 text-muted-foreground mb-1" />
+									<p className="text-sm text-muted-foreground">
+										{imageDropzone.isDragActive ? "Drop images here" : "Drag images here or click to browse"}
+									</p>
+								</>
+							)}
+						</div>
+					</div>
 				</div>
 
 				{/* Internal Notes */}
@@ -166,13 +252,13 @@ const CreateRequestPage = () => {
 						/>
 					</div>
 					<div
-						{...getRootProps()}
+						{...noteDropzone.getRootProps()}
 						className={`rounded-lg border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${
-							isDragActive ? "border-primary bg-primary/5" : "border-border"
+							noteDropzone.isDragActive ? "border-primary bg-primary/5" : "border-border"
 						}`}
 					>
-						<input {...getInputProps()} />
-						{uploading ? (
+						<input {...noteDropzone.getInputProps()} />
+						{uploadingNotes ? (
 							<>
 								<Loader2 className="mx-auto h-8 w-8 text-muted-foreground mb-2 animate-spin" />
 								<p className="text-sm text-muted-foreground">Uploading...</p>
@@ -181,14 +267,14 @@ const CreateRequestPage = () => {
 							<>
 								<Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
 								<p className="text-sm text-muted-foreground">
-									{isDragActive ? "Drop your files here" : "Drag your files here"}
+									{noteDropzone.isDragActive ? "Drop your files here" : "Drag your files here"}
 								</p>
 							</>
 						)}
 					</div>
-					{uploadedFiles.length > 0 && (
+					{noteFiles.length > 0 && (
 						<div className="space-y-2">
-							{uploadedFiles.map((file, index) => (
+							{noteFiles.map((file, index) => (
 								<div
 									key={file.fileId}
 									className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
@@ -199,7 +285,7 @@ const CreateRequestPage = () => {
 										variant="ghost"
 										size="icon"
 										className="h-6 w-6"
-										onClick={() => removeFile(index)}
+										onClick={() => removeNoteFile(index)}
 									>
 										<X className="h-4 w-4" />
 									</Button>
@@ -214,7 +300,7 @@ const CreateRequestPage = () => {
 					<p className="text-sm text-destructive">{mutation.error.message}</p>
 				)}
 				<div className="flex gap-2 pt-2">
-					<Button type="submit" disabled={mutation.isPending || uploading}>
+					<Button type="submit" disabled={mutation.isPending || isUploading}>
 						{mutation.isPending ? "Saving..." : "Save Request"}
 					</Button>
 					<Button type="button" variant="outline" onClick={() => navigate("/requests")}>
