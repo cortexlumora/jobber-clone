@@ -7,3 +7,4 @@ export * from "./custom-field";
 export * from "./client-contact";
 export * from "./team";
 export * from "./quote";
+export * from "./job";

@@ -21,3 +21,6 @@ export { default as customFieldValuesSchema } from "./custom-field-values";
 export { default as quotesSchema } from "./quotes";
 export { quoteStatusEnum, depositTypeEnum, depositModeEnum, quoteLineItemsSchema } from "./quotes";
 export { default as quoteFilesSchema } from "./quote-files";
+export { default as jobsSchema } from "./jobs";
+export { jobTypeEnum, jobStatusEnum, billingTypeEnum, endsTypeEnum, jobLineItemsSchema } from "./jobs";
+export { default as jobFilesSchema } from "./job-files";

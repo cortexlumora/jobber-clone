@@ -1,4 +1,4 @@
-import type { APIResponse, ClientDTO, ClientStatsDTO, ClientContactDTO, CompanySettingsDTO, CustomFieldDefinitionDTO, PropertyDTO, PresignUploadDTO, RequestDTO, TeamMemberDTO, QuoteDTO } from "@repo/dto";
+import type { APIResponse, ClientDTO, ClientStatsDTO, ClientContactDTO, CompanySettingsDTO, CustomFieldDefinitionDTO, PropertyDTO, PresignUploadDTO, RequestDTO, TeamMemberDTO, QuoteDTO, JobDTO } from "@repo/dto";
 import type { CreateClientForm } from "@repo/zod/client";
 import type { CreateRequestForm } from "@repo/zod/request";
 import type { UpdateCompanySettingsForm } from "@repo/zod/company-settings";
@@ -6,6 +6,7 @@ import type { CreateCustomFieldForm } from "@repo/zod/custom-field";
 import type { CreateClientContactForm } from "@repo/zod/client-contact";
 import type { InviteTeamMemberForm, AcceptInviteForm } from "@repo/zod/team";
 import type { CreateQuoteForm } from "@repo/zod/quote";
+import type { CreateJobForm } from "@repo/zod/job";
 import axios from "axios";
 import { http } from "./http";
 
@@ -150,5 +151,21 @@ export async function getQuotes() {
 
 export async function getQuoteById(id: string) {
 	const res = await http.get<APIResponse<QuoteDTO | null>>(`/api/v1/quotes/${id}`);
+	return res.data.data;
+}
+
+// Jobs
+export async function createJob(data: CreateJobForm) {
+	const res = await http.post<APIResponse<JobDTO>>("/api/v1/jobs", data);
+	return res.data.data;
+}
+
+export async function getJobs() {
+	const res = await http.get<APIResponse<JobDTO[]>>("/api/v1/jobs");
+	return res.data.data;
+}
+
+export async function getJobById(id: string) {
+	const res = await http.get<APIResponse<JobDTO | null>>(`/api/v1/jobs/${id}`);
 	return res.data.data;
 }
