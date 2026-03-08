@@ -36,16 +36,13 @@ const RequestsPage = () => {
 						<TableHeader>
 							<TableRow>
 								<TableHead>Title</TableHead>
-								<TableHead>Best Day</TableHead>
-								<TableHead>Arrival</TableHead>
 								<TableHead>Status</TableHead>
-								<TableHead>Assessment</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
 							{requests.length === 0 && (
 								<TableRow>
-									<TableCell colSpan={5} className="text-center text-muted-foreground">
+									<TableCell colSpan={2} className="text-center text-muted-foreground">
 										No requests yet
 									</TableCell>
 								</TableRow>
@@ -55,10 +52,7 @@ const RequestsPage = () => {
 									<TableCell className="font-medium max-w-xs truncate">
 										{request.title}
 									</TableCell>
-									<TableCell>{request.bestDay}</TableCell>
-									<TableCell className="capitalize">{request.preferredArrival}</TableCell>
 									<TableCell className="capitalize">{request.status}</TableCell>
-									<TableCell>{request.assessmentRequired ? "Yes" : "No"}</TableCell>
 								</TableRow>
 							))}
 						</TableBody>

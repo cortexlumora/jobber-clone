@@ -12,10 +12,6 @@ export async function createRequest(userId: string, data: CreateRequestForm) {
 			clientId: requestData.clientId,
 			title: requestData.title,
 			serviceDescription: requestData.serviceDescription,
-			bestDay: requestData.bestDay,
-			alternateDay: requestData.alternateDay || null,
-			preferredArrival: requestData.preferredArrival,
-			assessmentRequired: requestData.assessmentRequired,
 			internalNotes: requestData.internalNotes || null,
 		})
 		.returning();

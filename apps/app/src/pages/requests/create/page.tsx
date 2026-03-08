@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
 	Select,
 	SelectContent,
@@ -77,10 +76,6 @@ const CreateRequestPage = () => {
 			title: "",
 			clientId: "",
 			serviceDescription: "",
-			bestDay: "",
-			alternateDay: "",
-			preferredArrival: "anytime",
-			assessmentRequired: false,
 			internalNotes: "",
 			fileIds: [],
 		},
@@ -151,72 +146,6 @@ const CreateRequestPage = () => {
 					{errors.serviceDescription && (
 						<p className="text-sm text-destructive">{errors.serviceDescription.message}</p>
 					)}
-				</div>
-
-				{/* Availability */}
-				<div className="space-y-4">
-					<h3 className="text-lg font-medium">Your Availability</h3>
-					<div className="space-y-2">
-						<Label htmlFor="bestDay">Which day would be best for assessment of the work?</Label>
-						<Input
-							id="bestDay"
-							type="date"
-							{...register("bestDay", { required: "Best day is required" })}
-						/>
-						{errors.bestDay && (
-							<p className="text-sm text-destructive">{errors.bestDay.message}</p>
-						)}
-					</div>
-					<div className="space-y-2">
-						<Label htmlFor="alternateDay">Which is another day that works for you?</Label>
-						<Input
-							id="alternateDay"
-							type="date"
-							{...register("alternateDay")}
-						/>
-					</div>
-					<div className="space-y-2">
-						<Label>What are your preferred arrival times?</Label>
-						<Controller
-							control={control}
-							name="preferredArrival"
-							render={({ field }) => (
-								<Select onValueChange={field.onChange} value={field.value}>
-									<SelectTrigger>
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="morning">Morning</SelectItem>
-										<SelectItem value="anytime">Any Time</SelectItem>
-										<SelectItem value="afternoon">Afternoon</SelectItem>
-									</SelectContent>
-								</Select>
-							)}
-						/>
-					</div>
-				</div>
-
-				{/* Assessment */}
-				<div className="space-y-4">
-					<Controller
-						control={control}
-						name="assessmentRequired"
-						render={({ field }) => (
-							<div className="flex items-center justify-between">
-								<div className="space-y-0.5">
-									<Label htmlFor="assessmentRequired">On-site assessment required</Label>
-									<p className="text-sm text-muted-foreground">
-										Schedule an assessment to collect more info before the job
-									</p>
-								</div>
-								<Switch
-									id="assessmentRequired"
-									checked={field.value}
-									onCheckedChange={field.onChange}
-								/>
-							</div>
-						)}
-					/>
 				</div>
 
 				{/* Internal Notes */}
