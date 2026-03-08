@@ -24,6 +24,7 @@ import CreateClientPage from "./pages/clients/create/page";
 import ClientDetailPage from "./pages/clients/detail/page";
 import EditClientPage from "./pages/clients/edit/page";
 import CreateRequestPage from "./pages/requests/create/page";
+import CreateQuotePage from "./pages/quotes/create/page";
 import SettingsLayout from "./pages/settings/layout";
 import CompanySettingsPage from "./pages/settings/company/page";
 import TeamSettingsPage from "./pages/settings/team/page";
@@ -43,6 +44,7 @@ const routes = createBrowserRouter([
 			{ path: "/requests", element: <RequestsPage /> },
 			{ path: "/requests/create", element: <CreateRequestPage /> },
 			{ path: "/quotes", element: <QuotesPage /> },
+			{ path: "/quotes/create", element: <CreateQuotePage /> },
 			{ path: "/jobs", element: <JobsPage /> },
 			{ path: "/invoices", element: <InvoicesPage /> },
 			{ path: "/marketing", element: <MarketingPage /> },
