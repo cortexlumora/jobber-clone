@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDropzone } from "react-dropzone";
 import { getClients, presignUpload, uploadFileToS3, createRequest } from "@/lib/api";
 import { Upload, X, Loader2, Plus } from "lucide-react";
+import { StickyFooter } from "@/components/sticky-footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -177,9 +178,10 @@ const CreateRequestPage = () => {
 	const isUploading = uploadingImages || uploadingNotes || lineItems.some((i) => i.imageUploading);
 
 	return (
-		<div className="max-w-2xl mx-auto">
+		<StickyFooter.Root>
+			<StickyFooter.Content className="max-w-4xl mx-auto">
 			<h2 className="text-2xl font-semibold mt-8 mb-8">New Request</h2>
-			<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+			<form id="request-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 				{/* Overview */}
 				<div className="space-y-4">
 					<h3 className="text-lg font-medium">Overview</h3>
@@ -582,20 +584,25 @@ const CreateRequestPage = () => {
 					)}
 				</div>
 
-				{/* Actions */}
 				{mutation.isError && (
 					<p className="text-sm text-destructive">{mutation.error.message}</p>
 				)}
-				<div className="flex gap-2 pt-2">
-					<Button type="submit" disabled={mutation.isPending || isUploading}>
-						{mutation.isPending ? "Saving..." : "Save Request"}
-					</Button>
-					<Button type="button" variant="outline" onClick={() => navigate("/requests")}>
+			</form>
+			</StickyFooter.Content>
+			<StickyFooter.Bar
+				className="max-w-4xl"
+				left={
+					<Button variant="outline" onClick={() => navigate("/requests")}>
 						Cancel
 					</Button>
-				</div>
-			</form>
-		</div>
+				}
+				right={
+					<Button type="submit" form="request-form" disabled={mutation.isPending || isUploading}>
+						{mutation.isPending ? "Saving..." : "Save Request"}
+					</Button>
+				}
+			/>
+		</StickyFooter.Root>
 	);
 };
 
