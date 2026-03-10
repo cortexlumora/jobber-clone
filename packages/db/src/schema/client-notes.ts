@@ -14,6 +14,7 @@ const clientNotesSchema = pgTable("client_notes", {
 	relatedToInvoices: boolean("related_to_invoices").notNull().default(false),
 	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+	deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
 export default clientNotesSchema;

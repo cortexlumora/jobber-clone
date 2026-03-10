@@ -148,6 +148,13 @@
       "when": 1773145583175,
       "tag": "0020_glorious_killer_shrike",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1773146743837,
+      "tag": "0021_spicy_talon",
+      "breakpoints": true
     }
   ]
 }
