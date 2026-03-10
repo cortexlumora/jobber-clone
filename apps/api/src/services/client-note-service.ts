@@ -1,7 +1,7 @@
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import db, { clientNotesSchema, clientNoteFilesSchema, filesSchema, usersSchema } from "@repo/db";
-import type { CreateClientNoteForm } from "@repo/zod/client-note";
+import type { CreateClientNoteForm, UpdateClientNoteForm } from "@repo/zod/client-note";
 import type { ClientNoteFileDTO } from "@repo/dto";
 import { eq, desc } from "drizzle-orm";
 import { s3, S3_BUCKET } from "../lib/s3";
@@ -91,6 +91,44 @@ export async function getClientNotes(clientId: string) {
 			return { ...note, createdByAvatar: null as string | null, files };
 		}),
 	);
+}
+
+export async function updateClientNote(noteId: string, data: UpdateClientNoteForm) {
+	const [note] = await db
+		.update(clientNotesSchema)
+		.set({
+			content: data.content,
+			relatedToRequests: data.relatedToRequests ?? false,
+			relatedToQuotes: data.relatedToQuotes ?? false,
+			relatedToJobs: data.relatedToJobs ?? false,
+			relatedToInvoices: data.relatedToInvoices ?? false,
+		})
+		.where(eq(clientNotesSchema.id, noteId))
+		.returning();
+
+	if (!note) return null;
+
+	// Replace file associations: delete old, insert new
+	await db.delete(clientNoteFilesSchema).where(eq(clientNoteFilesSchema.noteId, noteId));
+	if (data.fileIds && data.fileIds.length > 0) {
+		await db.insert(clientNoteFilesSchema).values(
+			data.fileIds.map((fileId) => ({ noteId, fileId })),
+		);
+	}
+
+	const [user] = await db
+		.select({ name: usersSchema.name })
+		.from(usersSchema)
+		.where(eq(usersSchema.id, note.createdById));
+
+	const files = await getPresignedFiles(noteId);
+
+	return {
+		...note,
+		createdByName: user?.name ?? "",
+		createdByAvatar: null as string | null,
+		files,
+	};
 }
 
 export async function deleteClientNote(noteId: string) {

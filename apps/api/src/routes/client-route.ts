@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import { createClientSchema } from "@repo/zod/client";
-import { createClientNoteSchema } from "@repo/zod/client-note";
+import { createClientNoteSchema, updateClientNoteSchema } from "@repo/zod/client-note";
 import type { APIResponse, ClientDTO, ClientNoteDTO, ClientStatsDTO, PropertyDTO } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
@@ -17,6 +17,7 @@ import {
 import {
 	createClientNote,
 	getClientNotes,
+	updateClientNote,
 	deleteClientNote,
 } from "../services/client-note-service";
 
@@ -82,6 +83,16 @@ const clientRoute = new Hono()
 		const userId = getUserIdFromCTX(c);
 
 		const note = await createClientNote(userId, data);
+		return c.json<APIResponse<ClientNoteDTO>>({ data: note });
+	})
+	.put("/:id/notes/:noteId", zValidator("json", updateClientNoteSchema), async (c) => {
+		const noteId = c.req.param("noteId");
+		const data = c.req.valid("json");
+
+		const note = await updateClientNote(noteId, data);
+		if (!note) {
+			return c.json<APIResponse<null>>({ data: null });
+		}
 		return c.json<APIResponse<ClientNoteDTO>>({ data: note });
 	})
 	.delete("/:id/notes/:noteId", async (c) => {

@@ -7,7 +7,7 @@ import type { CreateClientContactForm } from "@repo/zod/client-contact";
 import type { InviteTeamMemberForm, AcceptInviteForm } from "@repo/zod/team";
 import type { CreateQuoteForm } from "@repo/zod/quote";
 import type { CreateJobForm } from "@repo/zod/job";
-import type { CreateClientNoteForm } from "@repo/zod/client-note";
+import type { CreateClientNoteForm, UpdateClientNoteForm } from "@repo/zod/client-note";
 import axios from "axios";
 import { http } from "./http";
 
@@ -179,6 +179,11 @@ export async function getClientNotes(clientId: string) {
 
 export async function createClientNote(data: CreateClientNoteForm) {
 	const res = await http.post<APIResponse<ClientNoteDTO>>(`/api/v1/clients/${data.clientId}/notes`, data);
+	return res.data.data;
+}
+
+export async function updateClientNote(clientId: string, noteId: string, data: UpdateClientNoteForm) {
+	const res = await http.put<APIResponse<ClientNoteDTO>>(`/api/v1/clients/${clientId}/notes/${noteId}`, data);
 	return res.data.data;
 }
 
