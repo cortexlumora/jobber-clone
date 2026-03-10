@@ -9,10 +9,10 @@ export async function getClientContacts(clientId: string) {
 		.where(eq(clientContactsSchema.clientId, clientId));
 }
 
-export async function createClientContact(data: CreateClientContactForm) {
+export async function createClientContact(clientId: string, data: CreateClientContactForm) {
 	const [created] = await db
 		.insert(clientContactsSchema)
-		.values(data)
+		.values({ ...data, clientId })
 		.returning();
 	return created;
 }

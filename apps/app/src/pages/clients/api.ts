@@ -47,17 +47,17 @@ export async function deleteClient(id: string) {
 
 // Client Contacts
 export async function getClientContacts(clientId: string) {
-	const res = await http.get<APIResponse<ClientContactDTO[]>>(`/api/v1/client-contacts/${clientId}`);
+	const res = await http.get<APIResponse<ClientContactDTO[]>>(`/api/v1/clients/${clientId}/contacts`);
 	return res.data.data;
 }
 
-export async function createClientContact(data: CreateClientContactForm) {
-	const res = await http.post<APIResponse<ClientContactDTO>>("/api/v1/client-contacts", data);
+export async function createClientContact(clientId: string, data: CreateClientContactForm) {
+	const res = await http.post<APIResponse<ClientContactDTO>>(`/api/v1/clients/${clientId}/contacts`, data);
 	return res.data.data;
 }
 
 export async function deleteClientContact(clientId: string, id: string) {
-	const res = await http.delete<APIResponse<ClientContactDTO>>(`/api/v1/client-contacts/${clientId}/${id}`);
+	const res = await http.delete<APIResponse<ClientContactDTO>>(`/api/v1/clients/${clientId}/contacts/${id}`);
 	return res.data.data;
 }
 

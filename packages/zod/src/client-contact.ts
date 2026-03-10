@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 export const createClientContactSchema = z.object({
-	clientId: z.string().uuid(),
 	title: z.enum(["none", "Mr.", "Ms.", "Mrs.", "Miss.", "Dr."]),
 	firstName: z.string().min(1, "First name is required"),
 	lastName: z.string().min(1, "Last name is required"),

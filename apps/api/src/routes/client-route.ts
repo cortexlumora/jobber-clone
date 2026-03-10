@@ -1,7 +1,8 @@
 import { zValidator } from "@hono/zod-validator";
 import { createClientSchema } from "@repo/zod/client";
+import { createClientContactSchema } from "@repo/zod/client-contact";
 import { createClientNoteSchema, updateClientNoteSchema } from "@repo/zod/client-note";
-import type { APIResponse, ClientDTO, ClientNoteDTO, ClientStatsDTO, PropertyDTO } from "@repo/dto";
+import type { APIResponse, ClientContactDTO, ClientDTO, ClientNoteDTO, ClientStatsDTO, PropertyDTO } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
@@ -14,6 +15,11 @@ import {
 	getClientStats,
 	updateClient,
 } from "../services/client-service";
+import {
+	getClientContacts,
+	createClientContact,
+	deleteClientContact,
+} from "../services/client-contact-service";
 import {
 	createClientNote,
 	getClientNotes,
@@ -71,6 +77,24 @@ const clientRoute = new Hono()
 
 		const client = await deleteClient(clientId);
 		return c.json<APIResponse<ClientDTO>>({ data: client });
+	})
+	// Contacts
+	.get("/:id/contacts", async (c) => {
+		const clientId = c.req.param("id");
+		const contacts = await getClientContacts(clientId);
+		return c.json<APIResponse<ClientContactDTO[]>>({ data: contacts });
+	})
+	.post("/:id/contacts", zValidator("json", createClientContactSchema), async (c) => {
+		const clientId = c.req.param("id");
+		const data = c.req.valid("json");
+		const contact = await createClientContact(clientId, data);
+		return c.json<APIResponse<ClientContactDTO>>({ data: contact }, 201);
+	})
+	.delete("/:id/contacts/:contactId", async (c) => {
+		const clientId = c.req.param("id");
+		const contactId = c.req.param("contactId");
+		const contact = await deleteClientContact(clientId, contactId);
+		return c.json<APIResponse<ClientContactDTO>>({ data: contact });
 	})
 	// Notes
 	.get("/:id/notes", async (c) => {
