@@ -73,7 +73,7 @@ export async function getClientById(clientId: string) {
 
 	if (!client) return null;
 
-	return { ...client, ...contactsResult };
+	return { ...client, additionalContacts: contactsResult };
 }
 
 export async function getClientProperties(clientId: string) {

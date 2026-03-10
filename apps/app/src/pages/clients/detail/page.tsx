@@ -60,8 +60,8 @@ const ClientDetailPage = () => {
 		enabled: !!id,
 	});
 
-	const contacts = client?.data ?? [];
-	const totalContacts = client?.pagination?.total ?? 0;
+	const contacts = client?.additionalContacts?.data ?? [];
+	const totalContacts = client?.additionalContacts?.pagination?.total ?? 0;
 
 	const { data: customFields = [] } = useQuery({
 		queryKey: ["custom-field-definitions", "client"],

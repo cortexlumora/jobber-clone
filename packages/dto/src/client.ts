@@ -46,12 +46,14 @@ export interface ClientStatsDTO {
 }
 
 export interface ClientDetailDTO extends ClientDTO {
-	data: import("./client-contact").ClientContactDTO[];
-	pagination: {
-		page: number;
-		limit: number;
-		total: number;
-		totalPages: number;
+	additionalContacts: {
+		data: import("./client-contact").ClientContactDTO[];
+		pagination: {
+			page: number;
+			limit: number;
+			total: number;
+			totalPages: number;
+		};
 	};
 }
 
