@@ -13,7 +13,8 @@
 		"./client-contact": "./src/client-contact.ts",
 		"./team": "./src/team.ts",
 		"./quote": "./src/quote.ts",
-		"./job": "./src/job.ts"
+		"./job": "./src/job.ts",
+		"./client-note": "./src/client-note.ts"
 	},
 	"dependencies": {
 		"zod": "^4.3.6"

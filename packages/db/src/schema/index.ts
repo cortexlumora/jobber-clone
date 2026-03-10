@@ -24,3 +24,5 @@ export { default as quoteFilesSchema } from "./quote-files";
 export { default as jobsSchema } from "./jobs";
 export { jobTypeEnum, jobStatusEnum, billingTypeEnum, endsTypeEnum, jobLineItemsSchema } from "./jobs";
 export { default as jobFilesSchema } from "./job-files";
+export { default as clientNotesSchema } from "./client-notes";
+export { default as clientNoteFilesSchema } from "./client-note-files";

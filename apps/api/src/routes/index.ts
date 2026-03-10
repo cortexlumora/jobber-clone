@@ -8,7 +8,6 @@ import clientContactRoute from "./client-contact-route";
 import teamRoute from "./team-route";
 import quoteRoute from "./quote-route";
 import jobRoute from "./job-route";
-
 const appRoutes = new Hono();
 
 appRoutes.route("/clients", clientRoute);

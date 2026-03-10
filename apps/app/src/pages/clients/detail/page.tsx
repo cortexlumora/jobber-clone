@@ -1,12 +1,18 @@
+import { useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
 	getClientById,
 	getClientProperties,
 	getClientContacts,
+	getClientNotes,
 	getCustomFieldDefinitions,
 	archiveClient,
 	deleteClient,
+	createClientNote,
+	deleteClientNote,
+	presignUpload,
+	uploadFileToS3,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
 	Mail,
+	Paperclip,
 	Pencil,
 	MoreHorizontal,
 	Plus,
@@ -71,6 +78,61 @@ const ClientDetailPage = () => {
 		queryKey: ["custom-field-definitions", "client"],
 		queryFn: () => getCustomFieldDefinitions("client"),
 	});
+
+	const { data: notes = [] } = useQuery({
+		queryKey: ["client-notes", id],
+		queryFn: () => getClientNotes(id!),
+		enabled: !!id,
+	});
+
+	const [noteContent, setNoteContent] = useState("");
+	const [noteFiles, setNoteFiles] = useState<File[]>([]);
+	const [isSavingNote, setIsSavingNote] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	const createNoteMutation = useMutation({
+		mutationFn: createClientNote,
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["client-notes", id] });
+			setNoteContent("");
+			setNoteFiles([]);
+		},
+	});
+
+	const deleteNoteMutation = useMutation({
+		mutationFn: (noteId: string) => deleteClientNote(id!, noteId),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["client-notes", id] });
+		},
+	});
+
+	const handleSaveNote = async () => {
+		if (!noteContent.trim() || !id) return;
+		setIsSavingNote(true);
+		try {
+			const fileIds: string[] = [];
+			for (const file of noteFiles) {
+				const { uploadUrl, fileId } = await presignUpload(file.name, file.type);
+				await uploadFileToS3(uploadUrl, file);
+				fileIds.push(fileId);
+			}
+			createNoteMutation.mutate({ clientId: id, content: noteContent.trim(), fileIds });
+		} finally {
+			setIsSavingNote(false);
+		}
+	};
+
+	const handleNoteFileDrop = (e: React.DragEvent) => {
+		e.preventDefault();
+		const files = Array.from(e.dataTransfer.files);
+		if (files.length > 0) setNoteFiles((prev) => [...prev, ...files]);
+	};
+
+	const handleNoteFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const files = Array.from(e.target.files ?? []);
+		if (files.length > 0) setNoteFiles((prev) => [...prev, ...files]);
+		e.target.value = "";
+	};
 
 	const archiveMutation = useMutation({
 		mutationFn: archiveClient,
@@ -383,13 +445,108 @@ const ClientDetailPage = () => {
 							</p>
 						</CardHeader>
 						<CardContent className="space-y-3">
-							<Textarea placeholder="Note details" rows={3} />
-							<div className="rounded-lg border border-dashed p-4 text-center">
+							{/* Add note form */}
+							<Textarea
+								placeholder="Note details"
+								rows={3}
+								value={noteContent}
+								onChange={(e) => setNoteContent(e.target.value)}
+							/>
+							<div
+								className="rounded-lg border border-dashed p-4 text-center"
+								onDragOver={(e) => e.preventDefault()}
+								onDrop={handleNoteFileDrop}
+							>
+								<input
+									ref={fileInputRef}
+									type="file"
+									multiple
+									className="hidden"
+									onChange={handleNoteFileSelect}
+								/>
 								<p className="text-sm text-muted-foreground">
 									Drag your files here or{" "}
-									<Button variant="link" className="p-0 h-auto text-sm">Select a File</Button>
+									<Button
+										variant="link"
+										className="p-0 h-auto text-sm"
+										onClick={() => fileInputRef.current?.click()}
+									>
+										Select a File
+									</Button>
 								</p>
 							</div>
+							{noteFiles.length > 0 && (
+								<div className="flex flex-wrap gap-2">
+									{noteFiles.map((file, i) => (
+										<div key={i} className="flex items-center gap-1.5 rounded border px-2 py-1 text-xs text-muted-foreground">
+											<span className="max-w-[120px] truncate">{file.name}</span>
+											<button
+												type="button"
+												className="hover:text-destructive"
+												onClick={() => setNoteFiles((prev) => prev.filter((_, idx) => idx !== i))}
+											>
+												&times;
+											</button>
+										</div>
+									))}
+								</div>
+							)}
+							<div className="flex justify-end">
+								<Button
+									size="sm"
+									onClick={handleSaveNote}
+									disabled={!noteContent.trim() || isSavingNote}
+								>
+									{isSavingNote ? "Saving..." : "Save Note"}
+								</Button>
+							</div>
+
+							{/* Existing notes (newest first) */}
+							{notes.length > 0 && (
+								<div className="space-y-3 pt-3 border-t">
+									{notes.map((note) => (
+										<div key={note.id} className="rounded-md border p-3 space-y-1">
+											<div className="flex items-center justify-between">
+												<span className="text-xs font-medium">{note.createdByName}</span>
+												<div className="flex items-center gap-2">
+													<span className="text-xs text-muted-foreground">
+														{new Date(note.createdAt).toLocaleDateString("en-US", {
+															month: "short",
+															day: "numeric",
+															year: "numeric",
+														})}
+													</span>
+													<Button
+														variant="ghost"
+														size="sm"
+														className="h-5 w-5 p-0 text-muted-foreground hover:text-destructive"
+														onClick={() => deleteNoteMutation.mutate(note.id)}
+													>
+														<Trash2 className="h-3 w-3" />
+													</Button>
+												</div>
+											</div>
+											<p className="text-sm">{note.content}</p>
+											{note.files.length > 0 && (
+												<div className="flex flex-wrap gap-2 pt-1">
+													{note.files.map((file) => (
+														<a
+															key={file.id}
+															href={file.url}
+															target="_blank"
+															rel="noopener noreferrer"
+															className="flex items-center gap-1.5 rounded border px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+														>
+															<Paperclip className="h-3 w-3" />
+															<span className="max-w-[120px] truncate">{file.name}</span>
+														</a>
+													))}
+												</div>
+											)}
+										</div>
+									))}
+								</div>
+							)}
 						</CardContent>
 					</Card>
 				</div>
