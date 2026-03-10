@@ -1,6 +1,6 @@
 import { pgTable, primaryKey, timestamp, uuid } from "drizzle-orm/pg-core";
 import clientNotesSchema from "./client-notes";
-import filesSchema from "./files";
+import filesSchema from "../files";
 
 const clientNoteFilesSchema = pgTable("client_note_files", {
 	noteId: uuid("note_id").notNull().references(() => clientNotesSchema.id, { onDelete: "cascade" }),

@@ -1,7 +1,7 @@
 import { boolean, integer, numeric, pgEnum, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
-import usersSchema from "./users";
-import clientsSchema from "./clients";
-import filesSchema from "./files";
+import usersSchema from "../users";
+import clientsSchema from "../client/clients";
+import filesSchema from "../files";
 
 export const requestStatusEnum = pgEnum("request_status", ["new", "assessed", "converted", "archived"]);
 export const reminderEnum = pgEnum("team_reminder", ["none", "at_start", "30min", "1hour", "2hour", "5hour", "24hour"]);

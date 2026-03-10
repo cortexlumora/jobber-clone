@@ -1,6 +1,6 @@
 import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import clientsSchema from "./clients";
-import usersSchema from "./users";
+import usersSchema from "../users";
 
 const clientNotesSchema = pgTable("client_notes", {
 	id: uuid("id").primaryKey().defaultRandom(),

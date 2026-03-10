@@ -1,5 +1,5 @@
 import { boolean, jsonb, pgEnum, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
-import usersSchema from "./users";
+import usersSchema from "../users";
 
 export const clientTitleEnum = pgEnum("client_title", ["none", "Mr.", "Ms.", "Mrs.", "Miss.", "Dr."]);
 export const clientStatusEnum = pgEnum("client_status", ["lead", "active", "inactive"]);

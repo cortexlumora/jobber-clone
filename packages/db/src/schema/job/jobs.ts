@@ -1,7 +1,7 @@
 import { boolean, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
-import usersSchema from "./users";
-import clientsSchema from "./clients";
-import filesSchema from "./files";
+import usersSchema from "../users";
+import clientsSchema from "../client/clients";
+import filesSchema from "../files";
 
 export const jobTypeEnum = pgEnum("job_type", ["one_off", "recurring"]);
 export const jobStatusEnum = pgEnum("job_status", ["draft", "active", "action_required", "complete", "archived"]);

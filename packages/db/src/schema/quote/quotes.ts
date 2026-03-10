@@ -1,7 +1,7 @@
 import { boolean, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
-import usersSchema from "./users";
-import clientsSchema from "./clients";
-import filesSchema from "./files";
+import usersSchema from "../users";
+import clientsSchema from "../client/clients";
+import filesSchema from "../files";
 
 export const quoteStatusEnum = pgEnum("quote_status", ["draft", "sent", "approved", "rejected", "archived"]);
 export const depositTypeEnum = pgEnum("deposit_type", ["none", "deposit", "schedule"]);

@@ -1,6 +1,6 @@
 import { pgTable, primaryKey, timestamp, uuid } from "drizzle-orm/pg-core";
 import jobsSchema from "./jobs";
-import filesSchema from "./files";
+import filesSchema from "../files";
 
 const jobFilesSchema = pgTable("job_files", {
 	jobId: uuid("job_id").notNull().references(() => jobsSchema.id, { onDelete: "cascade" }),
