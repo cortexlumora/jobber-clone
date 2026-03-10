@@ -177,8 +177,8 @@ export async function getClientNotes(clientId: string) {
 	return res.data.data;
 }
 
-export async function createClientNote(data: CreateClientNoteForm) {
-	const res = await http.post<APIResponse<ClientNoteDTO>>(`/api/v1/clients/${data.clientId}/notes`, data);
+export async function createClientNote(clientId: string, data: CreateClientNoteForm) {
+	const res = await http.post<APIResponse<ClientNoteDTO>>(`/api/v1/clients/${clientId}/notes`, data);
 	return res.data.data;
 }
 

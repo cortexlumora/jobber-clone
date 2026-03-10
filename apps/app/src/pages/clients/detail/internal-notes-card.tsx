@@ -320,7 +320,7 @@ const InternalNotesCard = ({ clientId }: InternalNotesCardProps) => {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const createNoteMutation = useMutation({
-		mutationFn: createClientNote,
+		mutationFn: (data: Parameters<typeof createClientNote>[1]) => createClientNote(clientId, data),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["client-notes", clientId] });
 			setNoteContent("");
@@ -339,7 +339,7 @@ const InternalNotesCard = ({ clientId }: InternalNotesCardProps) => {
 				await uploadFileToS3(uploadUrl, file);
 				fileIds.push(fileId);
 			}
-			createNoteMutation.mutate({ clientId, content: noteContent.trim(), fileIds, ...noteRelated });
+			createNoteMutation.mutate({ content: noteContent.trim(), fileIds, ...noteRelated });
 		} finally {
 			setIsSavingNote(false);
 		}

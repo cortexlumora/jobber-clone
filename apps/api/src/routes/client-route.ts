@@ -79,10 +79,11 @@ const clientRoute = new Hono()
 		return c.json<APIResponse<ClientNoteDTO[]>>({ data: notes });
 	})
 	.post("/:id/notes", zValidator("json", createClientNoteSchema), async (c) => {
+		const clientId = c.req.param("id");
 		const data = c.req.valid("json");
 		const userId = getUserIdFromCTX(c);
 
-		const note = await createClientNote(userId, data);
+		const note = await createClientNote(userId, clientId, data);
 		return c.json<APIResponse<ClientNoteDTO>>({ data: note });
 	})
 	.put("/:id/notes/:noteId", zValidator("json", updateClientNoteSchema), async (c) => {

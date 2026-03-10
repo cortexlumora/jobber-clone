@@ -27,11 +27,11 @@ async function getPresignedFiles(noteId: string): Promise<ClientNoteFileDTO[]> {
 	);
 }
 
-export async function createClientNote(userId: string, data: CreateClientNoteForm) {
+export async function createClientNote(userId: string, clientId: string, data: CreateClientNoteForm) {
 	const [note] = await db
 		.insert(clientNotesSchema)
 		.values({
-			clientId: data.clientId,
+			clientId,
 			createdById: userId,
 			content: data.content,
 			relatedToRequests: data.relatedToRequests ?? false,
