@@ -60,6 +60,7 @@ export async function createClientNote(userId: string, data: CreateClientNoteFor
 	return {
 		...note,
 		createdByName: user?.name ?? "",
+		createdByAvatar: null,
 		files,
 	};
 }
@@ -87,7 +88,7 @@ export async function getClientNotes(clientId: string) {
 	return Promise.all(
 		notes.map(async (note) => {
 			const files = await getPresignedFiles(note.id);
-			return { ...note, files };
+			return { ...note, createdByAvatar: null as string | null, files };
 		}),
 	);
 }

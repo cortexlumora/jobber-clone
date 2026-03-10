@@ -95,6 +95,7 @@ const clientRoute = new Hono()
 			data: {
 				...deleted,
 				createdByName: "",
+				createdByAvatar: null,
 				files: [],
 			},
 		});

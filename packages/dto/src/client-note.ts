@@ -10,6 +10,7 @@ export interface ClientNoteDTO {
 	clientId: string;
 	createdById: string;
 	createdByName: string;
+	createdByAvatar: string | null;
 	content: string;
 	relatedToRequests: boolean;
 	relatedToQuotes: boolean;
