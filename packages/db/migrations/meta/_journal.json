@@ -134,6 +134,13 @@
       "when": 1773141745813,
       "tag": "0018_flawless_revanche",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1773143366147,
+      "tag": "0019_nifty_chronomancer",
+      "breakpoints": true
     }
   ]
 }

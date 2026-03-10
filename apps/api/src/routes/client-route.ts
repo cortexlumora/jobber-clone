@@ -92,7 +92,11 @@ const clientRoute = new Hono()
 			return c.json<APIResponse<null>>({ data: null });
 		}
 		return c.json<APIResponse<ClientNoteDTO>>({
-			data: { ...deleted, createdByName: "", files: [] },
+			data: {
+				...deleted,
+				createdByName: "",
+				files: [],
+			},
 		});
 	});
 

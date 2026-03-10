@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import {
 	Table,
@@ -87,6 +88,12 @@ const ClientDetailPage = () => {
 
 	const [noteContent, setNoteContent] = useState("");
 	const [noteFiles, setNoteFiles] = useState<File[]>([]);
+	const [noteRelated, setNoteRelated] = useState({
+		relatedToRequests: false,
+		relatedToQuotes: false,
+		relatedToJobs: false,
+		relatedToInvoices: false,
+	});
 	const [isSavingNote, setIsSavingNote] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -96,6 +103,7 @@ const ClientDetailPage = () => {
 			queryClient.invalidateQueries({ queryKey: ["client-notes", id] });
 			setNoteContent("");
 			setNoteFiles([]);
+			setNoteRelated({ relatedToRequests: false, relatedToQuotes: false, relatedToJobs: false, relatedToInvoices: false });
 		},
 	});
 
@@ -116,7 +124,7 @@ const ClientDetailPage = () => {
 				await uploadFileToS3(uploadUrl, file);
 				fileIds.push(fileId);
 			}
-			createNoteMutation.mutate({ clientId: id, content: noteContent.trim(), fileIds });
+			createNoteMutation.mutate({ clientId: id, content: noteContent.trim(), fileIds, ...noteRelated });
 		} finally {
 			setIsSavingNote(false);
 		}
@@ -491,6 +499,27 @@ const ClientDetailPage = () => {
 									))}
 								</div>
 							)}
+							<div>
+								<p className="text-xs font-medium mb-2">Link note to related</p>
+								<div className="flex flex-wrap gap-3">
+									{([
+										["relatedToRequests", "Requests"],
+										["relatedToQuotes", "Quotes"],
+										["relatedToJobs", "Jobs"],
+										["relatedToInvoices", "Invoices"],
+									] as const).map(([key, label]) => (
+										<label key={key} className="flex items-center gap-1.5 text-sm cursor-pointer">
+											<Checkbox
+												checked={noteRelated[key]}
+												onCheckedChange={(checked) =>
+													setNoteRelated((prev) => ({ ...prev, [key]: !!checked }))
+												}
+											/>
+											{label}
+										</label>
+									))}
+								</div>
+							</div>
 							<div className="flex justify-end">
 								<Button
 									size="sm"
@@ -527,6 +556,14 @@ const ClientDetailPage = () => {
 												</div>
 											</div>
 											<p className="text-sm">{note.content}</p>
+											{(note.relatedToRequests || note.relatedToQuotes || note.relatedToJobs || note.relatedToInvoices) && (
+												<div className="flex flex-wrap gap-1 pt-1">
+													{note.relatedToRequests && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Requests</Badge>}
+													{note.relatedToQuotes && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Quotes</Badge>}
+													{note.relatedToJobs && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Jobs</Badge>}
+													{note.relatedToInvoices && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Invoices</Badge>}
+												</div>
+											)}
 											{note.files.length > 0 && (
 												<div className="flex flex-wrap gap-2 pt-1">
 													{note.files.map((file) => (

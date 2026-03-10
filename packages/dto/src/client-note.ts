@@ -11,6 +11,10 @@ export interface ClientNoteDTO {
 	createdById: string;
 	createdByName: string;
 	content: string;
+	relatedToRequests: boolean;
+	relatedToQuotes: boolean;
+	relatedToJobs: boolean;
+	relatedToInvoices: boolean;
 	files: ClientNoteFileDTO[];
 	createdAt: Date;
 	updatedAt: Date;

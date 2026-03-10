@@ -34,6 +34,10 @@ export async function createClientNote(userId: string, data: CreateClientNoteFor
 			clientId: data.clientId,
 			createdById: userId,
 			content: data.content,
+			relatedToRequests: data.relatedToRequests ?? false,
+			relatedToQuotes: data.relatedToQuotes ?? false,
+			relatedToJobs: data.relatedToJobs ?? false,
+			relatedToInvoices: data.relatedToInvoices ?? false,
 		})
 		.returning();
 
@@ -68,6 +72,10 @@ export async function getClientNotes(clientId: string) {
 			createdById: clientNotesSchema.createdById,
 			createdByName: usersSchema.name,
 			content: clientNotesSchema.content,
+			relatedToRequests: clientNotesSchema.relatedToRequests,
+			relatedToQuotes: clientNotesSchema.relatedToQuotes,
+			relatedToJobs: clientNotesSchema.relatedToJobs,
+			relatedToInvoices: clientNotesSchema.relatedToInvoices,
 			createdAt: clientNotesSchema.createdAt,
 			updatedAt: clientNotesSchema.updatedAt,
 		})
