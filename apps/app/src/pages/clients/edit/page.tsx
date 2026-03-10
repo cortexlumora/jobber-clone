@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { CreateClientForm } from "@repo/zod/client";
-import { getClientById, getClientProperties, getClientContacts, updateClient } from "@/lib/api";
+import { getClientById, getClientProperties, getClientContacts, updateClient } from "../api";
 import { StickyFooter } from "@/components/sticky-footer";
 import { Button } from "@/components/ui/button";
 import ClientForm from "../components/client-form";

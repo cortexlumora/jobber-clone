@@ -1,7 +1,9 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { getClients, createJob, presignUpload, uploadFileToS3 } from "@/lib/api";
+import { getClients } from "@/pages/clients/api";
+import { createJob } from "../api";
+import { presignUpload, uploadFileToS3 } from "@/lib/api";
 import { useDropzone } from "react-dropzone";
 import { Plus, X, Upload, Loader2 } from "lucide-react";
 import { StickyFooter } from "@/components/sticky-footer";

@@ -7,9 +7,8 @@ import {
 	updateClientNote,
 	togglePinNote,
 	deleteClientNote,
-	presignUpload,
-	uploadFileToS3,
-} from "@/lib/api";
+} from "../api";
+import { presignUpload, uploadFileToS3 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";

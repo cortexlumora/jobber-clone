@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { getClients, getClientStats, archiveClient, deleteClient } from "@/lib/api";
+import { getClients, getClientStats, archiveClient, deleteClient } from "./api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, TrendingUp, TrendingDown, MoreHorizontal, Phone, Mail, Archive, Trash2, ExternalLink } from "lucide-react";

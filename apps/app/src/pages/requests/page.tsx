@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { getRequests, getClients } from "@/lib/api";
+import { getRequests } from "./api";
+import { getClients } from "@/pages/clients/api";
 import type { ClientDTO } from "@repo/dto";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

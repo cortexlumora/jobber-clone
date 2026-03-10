@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { useNavigate } from "react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { CreateClientForm } from "@repo/zod/client";
-import { createClient } from "@/lib/api";
+import { createClient } from "../api";
 import { StickyFooter } from "@/components/sticky-footer";
 import { Button } from "@/components/ui/button";
 import ClientForm from "../components/client-form";

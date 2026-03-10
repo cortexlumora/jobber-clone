@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createCustomFieldDefinition } from "@/lib/api";
+import { createCustomFieldDefinition } from "@/pages/settings/api";
 import {
 	Dialog,
 	DialogContent,

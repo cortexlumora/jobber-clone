@@ -3,7 +3,7 @@ import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClientSchema, type CreateClientForm } from "@repo/zod/client";
-import { getCustomFieldDefinitions, createCustomFieldDefinition } from "@/lib/api";
+import { getCustomFieldDefinitions, createCustomFieldDefinition } from "@/pages/settings/api";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
