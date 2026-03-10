@@ -152,25 +152,41 @@ const ClientDetailPage = () => {
 								</Button>
 							</div>
 						</CardHeader>
-						<CardContent className="space-y-3">
-							{properties.length === 0 && (
+						<CardContent>
+							{properties.length === 0 ? (
 								<p className="text-sm text-muted-foreground">No properties</p>
-							)}
-							{properties.map((prop) => (
-								<div key={prop.id} className="text-sm space-y-0.5">
-									{prop.street1 && <p>{prop.street1}</p>}
-									{prop.street2 && <p>{prop.street2}</p>}
-									{prop.city && <p>{prop.city}</p>}
-									{prop.state && <p>{prop.state}</p>}
-									{prop.zip && <p>{prop.zip}</p>}
-								</div>
-							))}
-							{totalProperties > properties.length && (
-								<div className="pt-3 text-center">
-									<Button variant="link" size="sm" className="text-xs">
-										View all {totalProperties} properties
-									</Button>
-								</div>
+							) : (
+								<>
+									<Table>
+										<TableHeader>
+											<TableRow>
+												<TableHead className="text-xs">Address</TableHead>
+												<TableHead className="text-xs">City</TableHead>
+												<TableHead className="text-xs">State</TableHead>
+												<TableHead className="text-xs">ZIP</TableHead>
+											</TableRow>
+										</TableHeader>
+										<TableBody>
+											{properties.map((prop) => (
+												<TableRow key={prop.id}>
+													<TableCell className="text-xs">
+														{[prop.street1, prop.street2].filter(Boolean).join(", ") || "—"}
+													</TableCell>
+													<TableCell className="text-xs">{prop.city ?? "—"}</TableCell>
+													<TableCell className="text-xs">{prop.state ?? "—"}</TableCell>
+													<TableCell className="text-xs">{prop.zip ?? "—"}</TableCell>
+												</TableRow>
+											))}
+										</TableBody>
+									</Table>
+									{totalProperties > properties.length && (
+										<div className="pt-3 text-center">
+											<Button variant="link" size="sm" className="text-xs">
+												View all {totalProperties} properties
+											</Button>
+										</div>
+									)}
+								</>
 							)}
 						</CardContent>
 					</Card>
