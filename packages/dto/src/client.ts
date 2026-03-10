@@ -64,6 +64,7 @@ export interface ClientDetailDTO extends ClientDTO {
 			totalPages: number;
 		};
 	};
+	notes: import("./client-note").ClientNoteDTO[];
 }
 
 export interface ClientDTO {

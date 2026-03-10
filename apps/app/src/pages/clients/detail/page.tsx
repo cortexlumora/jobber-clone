@@ -409,7 +409,7 @@ const ClientDetailPage = () => {
 					</Card>
 
 					{/* Internal Notes */}
-					<InternalNotesCard clientId={id!} />
+					<InternalNotesCard clientId={id!} initialNotes={client.notes} />
 				</div>
 			</div>
 		</div>

@@ -2,6 +2,7 @@ import db, { clientsSchema, clientContactsSchema, propertiesSchema } from "@repo
 import type { CreateClientForm } from "@repo/zod/client";
 import { and, eq, ilike, isNull, or, sql, type SQL } from "drizzle-orm";
 import { getClientContacts } from "./client-contact-service";
+import { getClientNotes } from "./client-note-service";
 
 export async function createClient(userId: string, data: CreateClientForm) {
 	const { additionalContacts, properties, ...clientData } = data;
@@ -63,18 +64,19 @@ export async function getClientsByUser(userId: string) {
 }
 
 export async function getClientById(clientId: string) {
-	const [[client], contactsResult, propertiesResult] = await Promise.all([
+	const [[client], contactsResult, propertiesResult, notes] = await Promise.all([
 		db
 			.select()
 			.from(clientsSchema)
 			.where(and(eq(clientsSchema.id, clientId), isNull(clientsSchema.deletedAt))),
 		getClientContacts(clientId, { page: 1, limit: 10, search: "" }),
 		getClientProperties(clientId, { page: 1, limit: 10, search: "" }),
+		getClientNotes(clientId),
 	]);
 
 	if (!client) return null;
 
-	return { ...client, additionalContacts: contactsResult, propertyDetails: propertiesResult };
+	return { ...client, additionalContacts: contactsResult, propertyDetails: propertiesResult, notes };
 }
 
 export async function getClientProperties(clientId: string, pagination: { page: number; limit: number; search: string }) {

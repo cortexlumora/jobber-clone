@@ -323,15 +323,17 @@ const EditNote = ({ note, clientId, onClose, onTogglePin }: EditNoteProps) => {
 // ── Main Card ───────────────────────────────────────────────────────
 interface InternalNotesCardProps {
 	clientId: string;
+	initialNotes?: ClientNoteDTO[];
 }
 
-const InternalNotesCard = ({ clientId }: InternalNotesCardProps) => {
+const InternalNotesCard = ({ clientId, initialNotes }: InternalNotesCardProps) => {
 	const queryClient = useQueryClient();
 	const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
 	const { data: notes = [] } = useQuery({
 		queryKey: ["client-notes", clientId],
 		queryFn: () => getClientNotes(clientId),
+		initialData: initialNotes,
 	});
 
 	const pinMutation = useMutation({
