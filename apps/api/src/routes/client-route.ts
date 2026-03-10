@@ -61,11 +61,12 @@ const clientRoute = new Hono()
 		const client = await updateClient(clientId, data);
 		return c.json<APIResponse<ClientDTO>>({ data: client });
 	})
-	.get("/:id/properties", async (c) => {
+	.get("/:id/properties", zValidator("query", paginationSchema), async (c) => {
 		const clientId = c.req.param("id");
+		const pagination = c.req.valid("query");
 
-		const properties = await getClientProperties(clientId);
-		return c.json<APIResponse<PropertyDTO[]>>({ data: properties });
+		const result = await getClientProperties(clientId, pagination);
+		return c.json<PaginatedResponse<PropertyDTO>>(result);
 	})
 	.patch("/:id/archive", async (c) => {
 		const clientId = c.req.param("id");

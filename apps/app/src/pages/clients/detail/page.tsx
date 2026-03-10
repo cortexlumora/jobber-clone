@@ -2,7 +2,6 @@ import { useParams, useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
 	getClientById,
-	getClientProperties,
 	archiveClient,
 	deleteClient,
 } from "../api";
@@ -54,11 +53,8 @@ const ClientDetailPage = () => {
 		enabled: !!id,
 	});
 
-	const { data: properties = [] } = useQuery({
-		queryKey: ["client-properties", id],
-		queryFn: () => getClientProperties(id!),
-		enabled: !!id,
-	});
+	const properties = client?.propertyDetails?.data ?? [];
+	const totalProperties = client?.propertyDetails?.pagination?.total ?? 0;
 
 	const contacts = client?.additionalContacts?.data ?? [];
 	const totalContacts = client?.additionalContacts?.pagination?.total ?? 0;
@@ -147,7 +143,9 @@ const ClientDetailPage = () => {
 					<Card>
 						<CardHeader className="pb-3">
 							<div className="flex items-center justify-between">
-								<CardTitle className="text-sm font-semibold">Properties</CardTitle>
+								<CardTitle className="text-sm font-semibold">
+								Properties{totalProperties > 0 && ` (${totalProperties})`}
+							</CardTitle>
 								<Button variant="ghost" size="sm" className="h-7 text-xs">
 									<Plus className="h-3 w-3 mr-1" />
 									New Property
@@ -167,6 +165,13 @@ const ClientDetailPage = () => {
 									{prop.zip && <p>{prop.zip}</p>}
 								</div>
 							))}
+							{totalProperties > properties.length && (
+								<div className="pt-3 text-center">
+									<Button variant="link" size="sm" className="text-xs">
+										View all {totalProperties} properties
+									</Button>
+								</div>
+							)}
 						</CardContent>
 					</Card>
 

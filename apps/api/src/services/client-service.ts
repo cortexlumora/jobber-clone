@@ -1,6 +1,6 @@
 import db, { clientsSchema, clientContactsSchema, propertiesSchema } from "@repo/db";
 import type { CreateClientForm } from "@repo/zod/client";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, ilike, isNull, or, sql, type SQL } from "drizzle-orm";
 import { getClientContacts } from "./client-contact-service";
 
 export async function createClient(userId: string, data: CreateClientForm) {
@@ -63,24 +63,52 @@ export async function getClientsByUser(userId: string) {
 }
 
 export async function getClientById(clientId: string) {
-	const [[client], contactsResult] = await Promise.all([
+	const [[client], contactsResult, propertiesResult] = await Promise.all([
 		db
 			.select()
 			.from(clientsSchema)
 			.where(and(eq(clientsSchema.id, clientId), isNull(clientsSchema.deletedAt))),
 		getClientContacts(clientId, { page: 1, limit: 10, search: "" }),
+		getClientProperties(clientId, { page: 1, limit: 10, search: "" }),
 	]);
 
 	if (!client) return null;
 
-	return { ...client, additionalContacts: contactsResult };
+	return { ...client, additionalContacts: contactsResult, propertyDetails: propertiesResult };
 }
 
-export async function getClientProperties(clientId: string) {
-	return db
-		.select()
-		.from(propertiesSchema)
-		.where(eq(propertiesSchema.clientId, clientId));
+export async function getClientProperties(clientId: string, pagination: { page: number; limit: number; search: string }) {
+	const { page, limit, search } = pagination;
+	const offset = (page - 1) * limit;
+
+	const conditions: SQL[] = [eq(propertiesSchema.clientId, clientId)];
+	if (search) {
+		conditions.push(
+			or(
+				ilike(propertiesSchema.street1, `%${search}%`),
+				ilike(propertiesSchema.city, `%${search}%`),
+				ilike(propertiesSchema.state, `%${search}%`),
+				ilike(propertiesSchema.zip, `%${search}%`),
+			)!,
+		);
+	}
+
+	const where = and(...conditions);
+
+	const [data, [{ count }]] = await Promise.all([
+		db.select().from(propertiesSchema).where(where).limit(limit).offset(offset).orderBy(propertiesSchema.createdAt),
+		db.select({ count: sql<number>`count(*)` }).from(propertiesSchema).where(where),
+	]);
+
+	return {
+		data,
+		pagination: {
+			page,
+			limit,
+			total: Number(count),
+			totalPages: Math.ceil(Number(count) / limit),
+		},
+	};
 }
 
 export async function getClientStats(userId: string) {

@@ -30,9 +30,11 @@ export async function updateClient(id: string, data: CreateClientForm) {
 	return res.data.data;
 }
 
-export async function getClientProperties(id: string) {
-	const res = await http.get<APIResponse<PropertyDTO[]>>(`/api/v1/clients/${id}/properties`);
-	return res.data.data;
+export async function getClientProperties(id: string, page = 1, limit = 20) {
+	const res = await http.get<PaginatedResponse<PropertyDTO>>(`/api/v1/clients/${id}/properties`, {
+		params: { page, limit },
+	});
+	return res.data;
 }
 
 export async function archiveClient(id: string) {

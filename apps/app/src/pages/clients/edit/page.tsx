@@ -17,11 +17,12 @@ const EditClientPage = () => {
 		enabled: !!id,
 	});
 
-	const { data: properties = [], isLoading: propsLoading } = useQuery({
+	const { data: propertiesResult, isLoading: propsLoading } = useQuery({
 		queryKey: ["client-properties", id],
-		queryFn: () => getClientProperties(id!),
+		queryFn: () => getClientProperties(id!, 1, 100),
 		enabled: !!id,
 	});
+	const properties = propertiesResult?.data ?? [];
 
 	const { data: contactsResult, isLoading: contactsLoading } = useQuery({
 		queryKey: ["client-contacts", id],

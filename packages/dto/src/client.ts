@@ -55,6 +55,15 @@ export interface ClientDetailDTO extends ClientDTO {
 			totalPages: number;
 		};
 	};
+	propertyDetails: {
+		data: PropertyDTO[];
+		pagination: {
+			page: number;
+			limit: number;
+			total: number;
+			totalPages: number;
+		};
+	};
 }
 
 export interface ClientDTO {

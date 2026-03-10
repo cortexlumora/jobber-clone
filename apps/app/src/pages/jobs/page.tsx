@@ -89,8 +89,8 @@ const JobsPage = () => {
 			const map = new Map<string, PropertyDTO[]>();
 			await Promise.all(
 				clientIds.map(async (clientId) => {
-					const props = await getClientProperties(clientId);
-					map.set(clientId, props);
+					const result = await getClientProperties(clientId, 1, 100);
+					map.set(clientId, result.data);
 				}),
 			);
 			return map;
