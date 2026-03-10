@@ -1,4 +1,4 @@
-import type { APIResponse, ClientDTO, ClientStatsDTO, ClientContactDTO, ClientNoteDTO, PaginatedResponse, PropertyDTO } from "@repo/dto";
+import type { APIResponse, ClientDTO, ClientDetailDTO, ClientStatsDTO, ClientContactDTO, ClientNoteDTO, PaginatedResponse, PropertyDTO } from "@repo/dto";
 import type { CreateClientForm } from "@repo/zod/client";
 import type { CreateClientContactForm } from "@repo/zod/client-contact";
 import type { CreateClientNoteForm, UpdateClientNoteForm } from "@repo/zod/client-note";
@@ -16,7 +16,7 @@ export async function getClients() {
 }
 
 export async function getClientById(id: string) {
-	const res = await http.get<APIResponse<ClientDTO>>(`/api/v1/clients/${id}`);
+	const res = await http.get<APIResponse<ClientDetailDTO | null>>(`/api/v1/clients/${id}`);
 	return res.data.data;
 }
 

@@ -45,6 +45,16 @@ export interface ClientStatsDTO {
 	totalNewClients: number;
 }
 
+export interface ClientDetailDTO extends ClientDTO {
+	data: import("./client-contact").ClientContactDTO[];
+	pagination: {
+		page: number;
+		limit: number;
+		total: number;
+		totalPages: number;
+	};
+}
+
 export interface ClientDTO {
 	id: string;
 	userId: string;

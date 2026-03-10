@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
 	getClientById,
 	getClientProperties,
-	getClientContacts,
 	archiveClient,
 	deleteClient,
 } from "../api";
@@ -61,12 +60,8 @@ const ClientDetailPage = () => {
 		enabled: !!id,
 	});
 
-	const { data: contactsResult } = useQuery({
-		queryKey: ["client-contacts", id],
-		queryFn: () => getClientContacts(id!),
-		enabled: !!id,
-	});
-	const contacts = contactsResult?.data ?? [];
+	const contacts = client?.data ?? [];
+	const totalContacts = client?.pagination?.total ?? 0;
 
 	const { data: customFields = [] } = useQuery({
 		queryKey: ["custom-field-definitions", "client"],
@@ -178,35 +173,52 @@ const ClientDetailPage = () => {
 					{/* Contacts */}
 					<Card>
 						<CardHeader className="pb-3">
-							<CardTitle className="text-sm font-semibold">Contacts</CardTitle>
+							<div className="flex items-center justify-between">
+								<CardTitle className="text-sm font-semibold">
+									Contacts{totalContacts > 0 && ` (${totalContacts})`}
+								</CardTitle>
+								<Button variant="ghost" size="sm" className="h-7 text-xs">
+									<Plus className="h-3 w-3 mr-1" />
+									New Contact
+								</Button>
+							</div>
 						</CardHeader>
 						<CardContent>
 							{contacts.length === 0 ? (
 								<p className="text-sm text-muted-foreground">No contacts found</p>
 							) : (
-								<Table>
-									<TableHeader>
-										<TableRow>
-											<TableHead className="text-xs">Name</TableHead>
-											<TableHead className="text-xs">Role</TableHead>
-											<TableHead className="text-xs">Phone</TableHead>
-											<TableHead className="text-xs">Email</TableHead>
-										</TableRow>
-									</TableHeader>
-									<TableBody>
-										{contacts.map((contact) => (
-											<TableRow key={contact.id}>
-												<TableCell className="text-xs">
-													{contact.title !== "none" ? `${contact.title} ` : ""}
-													{contact.firstName} {contact.lastName}
-												</TableCell>
-												<TableCell className="text-xs">{contact.role ?? "—"}</TableCell>
-												<TableCell className="text-xs">{contact.phone ?? "—"}</TableCell>
-												<TableCell className="text-xs">{contact.email ?? "—"}</TableCell>
+								<>
+									<Table>
+										<TableHeader>
+											<TableRow>
+												<TableHead className="text-xs">Name</TableHead>
+												<TableHead className="text-xs">Role</TableHead>
+												<TableHead className="text-xs">Phone</TableHead>
+												<TableHead className="text-xs">Email</TableHead>
 											</TableRow>
-										))}
-									</TableBody>
-								</Table>
+										</TableHeader>
+										<TableBody>
+											{contacts.map((contact) => (
+												<TableRow key={contact.id}>
+													<TableCell className="text-xs">
+														{contact.title !== "none" ? `${contact.title} ` : ""}
+														{contact.firstName} {contact.lastName}
+													</TableCell>
+													<TableCell className="text-xs">{contact.role ?? "—"}</TableCell>
+													<TableCell className="text-xs">{contact.phone ?? "—"}</TableCell>
+													<TableCell className="text-xs">{contact.email ?? "—"}</TableCell>
+												</TableRow>
+											))}
+										</TableBody>
+									</Table>
+									{totalContacts > contacts.length && (
+										<div className="pt-3 text-center">
+											<Button variant="link" size="sm" className="text-xs">
+												View all {totalContacts} contacts
+											</Button>
+										</div>
+									)}
+								</>
 							)}
 						</CardContent>
 					</Card>

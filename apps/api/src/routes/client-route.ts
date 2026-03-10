@@ -3,7 +3,7 @@ import { createClientSchema } from "@repo/zod/client";
 import { createClientContactSchema } from "@repo/zod/client-contact";
 import { createClientNoteSchema, updateClientNoteSchema } from "@repo/zod/client-note";
 import { paginationSchema } from "@repo/zod/pagination";
-import type { APIResponse, ClientContactDTO, ClientDTO, ClientNoteDTO, ClientStatsDTO, PaginatedResponse, PropertyDTO } from "@repo/dto";
+import type { APIResponse, ClientContactDTO, ClientDTO, ClientDetailDTO, ClientNoteDTO, ClientStatsDTO, PaginatedResponse, PropertyDTO } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
@@ -52,7 +52,7 @@ const clientRoute = new Hono()
 		const clientId = c.req.param("id");
 
 		const client = await getClientById(clientId);
-		return c.json<APIResponse<ClientDTO | null>>({ data: client ?? null });
+		return c.json<APIResponse<ClientDetailDTO | null>>({ data: client });
 	})
 	.put("/:id", zValidator("json", createClientSchema), async (c) => {
 		const clientId = c.req.param("id");
