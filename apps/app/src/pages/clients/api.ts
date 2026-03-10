@@ -1,4 +1,4 @@
-import type { APIResponse, ClientDTO, ClientStatsDTO, ClientContactDTO, ClientNoteDTO, PropertyDTO } from "@repo/dto";
+import type { APIResponse, ClientDTO, ClientStatsDTO, ClientContactDTO, ClientNoteDTO, PaginatedResponse, PropertyDTO } from "@repo/dto";
 import type { CreateClientForm } from "@repo/zod/client";
 import type { CreateClientContactForm } from "@repo/zod/client-contact";
 import type { CreateClientNoteForm, UpdateClientNoteForm } from "@repo/zod/client-note";
@@ -46,9 +46,11 @@ export async function deleteClient(id: string) {
 }
 
 // Client Contacts
-export async function getClientContacts(clientId: string) {
-	const res = await http.get<APIResponse<ClientContactDTO[]>>(`/api/v1/clients/${clientId}/contacts`);
-	return res.data.data;
+export async function getClientContacts(clientId: string, page = 1, limit = 20) {
+	const res = await http.get<PaginatedResponse<ClientContactDTO>>(`/api/v1/clients/${clientId}/contacts`, {
+		params: { page, limit },
+	});
+	return res.data;
 }
 
 export async function createClientContact(clientId: string, data: CreateClientContactForm) {

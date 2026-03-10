@@ -2,7 +2,8 @@ import { zValidator } from "@hono/zod-validator";
 import { createClientSchema } from "@repo/zod/client";
 import { createClientContactSchema } from "@repo/zod/client-contact";
 import { createClientNoteSchema, updateClientNoteSchema } from "@repo/zod/client-note";
-import type { APIResponse, ClientContactDTO, ClientDTO, ClientNoteDTO, ClientStatsDTO, PropertyDTO } from "@repo/dto";
+import { paginationSchema } from "@repo/zod/pagination";
+import type { APIResponse, ClientContactDTO, ClientDTO, ClientNoteDTO, ClientStatsDTO, PaginatedResponse, PropertyDTO } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
@@ -79,10 +80,11 @@ const clientRoute = new Hono()
 		return c.json<APIResponse<ClientDTO>>({ data: client });
 	})
 	// Contacts
-	.get("/:id/contacts", async (c) => {
+	.get("/:id/contacts", zValidator("query", paginationSchema), async (c) => {
 		const clientId = c.req.param("id");
-		const contacts = await getClientContacts(clientId);
-		return c.json<APIResponse<ClientContactDTO[]>>({ data: contacts });
+		const pagination = c.req.valid("query");
+		const result = await getClientContacts(clientId, pagination);
+		return c.json<PaginatedResponse<ClientContactDTO>>(result);
 	})
 	.post("/:id/contacts", zValidator("json", createClientContactSchema), async (c) => {
 		const clientId = c.req.param("id");

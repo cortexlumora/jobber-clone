@@ -61,11 +61,12 @@ const ClientDetailPage = () => {
 		enabled: !!id,
 	});
 
-	const { data: contacts = [] } = useQuery({
+	const { data: contactsResult } = useQuery({
 		queryKey: ["client-contacts", id],
 		queryFn: () => getClientContacts(id!),
 		enabled: !!id,
 	});
+	const contacts = contactsResult?.data ?? [];
 
 	const { data: customFields = [] } = useQuery({
 		queryKey: ["custom-field-definitions", "client"],

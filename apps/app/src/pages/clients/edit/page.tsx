@@ -23,11 +23,12 @@ const EditClientPage = () => {
 		enabled: !!id,
 	});
 
-	const { data: contacts = [], isLoading: contactsLoading } = useQuery({
+	const { data: contactsResult, isLoading: contactsLoading } = useQuery({
 		queryKey: ["client-contacts", id],
 		queryFn: () => getClientContacts(id!),
 		enabled: !!id,
 	});
+	const contacts = contactsResult?.data ?? [];
 
 	const mutation = useMutation({
 		mutationFn: (data: CreateClientForm) => updateClient(id!, data),
