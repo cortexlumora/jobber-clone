@@ -46,7 +46,6 @@ const ClientDetailPage = () => {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-
 	const { data: client, isLoading } = useQuery({
 		queryKey: ["client", id],
 		queryFn: () => getClientById(id!),
@@ -142,15 +141,9 @@ const ClientDetailPage = () => {
 					{/* Properties */}
 					<Card>
 						<CardHeader className="pb-3">
-							<div className="flex items-center justify-between">
-								<CardTitle className="text-sm font-semibold">
+							<CardTitle className="text-sm font-semibold">
 								Properties{totalProperties > 0 && ` (${totalProperties})`}
 							</CardTitle>
-								<Button variant="ghost" size="sm" className="h-7 text-xs">
-									<Plus className="h-3 w-3 mr-1" />
-									New Property
-								</Button>
-							</div>
 						</CardHeader>
 						<CardContent>
 							{properties.length === 0 ? (
@@ -194,15 +187,9 @@ const ClientDetailPage = () => {
 					{/* Contacts */}
 					<Card>
 						<CardHeader className="pb-3">
-							<div className="flex items-center justify-between">
-								<CardTitle className="text-sm font-semibold">
-									Contacts{totalContacts > 0 && ` (${totalContacts})`}
-								</CardTitle>
-								<Button variant="ghost" size="sm" className="h-7 text-xs">
-									<Plus className="h-3 w-3 mr-1" />
-									New Contact
-								</Button>
-							</div>
+							<CardTitle className="text-sm font-semibold">
+								Contacts{totalContacts > 0 && ` (${totalContacts})`}
+							</CardTitle>
 						</CardHeader>
 						<CardContent>
 							{contacts.length === 0 ? (
