@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
-import { getClients, presignUpload, uploadFileToS3 } from "@/lib/api";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { getClients, createJob, presignUpload, uploadFileToS3 } from "@/lib/api";
 import { useDropzone } from "react-dropzone";
 import { Plus, X, Upload, Loader2 } from "lucide-react";
 import { StickyFooter } from "@/components/sticky-footer";
@@ -164,6 +164,43 @@ const CreateJobPage = () => {
 			}
 		},
 	});
+
+	const mutation = useMutation({
+		mutationFn: createJob,
+		onSuccess: () => {
+			navigate("/jobs");
+		},
+	});
+
+	const handleSave = () => {
+		mutation.mutate({
+			title,
+			clientId,
+			jobNumber: jobNumber || undefined,
+			salesperson: salesperson || undefined,
+			jobType,
+			startDate: startDate || undefined,
+			startTime: startTime || undefined,
+			endTime: endTime || undefined,
+			repeats: jobType === "recurring" ? repeats : undefined,
+			repeatDays: jobType === "recurring" ? repeatDays : undefined,
+			endsType: jobType === "recurring" ? endsType : undefined,
+			endsAfterVisits: jobType === "recurring" && endsType === "after" ? Number(endsAfterVisits) || undefined : undefined,
+			endsOnDate: jobType === "recurring" && endsType === "on" ? endsOnDate || undefined : undefined,
+			visitInstructions: visitInstructions || undefined,
+			billingType: jobType === "recurring" ? billingType : undefined,
+			invoiceFrequency: jobType === "recurring" ? invoiceFrequency : undefined,
+			lineItems: lineItems.map((item) => ({
+				name: item.name,
+				description: item.description || undefined,
+				qty: item.qty,
+				unitCost: item.unitCost,
+				unitPrice: item.unitPrice,
+			})),
+			notes: notes || undefined,
+			noteFileIds: noteFiles.map((f) => f.fileId),
+		});
+	};
 
 	const formatDisplayDate = (dateStr: string) => {
 		if (!dateStr) return "";
@@ -727,8 +764,8 @@ const CreateJobPage = () => {
 					</Button>
 				}
 				right={
-					<Button>
-						Save Job
+					<Button onClick={handleSave} disabled={mutation.isPending}>
+						{mutation.isPending ? "Saving..." : "Save Job"}
 					</Button>
 				}
 			/>
