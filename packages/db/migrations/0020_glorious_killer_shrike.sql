@@ -1,0 +1,1 @@
+ALTER TABLE "client_notes" ADD COLUMN "is_pinned" boolean DEFAULT false NOT NULL;

@@ -3,7 +3,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import db, { clientNotesSchema, clientNoteFilesSchema, filesSchema, usersSchema } from "@repo/db";
 import type { CreateClientNoteForm, UpdateClientNoteForm } from "@repo/zod/client-note";
 import type { ClientNoteFileDTO } from "@repo/dto";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, asc } from "drizzle-orm";
 import { s3, S3_BUCKET } from "../lib/s3";
 
 async function getPresignedFiles(noteId: string): Promise<ClientNoteFileDTO[]> {
@@ -73,6 +73,7 @@ export async function getClientNotes(clientId: string) {
 			createdById: clientNotesSchema.createdById,
 			createdByName: usersSchema.name,
 			content: clientNotesSchema.content,
+			isPinned: clientNotesSchema.isPinned,
 			relatedToRequests: clientNotesSchema.relatedToRequests,
 			relatedToQuotes: clientNotesSchema.relatedToQuotes,
 			relatedToJobs: clientNotesSchema.relatedToJobs,
@@ -83,7 +84,7 @@ export async function getClientNotes(clientId: string) {
 		.from(clientNotesSchema)
 		.innerJoin(usersSchema, eq(clientNotesSchema.createdById, usersSchema.id))
 		.where(eq(clientNotesSchema.clientId, clientId))
-		.orderBy(desc(clientNotesSchema.createdAt));
+		.orderBy(desc(clientNotesSchema.isPinned), desc(clientNotesSchema.createdAt));
 
 	return Promise.all(
 		notes.map(async (note) => {
@@ -129,6 +130,23 @@ export async function updateClientNote(noteId: string, data: UpdateClientNoteFor
 		createdByAvatar: null as string | null,
 		files,
 	};
+}
+
+export async function togglePinNote(noteId: string) {
+	const [existing] = await db
+		.select({ isPinned: clientNotesSchema.isPinned })
+		.from(clientNotesSchema)
+		.where(eq(clientNotesSchema.id, noteId));
+
+	if (!existing) return null;
+
+	const [updated] = await db
+		.update(clientNotesSchema)
+		.set({ isPinned: !existing.isPinned })
+		.where(eq(clientNotesSchema.id, noteId))
+		.returning();
+
+	return updated;
 }
 
 export async function deleteClientNote(noteId: string) {

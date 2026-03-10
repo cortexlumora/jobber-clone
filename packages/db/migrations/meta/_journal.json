@@ -141,6 +141,13 @@
       "when": 1773143366147,
       "tag": "0019_nifty_chronomancer",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1773145583175,
+      "tag": "0020_glorious_killer_shrike",
+      "breakpoints": true
     }
   ]
 }

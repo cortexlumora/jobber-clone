@@ -5,17 +5,17 @@ import {
 	getClientNotes,
 	createClientNote,
 	updateClientNote,
+	togglePinNote,
 	deleteClientNote,
 	presignUpload,
 	uploadFileToS3,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { FileText, Trash2, X } from "lucide-react";
+import { FileText, Pin, X } from "lucide-react";
 
 const RELATED_KEYS = [
 	["relatedToRequests", "Requests"],
@@ -62,15 +62,16 @@ function formatDate(date: Date | string) {
 interface CollapsedNoteProps {
 	note: ClientNoteDTO;
 	onClick: () => void;
+	onTogglePin: () => void;
 }
 
-const CollapsedNote = ({ note, onClick }: CollapsedNoteProps) => {
+const CollapsedNote = ({ note, onClick, onTogglePin }: CollapsedNoteProps) => {
 	const isEdited = new Date(note.updatedAt).getTime() - new Date(note.createdAt).getTime() > 1000;
 	const relatedLabel = getRelatedLabel(note);
 
 	return (
 		<div
-			className="rounded-md border p-3 space-y-1.5 cursor-pointer hover:bg-muted/50 transition-colors"
+			className={`rounded-md border p-3 space-y-1.5 cursor-pointer hover:bg-muted/50 transition-colors ${note.isPinned ? "border-primary/30 bg-primary/5" : ""}`}
 			onClick={onClick}
 		>
 			<div className="flex items-center gap-2">
@@ -78,13 +79,25 @@ const CollapsedNote = ({ note, onClick }: CollapsedNoteProps) => {
 					{note.createdByAvatar && <AvatarImage src={note.createdByAvatar} alt={note.createdByName} />}
 					<AvatarFallback>{getInitials(note.createdByName)}</AvatarFallback>
 				</Avatar>
-				<div>
+				<div className="flex-1 min-w-0">
 					<p className="text-xs font-medium leading-none">{note.createdByName}</p>
 					<p className="text-[11px] text-muted-foreground">
 						Created: {formatDate(note.createdAt)}
 						{isEdited && " · Edited"}
 					</p>
 				</div>
+				<Button
+					variant="ghost"
+					size="icon"
+					className="h-7 w-7 shrink-0"
+					onClick={(e) => {
+						e.stopPropagation();
+						onTogglePin();
+					}}
+					title={note.isPinned ? "Unpin note" : "Pin note"}
+				>
+					<Pin className={`h-3.5 w-3.5 ${note.isPinned ? "text-primary fill-primary" : "text-muted-foreground"}`} />
+				</Button>
 			</div>
 			<p className="text-sm">{note.content}</p>
 			{relatedLabel && (
@@ -99,9 +112,10 @@ interface EditNoteProps {
 	note: ClientNoteDTO;
 	clientId: string;
 	onClose: () => void;
+	onTogglePin: () => void;
 }
 
-const EditNote = ({ note, clientId, onClose }: EditNoteProps) => {
+const EditNote = ({ note, clientId, onClose, onTogglePin }: EditNoteProps) => {
 	const queryClient = useQueryClient();
 	const [content, setContent] = useState(note.content);
 	const [existingFiles, setExistingFiles] = useState<ClientNoteFileDTO[]>(note.files);
@@ -164,20 +178,29 @@ const EditNote = ({ note, clientId, onClose }: EditNoteProps) => {
 	const isEdited = new Date(note.updatedAt).getTime() - new Date(note.createdAt).getTime() > 1000;
 
 	return (
-		<div className="rounded-md border p-3 space-y-3">
+		<div className={`rounded-md border p-3 space-y-3 ${note.isPinned ? "border-primary/30 bg-primary/5" : ""}`}>
 			{/* Header */}
 			<div className="flex items-center gap-2">
 				<Avatar size="sm">
 					{note.createdByAvatar && <AvatarImage src={note.createdByAvatar} alt={note.createdByName} />}
 					<AvatarFallback>{getInitials(note.createdByName)}</AvatarFallback>
 				</Avatar>
-				<div>
+				<div className="flex-1 min-w-0">
 					<p className="text-xs font-medium leading-none">{note.createdByName}</p>
 					<p className="text-[11px] text-muted-foreground">
 						Created: {formatDate(note.createdAt)}
 						{isEdited && " · Edited"}
 					</p>
 				</div>
+				<Button
+					variant="ghost"
+					size="icon"
+					className="h-7 w-7 shrink-0"
+					onClick={onTogglePin}
+					title={note.isPinned ? "Unpin note" : "Pin note"}
+				>
+					<Pin className={`h-3.5 w-3.5 ${note.isPinned ? "text-primary fill-primary" : "text-muted-foreground"}`} />
+				</Button>
 			</div>
 
 			{/* Content */}
@@ -312,6 +335,13 @@ const InternalNotesCard = ({ clientId }: InternalNotesCardProps) => {
 		queryFn: () => getClientNotes(clientId),
 	});
 
+	const pinMutation = useMutation({
+		mutationFn: (noteId: string) => togglePinNote(clientId, noteId),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["client-notes", clientId] });
+		},
+	});
+
 	// Create note state
 	const [noteContent, setNoteContent] = useState("");
 	const [noteFiles, setNoteFiles] = useState<File[]>([]);
@@ -432,12 +462,14 @@ const InternalNotesCard = ({ clientId }: InternalNotesCardProps) => {
 									note={note}
 									clientId={clientId}
 									onClose={() => setEditingNoteId(null)}
+									onTogglePin={() => pinMutation.mutate(note.id)}
 								/>
 							) : (
 								<CollapsedNote
 									key={note.id}
 									note={note}
 									onClick={() => setEditingNoteId(note.id)}
+									onTogglePin={() => pinMutation.mutate(note.id)}
 								/>
 							),
 						)}

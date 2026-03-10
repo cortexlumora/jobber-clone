@@ -7,6 +7,7 @@ const clientNotesSchema = pgTable("client_notes", {
 	clientId: uuid("client_id").notNull().references(() => clientsSchema.id, { onDelete: "cascade" }),
 	createdById: uuid("created_by_id").notNull().references(() => usersSchema.id, { onDelete: "cascade" }),
 	content: text("content").notNull(),
+	isPinned: boolean("is_pinned").notNull().default(false),
 	relatedToRequests: boolean("related_to_requests").notNull().default(false),
 	relatedToQuotes: boolean("related_to_quotes").notNull().default(false),
 	relatedToJobs: boolean("related_to_jobs").notNull().default(false),

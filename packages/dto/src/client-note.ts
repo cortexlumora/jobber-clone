@@ -12,6 +12,7 @@ export interface ClientNoteDTO {
 	createdByName: string;
 	createdByAvatar: string | null;
 	content: string;
+	isPinned: boolean;
 	relatedToRequests: boolean;
 	relatedToQuotes: boolean;
 	relatedToJobs: boolean;

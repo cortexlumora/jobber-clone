@@ -18,6 +18,7 @@ import {
 	createClientNote,
 	getClientNotes,
 	updateClientNote,
+	togglePinNote,
 	deleteClientNote,
 } from "../services/client-note-service";
 
@@ -95,6 +96,15 @@ const clientRoute = new Hono()
 			return c.json<APIResponse<null>>({ data: null });
 		}
 		return c.json<APIResponse<ClientNoteDTO>>({ data: note });
+	})
+	.patch("/:id/notes/:noteId/pin", async (c) => {
+		const noteId = c.req.param("noteId");
+
+		const note = await togglePinNote(noteId);
+		if (!note) {
+			return c.json<APIResponse<null>>({ data: null });
+		}
+		return c.json<APIResponse<{ isPinned: boolean }>>({ data: { isPinned: note.isPinned } });
 	})
 	.delete("/:id/notes/:noteId", async (c) => {
 		const noteId = c.req.param("noteId");

@@ -187,6 +187,11 @@ export async function updateClientNote(clientId: string, noteId: string, data: U
 	return res.data.data;
 }
 
+export async function togglePinNote(clientId: string, noteId: string) {
+	const res = await http.patch<APIResponse<{ isPinned: boolean }>>(`/api/v1/clients/${clientId}/notes/${noteId}/pin`);
+	return res.data.data;
+}
+
 export async function deleteClientNote(clientId: string, noteId: string) {
 	const res = await http.delete<APIResponse<ClientNoteDTO>>(`/api/v1/clients/${clientId}/notes/${noteId}`);
 	return res.data.data;
