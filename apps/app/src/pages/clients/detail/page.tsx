@@ -221,7 +221,7 @@ const ClientDetailPage = () => {
 									</Table>
 									{totalContacts > contacts.length && (
 										<div className="pt-3 text-center">
-											<Button variant="link" size="sm" className="text-xs">
+											<Button variant="link" size="sm" className="text-xs" onClick={() => navigate(`/clients/${id}/contacts`)}>
 												View all {totalContacts} contacts
 											</Button>
 										</div>

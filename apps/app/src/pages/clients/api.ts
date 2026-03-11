@@ -48,9 +48,9 @@ export async function deleteClient(id: string) {
 }
 
 // Client Contacts
-export async function getClientContacts(clientId: string, page = 1, limit = 20) {
+export async function getClientContacts(clientId: string, page = 1, limit = 20, search = "") {
 	const res = await http.get<PaginatedResponse<ClientContactDTO>>(`/api/v1/clients/${clientId}/contacts`, {
-		params: { page, limit },
+		params: { page, limit, search },
 	});
 	return res.data;
 }
