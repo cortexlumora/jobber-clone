@@ -471,7 +471,7 @@ const FormDetailPage = () => {
 	};
 
 	return (
-		<div className="min-h-screen flex flex-col">
+		<div className="h-screen flex flex-col overflow-hidden">
 			{/* Header bar */}
 			<header className="h-14 border-b flex items-center justify-between px-4 shrink-0">
 				<div className="flex items-center gap-3">
@@ -542,14 +542,17 @@ const FormDetailPage = () => {
 					</div>
 
 					{/* Right card */}
-					<div className="w-[30%] shrink-0 rounded-lg border bg-card p-6 overflow-y-auto">
-						<h2 className="text-lg font-semibold mb-4">Manage form</h2>
-						<Tabs defaultValue="questions">
-							<TabsList className="w-full mb-4">
-								<TabsTrigger value="questions" className="flex-1">Add Questions</TabsTrigger>
-								<TabsTrigger value="settings" className="flex-1">Settings</TabsTrigger>
-							</TabsList>
-							<TabsContent value="questions" className="space-y-6 overflow-y-auto max-h-[calc(100vh-14rem)]">
+					<div className="w-[30%] shrink-0 rounded-lg border bg-card flex flex-col overflow-hidden">
+						<Tabs defaultValue="questions" className="flex flex-col flex-1 overflow-hidden">
+							<div className="p-6 pb-0 shrink-0">
+								<h2 className="text-lg font-semibold mb-4">Manage form</h2>
+								<TabsList className="w-full mb-4">
+									<TabsTrigger value="questions" className="flex-1">Add Questions</TabsTrigger>
+									<TabsTrigger value="settings" className="flex-1">Settings</TabsTrigger>
+								</TabsList>
+							</div>
+							<div className="flex-1 overflow-y-auto px-6 pb-6">
+								<TabsContent value="questions" className="space-y-6 mt-0">
 								{SIDEBAR_ITEMS.map((group) => (
 									<div key={group.category} className="space-y-2">
 										<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -570,17 +573,18 @@ const FormDetailPage = () => {
 										</div>
 									</div>
 								))}
-							</TabsContent>
-							<TabsContent value="settings" className="space-y-4">
-								<div className="space-y-2">
-									<Label htmlFor="formTitle">Form title</Label>
-									<Input id="formTitle" placeholder="Enter form title" defaultValue={form?.name ?? ""} />
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="formDesc">Form description</Label>
-									<Textarea id="formDesc" placeholder="Enter form description" defaultValue={form?.description ?? ""} />
-								</div>
-							</TabsContent>
+								</TabsContent>
+								<TabsContent value="settings" className="space-y-4 mt-0">
+									<div className="space-y-2">
+										<Label htmlFor="formTitle">Form title</Label>
+										<Input id="formTitle" placeholder="Enter form title" defaultValue={form?.name ?? ""} />
+									</div>
+									<div className="space-y-2">
+										<Label htmlFor="formDesc">Form description</Label>
+										<Textarea id="formDesc" placeholder="Enter form description" defaultValue={form?.description ?? ""} />
+									</div>
+								</TabsContent>
+							</div>
 						</Tabs>
 					</div>
 				</div>
