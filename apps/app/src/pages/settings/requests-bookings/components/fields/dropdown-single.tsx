@@ -10,7 +10,7 @@ import type { FieldRendererProps } from "./types";
 export function DropdownSingleField(_props: FieldRendererProps) {
 	return (
 		<Select disabled>
-			<SelectTrigger>
+			<SelectTrigger className="w-full">
 				<SelectValue placeholder="Choose an option" />
 			</SelectTrigger>
 			<SelectContent>
