@@ -29,3 +29,4 @@ export { default as clientNoteFilesSchema } from "./client/client-note-files";
 export { default as requestFormsSchema } from "./request-forms";
 export { default as bookableServicesSchema } from "./bookable-services";
 export { default as requestsBookingsSettingsSchema } from "./requests-bookings-settings";
+export { default as productsServicesSchema } from "./products-services";

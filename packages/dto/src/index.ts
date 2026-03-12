@@ -12,3 +12,4 @@ export * from "./client-note";
 export * from "./request-form";
 export * from "./bookable-service";
 export * from "./requests-bookings-settings";
+export * from "./product-service";

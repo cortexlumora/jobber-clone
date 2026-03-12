@@ -169,6 +169,13 @@
       "when": 1773336840325,
       "tag": "0023_fat_captain_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1773346052072,
+      "tag": "0024_blue_otto_octavius",
+      "breakpoints": true
     }
   ]
 }

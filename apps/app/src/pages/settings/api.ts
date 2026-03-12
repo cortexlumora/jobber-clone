@@ -111,3 +111,24 @@ export async function deleteBookableService(id: string) {
 	const res = await http.delete<APIResponse<BookableServiceDTO>>(`/api/v1/requests-bookings/services/${id}`);
 	return res.data.data;
 }
+
+// Products & Services
+export async function getProductsServices(params?: { search?: string; page?: number; limit?: number }) {
+	const searchParams = new URLSearchParams();
+	if (params?.search) searchParams.set("search", params.search);
+	if (params?.page) searchParams.set("page", params.page.toString());
+	if (params?.limit) searchParams.set("limit", params.limit.toString());
+	const query = searchParams.toString();
+	const res = await http.get(`/api/v1/products-services${query ? `?${query}` : ""}`);
+	return res.data;
+}
+
+export async function createProductService(data: any) {
+	const res = await http.post("/api/v1/products-services", data);
+	return res.data.data;
+}
+
+export async function deleteProductService(id: string) {
+	const res = await http.delete(`/api/v1/products-services/${id}`);
+	return res.data.data;
+}

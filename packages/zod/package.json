@@ -18,7 +18,8 @@
 		"./pagination": "./src/pagination.ts",
 		"./request-form": "./src/request-form.ts",
 		"./bookable-service": "./src/bookable-service.ts",
-		"./requests-bookings-settings": "./src/requests-bookings-settings.ts"
+		"./requests-bookings-settings": "./src/requests-bookings-settings.ts",
+		"./product-service": "./src/product-service.ts"
 	},
 	"dependencies": {
 		"zod": "^4.3.6"
