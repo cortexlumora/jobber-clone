@@ -24,6 +24,7 @@ export interface FormField {
 	label: string;
 	required?: boolean;
 	options?: string[];
+	unit?: string;
 }
 
 export interface FieldRendererProps {
