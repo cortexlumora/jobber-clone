@@ -344,7 +344,7 @@ const QuotesPage = () => {
 								});
 
 								return (
-									<TableRow key={quote.id} className="cursor-pointer hover:bg-muted/50">
+									<TableRow key={quote.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/quotes/${quote.id}`)}>
 										<TableCell className="font-medium">
 											{clientName}
 										</TableCell>
