@@ -52,6 +52,7 @@ import {
 	UserSearch,
 	ShoppingCart,
 	Plus,
+	Trash2,
 } from "lucide-react";
 import { getRequestForms } from "../api";
 
@@ -224,11 +225,13 @@ function SortableField({
 	isEditing,
 	onSelect,
 	onUpdate,
+	onDelete,
 }: {
 	field: FormField;
 	isEditing: boolean;
 	onSelect: () => void;
 	onUpdate: (updates: Partial<FormField>) => void;
+	onDelete: () => void;
 }) {
 	const {
 		attributes,
@@ -249,14 +252,24 @@ function SortableField({
 		<div
 			ref={setNodeRef}
 			style={style}
-			className={`flex items-start gap-2 rounded-md p-2 -mx-2 cursor-pointer transition-colors ${isEditing ? "ring-2 ring-primary/30 bg-accent/30" : "hover:bg-accent/20"}`}
+			className={`flex items-start gap-2 rounded-lg p-3 -mx-3 cursor-pointer transition-all ${isEditing ? "ring-2 ring-primary bg-primary/5 shadow-sm" : "hover:bg-accent/20"}`}
 			onClick={(e) => { e.stopPropagation(); onSelect(); }}
 		>
 			<div className="flex-1">
 				<FieldRenderer field={field} isEditing={isEditing} onUpdate={onUpdate} />
 			</div>
-			<div {...listeners} {...attributes} className="cursor-grab mt-8 shrink-0" onClick={(e) => e.stopPropagation()}>
-				<GripVertical className="size-5 text-muted-foreground/50" />
+			<div className="flex flex-col items-center gap-1 mt-8 shrink-0" onClick={(e) => e.stopPropagation()}>
+				<div {...listeners} {...attributes} className="cursor-grab">
+					<GripVertical className="size-5 text-muted-foreground/50" />
+				</div>
+				{isEditing && (
+					<button
+						onClick={onDelete}
+						className="p-1 rounded-md text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+					>
+						<Trash2 className="size-4" />
+					</button>
+				)}
 			</div>
 		</div>
 	);
@@ -360,6 +373,7 @@ function FieldRenderer({
 								value={field.label}
 								onChange={(e) => onUpdate?.({ label: e.target.value })}
 								placeholder="Enter question title"
+								autoFocus
 							/>
 						</div>
 						<Input placeholder="Short answer" disabled />
@@ -585,6 +599,17 @@ const FormDetailPage = () => {
 	const [activeType, setActiveType] = useState<string | null>(null);
 	const [isDraggingFromSidebar, setIsDraggingFromSidebar] = useState(false);
 	const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
+
+	const deleteField = (sectionId: string, fieldId: string) => {
+		setSections((prev) =>
+			prev.map((s) =>
+				s.id === sectionId
+					? { ...s, fields: s.fields.filter((f) => f.id !== fieldId) }
+					: s
+			)
+		);
+		if (editingFieldId === fieldId) setEditingFieldId(null);
+	};
 
 	const updateField = (fieldId: string, updates: Partial<FormField>) => {
 		setSections((prev) =>
@@ -813,6 +838,7 @@ const FormDetailPage = () => {
 														isEditing={editingFieldId === field.id}
 														onSelect={() => setEditingFieldId(field.id)}
 														onUpdate={(updates) => updateField(field.id, updates)}
+													onDelete={() => deleteField(section.id, field.id)}
 													/>
 												))}
 											</SortableContext>
