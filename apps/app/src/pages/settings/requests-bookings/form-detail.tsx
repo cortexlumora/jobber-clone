@@ -84,70 +84,85 @@ const FormDetailPage = () => {
 								</Button>
 							</div>
 
-							<div className="grid grid-cols-2 gap-4">
-								<div className="space-y-2">
-									<Label>First name</Label>
-									<Input placeholder="First name" disabled />
+							{/* First name + Last name (grouped) */}
+							<div className="flex items-start gap-2">
+								<div className="flex-1 grid grid-cols-2 gap-4">
+									<div className="space-y-2">
+										<Label>First name</Label>
+										<Input placeholder="First name" disabled />
+									</div>
+									<div className="space-y-2">
+										<Label>Last name</Label>
+										<Input placeholder="Last name" disabled />
+									</div>
 								</div>
-								<div className="space-y-2">
-									<Label>Last name</Label>
-									<Input placeholder="Last name" disabled />
+								<GripVertical className="size-5 text-muted-foreground/50 cursor-grab mt-8 shrink-0" />
+							</div>
+
+							{/* Company name */}
+							<div className="flex items-start gap-2">
+								<div className="flex-1 space-y-2">
+									<Label>Company name</Label>
+									<Input placeholder="Company name" disabled />
 								</div>
+								<GripVertical className="size-5 text-muted-foreground/50 cursor-grab mt-8 shrink-0" />
 							</div>
 
-							<div className="space-y-2">
-								<Label>Company name</Label>
-								<Input placeholder="Company name" disabled />
+							{/* Email */}
+							<div className="flex items-start gap-2">
+								<div className="flex-1 space-y-2">
+									<Label>Email</Label>
+									<Input type="email" placeholder="Email" disabled />
+								</div>
+								<GripVertical className="size-5 text-muted-foreground/50 cursor-grab mt-8 shrink-0" />
 							</div>
 
-							<div className="space-y-2">
-								<Label>Email</Label>
-								<Input type="email" placeholder="Email" disabled />
-							</div>
-
-							<div className="space-y-2">
-								<Label>Phone</Label>
-								<Input placeholder="(___) ___-____" disabled />
-								<p className="text-xs text-muted-foreground">
-									By providing your phone number, you agree to receive Visit Reminders and other
-									transactional text messages (SMS). You can unsubscribe at anytime by replying STOP.
-									Message and data rates may apply. Message frequency varies. Reply HELP for help or
-									STOP to cancel.
-								</p>
+							{/* Phone */}
+							<div className="flex items-start gap-2">
+								<div className="flex-1 space-y-2">
+									<Label>Phone</Label>
+									<Input placeholder="(___) ___-____" disabled />
+									<p className="text-xs text-muted-foreground">
+										By providing your phone number, you agree to receive Visit Reminders and other
+										transactional text messages (SMS). You can unsubscribe at anytime by replying STOP.
+										Message and data rates may apply. Message frequency varies. Reply HELP for help or
+										STOP to cancel.
+									</p>
+								</div>
+								<GripVertical className="size-5 text-muted-foreground/50 cursor-grab mt-8 shrink-0" />
 							</div>
 
 							{/* Street Address */}
-							<div className="space-y-4">
-								<Label className="text-base font-medium">Street address</Label>
-								<div className="space-y-4">
-									<div className="space-y-2">
+							<div className="flex items-start gap-2">
+								<div className="flex-1 space-y-4">
+									<Label className="text-base font-medium">Street address</Label>
+									<div className="space-y-4">
 										<Input placeholder="Street address" disabled />
-									</div>
-									<div className="space-y-2">
 										<Input placeholder="Unit, apartment, suite, etc. (optional)" disabled />
-									</div>
-									<div className="space-y-2">
-										<Label>City</Label>
-										<Input placeholder="City" disabled />
-									</div>
-									<div className="grid grid-cols-2 gap-4">
 										<div className="space-y-2">
-											<Label>State</Label>
-											<Select disabled>
-												<SelectTrigger>
-													<SelectValue placeholder="Choose an option" />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="AL">Alabama</SelectItem>
-												</SelectContent>
-											</Select>
+											<Label>City</Label>
+											<Input placeholder="City" disabled />
 										</div>
-										<div className="space-y-2">
-											<Label>ZIP Code</Label>
-											<Input placeholder="ZIP Code" disabled />
+										<div className="grid grid-cols-2 gap-4">
+											<div className="space-y-2">
+												<Label>State</Label>
+												<Select disabled>
+													<SelectTrigger>
+														<SelectValue placeholder="Choose an option" />
+													</SelectTrigger>
+													<SelectContent>
+														<SelectItem value="AL">Alabama</SelectItem>
+													</SelectContent>
+												</Select>
+											</div>
+											<div className="space-y-2">
+												<Label>ZIP Code</Label>
+												<Input placeholder="ZIP Code" disabled />
+											</div>
 										</div>
 									</div>
 								</div>
+								<GripVertical className="size-5 text-muted-foreground/50 cursor-grab mt-8 shrink-0" />
 							</div>
 						</div>
 
