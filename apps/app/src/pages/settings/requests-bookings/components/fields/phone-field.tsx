@@ -1,11 +1,9 @@
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import type { FieldRendererProps } from "./types";
 
-export function PhoneField({ field }: FieldRendererProps) {
+export function PhoneField(_props: FieldRendererProps) {
 	return (
-		<div className="space-y-2">
-			<Label>{field.label}</Label>
+		<>
 			<Input placeholder="(___) ___-____" disabled />
 			<p className="text-xs text-muted-foreground">
 				By providing your phone number, you agree to receive Visit Reminders and other
@@ -13,6 +11,6 @@ export function PhoneField({ field }: FieldRendererProps) {
 				Message and data rates may apply. Message frequency varies. Reply HELP for help or
 				STOP to cancel.
 			</p>
-		</div>
+		</>
 	);
 }

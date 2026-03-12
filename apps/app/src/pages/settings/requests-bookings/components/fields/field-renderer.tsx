@@ -1,5 +1,4 @@
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import type { FieldRendererProps } from "./types";
 import { NameGroupField } from "./name-group";
 import { CompanyNameField } from "./company-name";
@@ -59,11 +58,6 @@ export function FieldRenderer(props: FieldRendererProps) {
 		case "products_services":
 			return <ProductsServicesField {...props} />;
 		default:
-			return (
-				<div className="space-y-2">
-					<Label>{props.field.label}</Label>
-					<Input placeholder="" disabled />
-				</div>
-			);
+			return <Input placeholder="" disabled />;
 	}
 }

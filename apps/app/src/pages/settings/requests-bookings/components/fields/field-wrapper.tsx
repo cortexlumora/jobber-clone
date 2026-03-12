@@ -65,9 +65,9 @@ function FieldWrapperContent({
 	onUpdate: (updates: Partial<FormField>) => void;
 }) {
 	return (
-		<div className="flex-1 min-w-0">
-			{isEditing && (
-				<div className="space-y-2 mb-3" onClick={(e) => e.stopPropagation()}>
+		<div className="flex-1 min-w-0 space-y-2">
+			{isEditing ? (
+				<div className="space-y-2" onClick={(e) => e.stopPropagation()}>
 					<Label className="text-xs text-muted-foreground">Question title</Label>
 					<Input
 						value={field.label}
@@ -76,6 +76,8 @@ function FieldWrapperContent({
 						autoFocus
 					/>
 				</div>
+			) : (
+				<Label>{field.label}</Label>
 			)}
 			<FieldRenderer field={field} isEditing={isEditing} onUpdate={onUpdate} />
 			{isEditing && (

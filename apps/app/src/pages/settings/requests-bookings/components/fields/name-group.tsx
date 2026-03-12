@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { FieldRendererProps } from "./types";
 
-export function NameGroupField({ field: _ }: FieldRendererProps) {
+export function NameGroupField(_props: FieldRendererProps) {
 	return (
 		<div className="grid grid-cols-2 gap-4">
 			<div className="space-y-2">

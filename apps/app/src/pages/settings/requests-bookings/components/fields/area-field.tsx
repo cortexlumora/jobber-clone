@@ -1,15 +1,11 @@
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import type { FieldRendererProps } from "./types";
 
-export function AreaField({ field }: FieldRendererProps) {
+export function AreaField(_props: FieldRendererProps) {
 	return (
-		<div className="space-y-2">
-			<Label>{field.label}</Label>
-			<div className="grid grid-cols-2 gap-4">
-				<Input placeholder="Length" disabled />
-				<Input placeholder="Width" disabled />
-			</div>
+		<div className="grid grid-cols-2 gap-4">
+			<Input placeholder="Length" disabled />
+			<Input placeholder="Width" disabled />
 		</div>
 	);
 }

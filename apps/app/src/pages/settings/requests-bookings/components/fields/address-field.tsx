@@ -9,10 +9,9 @@ import {
 } from "@/components/ui/select";
 import type { FieldRendererProps } from "./types";
 
-export function AddressField({ field }: FieldRendererProps) {
+export function AddressField(_props: FieldRendererProps) {
 	return (
 		<div className="space-y-4">
-			<Label className="text-base font-medium">{field.label}</Label>
 			<Input placeholder="Street address" disabled />
 			<Input placeholder="Unit, apartment, suite, etc. (optional)" disabled />
 			<div className="space-y-2">
