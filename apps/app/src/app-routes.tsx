@@ -33,6 +33,7 @@ import TeamSettingsPage from "./pages/settings/team/page";
 import RequestsBookingsPage from "./pages/settings/requests-bookings/page";
 import FormDetailPage from "./pages/settings/requests-bookings/form-detail";
 import ProductsServicesPage from "./pages/settings/products-services/page";
+import CustomFieldsPage from "./pages/settings/custom-fields/page";
 import AppLayout from "./pages/app-layout";
 
 const routes = createBrowserRouter([
@@ -69,7 +70,7 @@ const routes = createBrowserRouter([
 					{ path: "company", element: <CompanySettingsPage /> },
 					{ path: "business-profile", element: <PlaceholderPage title="Business Profile" /> },
 					{ path: "products-services", element: <ProductsServicesPage /> },
-					{ path: "custom-fields", element: <PlaceholderPage title="Custom Fields" /> },
+					{ path: "custom-fields", element: <CustomFieldsPage /> },
 					{ path: "payments", element: <PlaceholderPage title="Payments" /> },
 					{ path: "expense-tracking", element: <PlaceholderPage title="Expense Tracking" /> },
 					{ path: "automations", element: <PlaceholderPage title="Automations" /> },

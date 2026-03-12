@@ -48,7 +48,7 @@ export function CustomFieldDialog({ open, onOpenChange, appliesTo, appliesToLabe
 		mutation.mutate({
 			name,
 			fieldType: fieldType as "text" | "number" | "dropdown" | "checkbox" | "date",
-			appliesTo: appliesTo as "client" | "property" | "request" | "job" | "quote",
+			appliesTo: appliesTo as "client" | "property" | "request" | "job" | "quote" | "invoice" | "team",
 			defaultValue: defaultValue || undefined,
 		});
 	};
