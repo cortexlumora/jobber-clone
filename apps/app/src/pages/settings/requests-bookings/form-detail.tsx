@@ -582,7 +582,7 @@ const FormDetailPage = () => {
 					fields: [],
 				};
 
-				// Dropped on a drop indicator
+				// Sections can only be dropped on drop indicators or the canvas itself
 				if (overId.startsWith("drop-")) {
 					const idx = parseInt(overId.split("-")[1]);
 					const newSections = [...sections];
@@ -591,16 +591,10 @@ const FormDetailPage = () => {
 					return;
 				}
 
-				// Dropped on a section or canvas
-				const overSectionId = findSectionId(overId);
-				if (overSectionId) {
-					const idx = sections.findIndex((s) => s.id === overSectionId);
-					const newSections = [...sections];
-					newSections.splice(idx + 1, 0, newSection);
-					setSections(newSections);
-				} else {
+				if (overId === "canvas") {
 					setSections([...sections, newSection]);
 				}
+				// Ignore drops on sections or fields — sections can't nest
 				return;
 			}
 
@@ -745,7 +739,7 @@ const FormDetailPage = () => {
 					<div className="flex-1 rounded-lg border bg-card p-8 overflow-y-auto">
 						<CanvasDropZone>
 							<SortableContext items={sectionIds} strategy={verticalListSortingStrategy}>
-								<DropIndicator id="drop-0" isDragging={isDraggingFromSidebar} />
+								<DropIndicator id="drop-0" isDragging={isDraggingFromSidebar && activeType === "section"} />
 								{sections.map((section, index) => (
 									<div key={section.id}>
 										<SortableSection section={section}>
@@ -763,7 +757,7 @@ const FormDetailPage = () => {
 												</div>
 											)}
 										</SortableSection>
-										<DropIndicator id={`drop-${index + 1}`} isDragging={isDraggingFromSidebar} />
+										<DropIndicator id={`drop-${index + 1}`} isDragging={isDraggingFromSidebar && activeType === "section"} />
 									</div>
 								))}
 							</SortableContext>
@@ -819,7 +813,7 @@ const FormDetailPage = () => {
 					</div>
 				</div>
 
-				<DragOverlay>
+				<DragOverlay dropAnimation={null}>
 					{activeType ? <DragOverlayContent type={activeType} /> : null}
 				</DragOverlay>
 			</DndContext>
