@@ -152,12 +152,14 @@ function SortableSection({
 	isEditing,
 	onSelect,
 	onUpdateTitle,
+	onDeselect,
 }: {
 	section: FormSection;
 	children: React.ReactNode;
 	isEditing: boolean;
 	onSelect: () => void;
 	onUpdateTitle: (title: string) => void;
+	onDeselect: () => void;
 }) {
 	const {
 		attributes,
@@ -184,6 +186,7 @@ function SortableSection({
 					<Input
 						value={section.title}
 						onChange={(e) => onUpdateTitle(e.target.value)}
+						onKeyDown={(e) => { if (e.key === "Enter") onDeselect(); }}
 						className="text-lg font-semibold h-auto py-1 px-2 -ml-2"
 						autoFocus
 						onClick={(e) => e.stopPropagation()}
@@ -504,6 +507,7 @@ const FormDetailPage = () => {
 											isEditing={editingSectionId === section.id}
 											onSelect={() => { setEditingSectionId(section.id); setEditingFieldId(null); }}
 											onUpdateTitle={(title) => updateSectionTitle(section.id, title)}
+											onDeselect={() => setEditingSectionId(null)}
 										>
 											<SortableContext
 												items={section.fields.map((f) => f.id)}
@@ -518,6 +522,7 @@ const FormDetailPage = () => {
 															onSelect={() => { setEditingFieldId(field.id); setEditingSectionId(null); }}
 															onUpdate={(updates) => updateField(field.id, updates)}
 															onDelete={() => deleteField(section.id, field.id)}
+															onDeselect={() => setEditingFieldId(null)}
 														/>
 														<DropIndicator id={`field-drop-${section.id}-${fieldIndex + 1}`} isDragging={isDraggingField} />
 													</div>

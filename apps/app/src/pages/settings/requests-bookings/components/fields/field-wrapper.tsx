@@ -13,6 +13,7 @@ interface FieldWrapperProps {
 	onSelect: () => void;
 	onUpdate: (updates: Partial<FormField>) => void;
 	onDelete: () => void;
+	onDeselect: () => void;
 }
 
 function FieldWrapperRoot({
@@ -21,6 +22,7 @@ function FieldWrapperRoot({
 	onSelect,
 	onUpdate,
 	onDelete,
+	onDeselect,
 }: FieldWrapperProps) {
 	const {
 		attributes,
@@ -44,7 +46,7 @@ function FieldWrapperRoot({
 			className={`flex items-start gap-2 rounded-lg p-3 -mx-3 cursor-pointer transition-all ${isEditing ? "ring-2 ring-primary bg-primary/5 shadow-sm" : "hover:bg-accent/20"}`}
 			onClick={(e) => { e.stopPropagation(); onSelect(); }}
 		>
-			<FieldWrapper.Content field={field} isEditing={isEditing} onUpdate={onUpdate} />
+			<FieldWrapper.Content field={field} isEditing={isEditing} onUpdate={onUpdate} onDeselect={onDeselect} />
 			<FieldWrapper.Actions
 				isEditing={isEditing}
 				onDelete={onDelete}
@@ -59,10 +61,12 @@ function FieldWrapperContent({
 	field,
 	isEditing,
 	onUpdate,
+	onDeselect,
 }: {
 	field: FormField;
 	isEditing: boolean;
 	onUpdate: (updates: Partial<FormField>) => void;
+	onDeselect: () => void;
 }) {
 	return (
 		<div className="flex-1 min-w-0 space-y-2">
@@ -72,6 +76,7 @@ function FieldWrapperContent({
 					<Input
 						value={field.label}
 						onChange={(e) => onUpdate({ label: e.target.value })}
+						onKeyDown={(e) => { if (e.key === "Enter") onDeselect(); }}
 						placeholder="Enter question title"
 						autoFocus
 					/>
