@@ -15,7 +15,10 @@
 		"./quote": "./src/quote.ts",
 		"./job": "./src/job.ts",
 		"./client-note": "./src/client-note.ts",
-		"./pagination": "./src/pagination.ts"
+		"./pagination": "./src/pagination.ts",
+		"./request-form": "./src/request-form.ts",
+		"./bookable-service": "./src/bookable-service.ts",
+		"./requests-bookings-settings": "./src/requests-bookings-settings.ts"
 	},
 	"dependencies": {
 		"zod": "^4.3.6"

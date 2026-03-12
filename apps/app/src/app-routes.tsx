@@ -30,6 +30,8 @@ import CreateJobPage from "./pages/jobs/create/page";
 import SettingsLayout from "./pages/settings/layout";
 import CompanySettingsPage from "./pages/settings/company/page";
 import TeamSettingsPage from "./pages/settings/team/page";
+import RequestsBookingsPage from "./pages/settings/requests-bookings/page";
+import FormDetailPage from "./pages/settings/requests-bookings/form-detail";
 import AppLayout from "./pages/app-layout";
 
 const routes = createBrowserRouter([
@@ -76,7 +78,8 @@ const routes = createBrowserRouter([
 					{ path: "job-forms", element: <PlaceholderPage title="Job Forms" /> },
 					{ path: "client-hub", element: <PlaceholderPage title="Client Hub" /> },
 					{ path: "emails", element: <PlaceholderPage title="Emails & Text Messages" /> },
-					{ path: "requests-bookings", element: <PlaceholderPage title="Requests & Bookings" /> },
+					{ path: "requests-bookings", element: <RequestsBookingsPage /> },
+					{ path: "requests-bookings/forms/:formId", element: <FormDetailPage /> },
 				],
 			},
 		],

@@ -155,6 +155,20 @@
       "when": 1773146743837,
       "tag": "0021_spicy_talon",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1773336458990,
+      "tag": "0022_medical_mystique",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1773336840325,
+      "tag": "0023_fat_captain_marvel",
+      "breakpoints": true
     }
   ]
 }

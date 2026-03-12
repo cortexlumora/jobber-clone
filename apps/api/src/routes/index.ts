@@ -8,6 +8,7 @@ import customFieldRoute from "./custom-field-route";
 import teamRoute from "./team-route";
 import quoteRoute from "./quote-route";
 import jobRoute from "./job-route";
+import requestsBookingsRoute from "./requests-bookings-route";
 const appRoutes = new Hono();
 
 appRoutes.route("/clients", clientRoute);
@@ -19,5 +20,6 @@ appRoutes.route("/custom-fields", customFieldRoute);
 appRoutes.route("/team", teamRoute);
 appRoutes.route("/quotes", quoteRoute);
 appRoutes.route("/jobs", jobRoute);
+appRoutes.route("/requests-bookings", requestsBookingsRoute);
 
 export default appRoutes;
