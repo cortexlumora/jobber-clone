@@ -263,7 +263,7 @@ const RequestsPage = () => {
 								const time = formatRelativeTime(request.createdAt);
 
 								return (
-									<TableRow key={request.id} className="cursor-pointer hover:bg-muted/50">
+									<TableRow key={request.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/requests/${request.id}`)}>
 										<TableCell className="font-medium">
 											{clientTitle && <span className="text-muted-foreground">{clientTitle} </span>}
 											{clientName}
