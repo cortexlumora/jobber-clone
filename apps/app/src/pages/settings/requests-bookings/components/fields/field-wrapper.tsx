@@ -1,5 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { GripVertical, Trash2 } from "lucide-react";
@@ -65,6 +66,17 @@ function FieldWrapperContent({
 }) {
 	return (
 		<div className="flex-1 min-w-0">
+			{isEditing && (
+				<div className="space-y-2 mb-3" onClick={(e) => e.stopPropagation()}>
+					<Label className="text-xs text-muted-foreground">Question title</Label>
+					<Input
+						value={field.label}
+						onChange={(e) => onUpdate({ label: e.target.value })}
+						placeholder="Enter question title"
+						autoFocus
+					/>
+				</div>
+			)}
 			<FieldRenderer field={field} isEditing={isEditing} onUpdate={onUpdate} />
 			{isEditing && (
 				<div className="flex items-center justify-between mt-3 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
