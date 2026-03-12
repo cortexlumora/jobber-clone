@@ -35,6 +35,7 @@ import FormDetailPage from "./pages/settings/requests-bookings/form-detail";
 import AppLayout from "./pages/app-layout";
 
 const routes = createBrowserRouter([
+	{ path: "/settings/requests-bookings/forms/:formId", element: <FormDetailPage /> },
 	{
 		element: <AppLayout />,
 		children: [
@@ -79,7 +80,6 @@ const routes = createBrowserRouter([
 					{ path: "client-hub", element: <PlaceholderPage title="Client Hub" /> },
 					{ path: "emails", element: <PlaceholderPage title="Emails & Text Messages" /> },
 					{ path: "requests-bookings", element: <RequestsBookingsPage /> },
-					{ path: "requests-bookings/forms/:formId", element: <FormDetailPage /> },
 				],
 			},
 		],

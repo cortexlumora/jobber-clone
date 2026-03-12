@@ -16,17 +16,30 @@ const FormDetailPage = () => {
 	const form = forms.find((f) => f.id === formId);
 
 	return (
-		<div className="max-w-3xl">
-			<div className="flex items-center gap-3 mb-6">
-				<Button variant="ghost" size="sm" onClick={() => navigate("/settings/requests-bookings")}>
-					<ArrowLeft className="size-4" />
-				</Button>
-				<h2 className="text-2xl font-semibold">{form?.name ?? "Form Details"}</h2>
+		<div className="min-h-screen flex flex-col">
+			{/* Header bar */}
+			<header className="h-14 border-b flex items-center justify-between px-4 shrink-0">
+				<div className="flex items-center gap-3">
+					<Button variant="ghost" size="sm" onClick={() => navigate("/settings/requests-bookings")}>
+						<ArrowLeft className="size-4" />
+					</Button>
+					<h1 className="text-lg font-semibold">{form?.name ?? "Form Details"}</h1>
+				</div>
+				<div className="flex items-center gap-2">
+					<Button variant="outline" size="sm" onClick={() => navigate("/settings/requests-bookings")}>
+						Cancel
+					</Button>
+					<Button size="sm">Save</Button>
+				</div>
+			</header>
+
+			{/* Canvas area */}
+			<div className="flex-1 p-8">
+				{form?.description && (
+					<p className="text-sm text-muted-foreground mb-6">{form.description}</p>
+				)}
+				<p className="text-muted-foreground">Coming soon</p>
 			</div>
-			{form?.description && (
-				<p className="text-sm text-muted-foreground mb-6">{form.description}</p>
-			)}
-			<p className="text-muted-foreground">Coming soon</p>
 		</div>
 	);
 };
