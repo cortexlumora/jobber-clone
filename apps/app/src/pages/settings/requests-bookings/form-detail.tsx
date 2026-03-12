@@ -4,9 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	ArrowLeft,
+	GripVertical,
+	MoreHorizontal,
 	Columns2,
 	AlignLeft,
 	AlignJustify,
@@ -60,8 +69,142 @@ const FormDetailPage = () => {
 
 			{/* Canvas area */}
 			<div className="flex-1 flex gap-4 p-4 overflow-hidden">
-				{/* Left card */}
-				<div className="flex-1 rounded-lg border bg-card p-6">
+				{/* Left card - Form preview */}
+				<div className="flex-1 rounded-lg border bg-card p-8 overflow-y-auto">
+					<div className="max-w-xl mx-auto space-y-4">
+						{/* Contact Information Section */}
+						<div className="rounded-lg border p-6 space-y-6 relative">
+							<div className="flex justify-center -mt-3">
+								<GripVertical className="size-5 text-muted-foreground/50 rotate-90 cursor-grab" />
+							</div>
+							<div className="flex items-center justify-between">
+								<h3 className="text-lg font-semibold">Contact information</h3>
+								<Button variant="ghost" size="sm" className="size-8 p-0">
+									<MoreHorizontal className="size-4" />
+								</Button>
+							</div>
+
+							<div className="grid grid-cols-2 gap-4">
+								<div className="space-y-2">
+									<Label>First name</Label>
+									<Input placeholder="First name" disabled />
+								</div>
+								<div className="space-y-2">
+									<Label>Last name</Label>
+									<Input placeholder="Last name" disabled />
+								</div>
+							</div>
+
+							<div className="space-y-2">
+								<Label>Company name</Label>
+								<Input placeholder="Company name" disabled />
+							</div>
+
+							<div className="space-y-2">
+								<Label>Email</Label>
+								<Input type="email" placeholder="Email" disabled />
+							</div>
+
+							<div className="space-y-2">
+								<Label>Phone</Label>
+								<Input placeholder="(___) ___-____" disabled />
+								<p className="text-xs text-muted-foreground">
+									By providing your phone number, you agree to receive Visit Reminders and other
+									transactional text messages (SMS). You can unsubscribe at anytime by replying STOP.
+									Message and data rates may apply. Message frequency varies. Reply HELP for help or
+									STOP to cancel.
+								</p>
+							</div>
+
+							{/* Street Address */}
+							<div className="space-y-4">
+								<Label className="text-base font-medium">Street address</Label>
+								<div className="space-y-4">
+									<div className="space-y-2">
+										<Input placeholder="Street address" disabled />
+									</div>
+									<div className="space-y-2">
+										<Input placeholder="Unit, apartment, suite, etc. (optional)" disabled />
+									</div>
+									<div className="space-y-2">
+										<Label>City</Label>
+										<Input placeholder="City" disabled />
+									</div>
+									<div className="grid grid-cols-2 gap-4">
+										<div className="space-y-2">
+											<Label>State</Label>
+											<Select disabled>
+												<SelectTrigger>
+													<SelectValue placeholder="Choose an option" />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="AL">Alabama</SelectItem>
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="space-y-2">
+											<Label>ZIP Code</Label>
+											<Input placeholder="ZIP Code" disabled />
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						{/* Service Details Section */}
+						<div className="rounded-lg border p-6 space-y-6 relative">
+							<div className="flex justify-center -mt-3">
+								<GripVertical className="size-5 text-muted-foreground/50 rotate-90 cursor-grab" />
+							</div>
+							<div className="flex items-center justify-between">
+								<h3 className="text-lg font-semibold">Service details</h3>
+								<Button variant="ghost" size="sm" className="size-8 p-0">
+									<MoreHorizontal className="size-4" />
+								</Button>
+							</div>
+
+							{/* Long answer - description */}
+							<div className="space-y-2">
+								<div className="flex items-center justify-between">
+									<Label>Please provide as much information as you can</Label>
+									<GripVertical className="size-4 text-muted-foreground/50 cursor-grab" />
+								</div>
+								<Textarea placeholder="" disabled rows={4} />
+								<p className="text-xs text-muted-foreground">Required</p>
+							</div>
+
+							{/* Image upload */}
+							<div className="space-y-2">
+								<div className="flex items-center justify-between">
+									<Label>Share images of the work to be done</Label>
+									<GripVertical className="size-4 text-muted-foreground/50 cursor-grab" />
+								</div>
+								<div className="rounded-lg border-2 border-dashed p-8 flex flex-col items-center gap-2">
+									<Button variant="outline" size="sm" disabled>
+										Select Images
+									</Button>
+									<p className="text-sm text-muted-foreground">Select or drag a file here to upload</p>
+									<p className="text-xs text-muted-foreground">Up to 50MB each</p>
+								</div>
+							</div>
+
+							{/* Lead source dropdown */}
+							<div className="space-y-2">
+								<div className="flex items-center justify-between">
+									<Label>How did you hear about us?</Label>
+									<GripVertical className="size-4 text-muted-foreground/50 cursor-grab" />
+								</div>
+								<Select disabled>
+									<SelectTrigger>
+										<SelectValue placeholder="Choose an option" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="existing_client">Existing Client</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+					</div>
 				</div>
 
 				{/* Right card */}
