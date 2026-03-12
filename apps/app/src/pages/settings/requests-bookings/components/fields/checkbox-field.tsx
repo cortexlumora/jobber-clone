@@ -9,7 +9,6 @@ export function CheckboxField({ field }: FieldRendererProps) {
 				<input type="checkbox" disabled className="size-4" />
 				<span className="text-sm text-muted-foreground">Option</span>
 			</div>
-			{field.required && <p className="text-xs text-muted-foreground">Required</p>}
 		</div>
 	);
 }

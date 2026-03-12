@@ -15,7 +15,6 @@ export function RadioField({ field }: FieldRendererProps) {
 					<span className="text-sm text-muted-foreground">Option 2</span>
 				</label>
 			</div>
-			{field.required && <p className="text-xs text-muted-foreground">Required</p>}
 		</div>
 	);
 }

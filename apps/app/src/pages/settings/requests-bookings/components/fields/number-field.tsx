@@ -7,7 +7,6 @@ export function NumberField({ field }: FieldRendererProps) {
 		<div className="space-y-2">
 			<Label>{field.label}</Label>
 			<Input type="number" placeholder="0" disabled />
-			{field.required && <p className="text-xs text-muted-foreground">Required</p>}
 		</div>
 	);
 }

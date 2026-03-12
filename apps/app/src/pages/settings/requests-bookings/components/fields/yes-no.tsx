@@ -10,7 +10,6 @@ export function YesNoField({ field }: FieldRendererProps) {
 				<Button variant="outline" size="sm" disabled>Yes</Button>
 				<Button variant="outline" size="sm" disabled>No</Button>
 			</div>
-			{field.required && <p className="text-xs text-muted-foreground">Required</p>}
 		</div>
 	);
 }

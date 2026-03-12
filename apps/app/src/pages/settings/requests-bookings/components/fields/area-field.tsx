@@ -10,7 +10,6 @@ export function AreaField({ field }: FieldRendererProps) {
 				<Input placeholder="Length" disabled />
 				<Input placeholder="Width" disabled />
 			</div>
-			{field.required && <p className="text-xs text-muted-foreground">Required</p>}
 		</div>
 	);
 }

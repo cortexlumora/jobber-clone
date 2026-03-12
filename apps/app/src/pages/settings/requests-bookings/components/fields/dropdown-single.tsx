@@ -20,7 +20,6 @@ export function DropdownSingleField({ field }: FieldRendererProps) {
 					<SelectItem value="option1">Option 1</SelectItem>
 				</SelectContent>
 			</Select>
-			{field.required && <p className="text-xs text-muted-foreground">Required</p>}
 		</div>
 	);
 }

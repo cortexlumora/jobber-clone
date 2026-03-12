@@ -7,7 +7,6 @@ export function LongAnswerField({ field }: FieldRendererProps) {
 		<div className="space-y-2">
 			<Label>{field.label}</Label>
 			<Textarea placeholder="" disabled rows={4} />
-			{field.required && <p className="text-xs text-muted-foreground">Required</p>}
 		</div>
 	);
 }

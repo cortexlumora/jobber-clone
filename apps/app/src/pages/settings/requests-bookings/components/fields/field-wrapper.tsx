@@ -1,5 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { GripVertical, Trash2 } from "lucide-react";
 import { FieldRenderer } from "./field-renderer";
 import type { FormField } from "./types";
@@ -62,8 +64,20 @@ function FieldWrapperContent({
 	onUpdate: (updates: Partial<FormField>) => void;
 }) {
 	return (
-		<div className="flex-1 min-w-0">
+		<div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
 			<FieldRenderer field={field} isEditing={isEditing} onUpdate={onUpdate} />
+			{isEditing && (
+				<div className="flex items-center justify-between mt-3 pt-3 border-t">
+					<Label className="text-sm">Required</Label>
+					<Switch
+						checked={field.required ?? false}
+						onCheckedChange={(checked) => onUpdate({ required: checked })}
+					/>
+				</div>
+			)}
+			{!isEditing && field.required && (
+				<p className="text-xs text-muted-foreground mt-1">Required</p>
+			)}
 		</div>
 	);
 }
