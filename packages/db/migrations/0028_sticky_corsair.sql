@@ -1,0 +1,1 @@
+ALTER TABLE "request_forms" ADD COLUMN "config" jsonb;

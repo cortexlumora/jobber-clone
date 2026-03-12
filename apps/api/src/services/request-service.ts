@@ -1,20 +1,25 @@
-import db, { requestsSchema, requestFilesSchema } from "@repo/db";
+import db, { requestsSchema, requestFilesSchema, requestLineItemsSchema } from "@repo/db";
 import type { CreateRequestForm } from "@repo/zod/request";
 import { and, eq, isNull } from "drizzle-orm";
 
 export async function createRequest(userId: string, data: CreateRequestForm) {
-	const { fileIds, ...requestData } = data;
+	const { fileIds, lineItems, ...requestData } = data;
 
 	const [request] = await db
 		.insert(requestsSchema)
 		.values({
 			userId,
 			clientId: requestData.clientId,
+			title: requestData.title,
 			serviceDescription: requestData.serviceDescription,
-			bestDay: requestData.bestDay,
-			alternateDay: requestData.alternateDay || null,
-			preferredArrival: requestData.preferredArrival,
-			assessmentRequired: requestData.assessmentRequired,
+			assessmentInstructions: requestData.assessmentInstructions || null,
+			assessmentStartDate: requestData.assessmentStartDate || null,
+			assessmentEndDate: requestData.assessmentEndDate || null,
+			assessmentStartTime: requestData.assessmentStartTime || null,
+			assessmentEndTime: requestData.assessmentEndTime || null,
+			scheduleLater: requestData.scheduleLater ?? false,
+			anytime: requestData.anytime ?? false,
+			teamReminder: requestData.teamReminder ?? "none",
 			internalNotes: requestData.internalNotes || null,
 		})
 		.returning();
@@ -28,7 +33,21 @@ export async function createRequest(userId: string, data: CreateRequestForm) {
 		);
 	}
 
-	return { ...request, fileIds: fileIds ?? [] };
+	let insertedLineItems: typeof requestLineItemsSchema.$inferSelect[] = [];
+	if (lineItems && lineItems.length > 0) {
+		insertedLineItems = await db.insert(requestLineItemsSchema).values(
+			lineItems.map((item) => ({
+				requestId: request.id,
+				name: item.name,
+				description: item.description || null,
+				qty: item.qty,
+				unitPrice: String(item.unitPrice),
+				imageFileId: item.imageFileId || null,
+			})),
+		).returning();
+	}
+
+	return { ...request, fileIds: fileIds ?? [], lineItems: insertedLineItems };
 }
 
 export async function getRequestsByUser(userId: string) {
@@ -43,7 +62,11 @@ export async function getRequestsByUser(userId: string) {
 				.select({ fileId: requestFilesSchema.fileId })
 				.from(requestFilesSchema)
 				.where(eq(requestFilesSchema.requestId, request.id));
-			return { ...request, fileIds: files.map((f) => f.fileId) };
+			const items = await db
+				.select()
+				.from(requestLineItemsSchema)
+				.where(eq(requestLineItemsSchema.requestId, request.id));
+			return { ...request, fileIds: files.map((f) => f.fileId), lineItems: items };
 		}),
 	);
 
@@ -63,5 +86,10 @@ export async function getRequestById(requestId: string) {
 		.from(requestFilesSchema)
 		.where(eq(requestFilesSchema.requestId, request.id));
 
-	return { ...request, fileIds: files.map((f) => f.fileId) };
+	const items = await db
+		.select()
+		.from(requestLineItemsSchema)
+		.where(eq(requestLineItemsSchema.requestId, request.id));
+
+	return { ...request, fileIds: files.map((f) => f.fileId), lineItems: items };
 }

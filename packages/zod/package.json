@@ -7,7 +7,19 @@
 		".": "./src/index.ts",
 		"./client": "./src/client.ts",
 		"./file": "./src/file.ts",
-		"./request": "./src/request.ts"
+		"./request": "./src/request.ts",
+		"./company-settings": "./src/company-settings.ts",
+		"./custom-field": "./src/custom-field.ts",
+		"./client-contact": "./src/client-contact.ts",
+		"./team": "./src/team.ts",
+		"./quote": "./src/quote.ts",
+		"./job": "./src/job.ts",
+		"./client-note": "./src/client-note.ts",
+		"./pagination": "./src/pagination.ts",
+		"./request-form": "./src/request-form.ts",
+		"./bookable-service": "./src/bookable-service.ts",
+		"./requests-bookings-settings": "./src/requests-bookings-settings.ts",
+		"./product-service": "./src/product-service.ts"
 	},
 	"dependencies": {
 		"zod": "^4.3.6"

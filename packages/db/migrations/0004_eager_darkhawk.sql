@@ -1,0 +1,1 @@
+ALTER TABLE "clients" ADD COLUMN "status" "client_status" DEFAULT 'lead' NOT NULL;

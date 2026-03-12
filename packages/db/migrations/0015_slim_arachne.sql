@@ -1,0 +1,1 @@
+ALTER TYPE "public"."applies_to" ADD VALUE 'quote';

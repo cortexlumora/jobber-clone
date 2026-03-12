@@ -7,7 +7,10 @@
 		".": "./src/index.ts",
 		"./client": "./src/client.ts",
 		"./file": "./src/file.ts",
-		"./request": "./src/request.ts"
+		"./request": "./src/request.ts",
+		"./company-settings": "./src/company-settings.ts",
+		"./custom-field": "./src/custom-field.ts",
+		"./client-contact": "./src/client-contact.ts"
 	},
 	"devDependencies": {
 		"typescript": "~5.9.3"

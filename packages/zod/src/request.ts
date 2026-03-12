@@ -1,12 +1,29 @@
 import { z } from "zod";
 
+export const lineItemSchema = z.object({
+	name: z.string().min(1, "Name is required"),
+	description: z.string().optional(),
+	qty: z.number().int().min(1).default(1),
+	unitPrice: z.number().min(0).default(0),
+	imageFileId: z.string().uuid().optional(),
+});
+
 export const createRequestSchema = z.object({
+	title: z.string().min(1, "Title is required"),
 	clientId: z.string().uuid("Client is required"),
 	serviceDescription: z.string().min(1, "Service description is required"),
-	bestDay: z.string().min(1, "Best day is required"),
-	alternateDay: z.string().optional(),
-	preferredArrival: z.enum(["morning", "anytime", "afternoon"]),
-	assessmentRequired: z.boolean(),
+	// Assessment
+	assessmentInstructions: z.string().optional(),
+	assessmentStartDate: z.string().optional(),
+	assessmentEndDate: z.string().optional(),
+	assessmentStartTime: z.string().optional(),
+	assessmentEndTime: z.string().optional(),
+	scheduleLater: z.boolean().optional(),
+	anytime: z.boolean().optional(),
+	teamReminder: z.enum(["none", "at_start", "30min", "1hour", "2hour", "5hour", "24hour"]).optional(),
+	// Line items
+	lineItems: z.array(lineItemSchema).optional(),
+	// Notes & files
 	internalNotes: z.string().optional(),
 	fileIds: z.array(z.string().uuid()).optional(),
 });

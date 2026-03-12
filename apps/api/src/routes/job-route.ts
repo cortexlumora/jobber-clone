@@ -1,0 +1,33 @@
+import { zValidator } from "@hono/zod-validator";
+import { createJobSchema } from "@repo/zod/job";
+import type { APIResponse, JobDTO } from "@repo/dto";
+import { Hono } from "hono";
+import { getUserIdFromCTX } from "../lib/helpers";
+import {
+	createJob,
+	getJobById,
+	getJobsByUser,
+} from "../services/job-service";
+
+const jobRoute = new Hono()
+	.post("/", zValidator("json", createJobSchema), async (c) => {
+		const data = c.req.valid("json");
+		const userId = getUserIdFromCTX(c);
+
+		const job = await createJob(userId, data);
+		return c.json<APIResponse<JobDTO>>({ data: job });
+	})
+	.get("/", async (c) => {
+		const userId = getUserIdFromCTX(c);
+
+		const jobs = await getJobsByUser(userId);
+		return c.json<APIResponse<JobDTO[]>>({ data: jobs });
+	})
+	.get("/:id", async (c) => {
+		const jobId = c.req.param("id");
+
+		const job = await getJobById(jobId);
+		return c.json<APIResponse<JobDTO | null>>({ data: job });
+	});
+
+export default jobRoute;
