@@ -258,7 +258,7 @@ function SortableField({
 			<div className="flex-1">
 				<FieldRenderer field={field} isEditing={isEditing} onUpdate={onUpdate} />
 			</div>
-			<div className="flex flex-col items-center gap-1 mt-8 shrink-0" onClick={(e) => e.stopPropagation()}>
+			<div className="flex flex-col items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
 				<div {...listeners} {...attributes} className="cursor-grab">
 					<GripVertical className="size-5 text-muted-foreground/50" />
 				</div>
