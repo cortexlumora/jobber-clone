@@ -149,9 +149,15 @@ function SidebarDraggableItem({ type, label, icon: Icon }: { type: string; label
 function SortableSection({
 	section,
 	children,
+	isEditing,
+	onSelect,
+	onUpdateTitle,
 }: {
 	section: FormSection;
 	children: React.ReactNode;
+	isEditing: boolean;
+	onSelect: () => void;
+	onUpdateTitle: (title: string) => void;
 }) {
 	const {
 		attributes,
@@ -174,7 +180,22 @@ function SortableSection({
 				<GripVertical className="size-5 text-muted-foreground/50 rotate-90 cursor-grab" />
 			</div>
 			<div className="flex items-center justify-between">
-				<h3 className="text-lg font-semibold">{section.title}</h3>
+				{isEditing ? (
+					<Input
+						value={section.title}
+						onChange={(e) => onUpdateTitle(e.target.value)}
+						className="text-lg font-semibold h-auto py-1 px-2 -ml-2"
+						autoFocus
+						onClick={(e) => e.stopPropagation()}
+					/>
+				) : (
+					<h3
+						className="text-lg font-semibold cursor-pointer hover:text-primary/80 transition-colors"
+						onClick={(e) => { e.stopPropagation(); onSelect(); }}
+					>
+						{section.title}
+					</h3>
+				)}
 				<Button variant="ghost" size="sm" className="size-8 p-0">
 					<MoreHorizontal className="size-4" />
 				</Button>
@@ -227,6 +248,13 @@ const FormDetailPage = () => {
 	const [activeType, setActiveType] = useState<string | null>(null);
 	const [isDraggingFromSidebar, setIsDraggingFromSidebar] = useState(false);
 	const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
+	const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+
+	const updateSectionTitle = (sectionId: string, title: string) => {
+		setSections((prev) =>
+			prev.map((s) => (s.id === sectionId ? { ...s, title } : s))
+		);
+	};
 
 	const deleteField = (sectionId: string, fieldId: string) => {
 		setSections((prev) =>
@@ -465,13 +493,18 @@ const FormDetailPage = () => {
 				{/* Canvas area */}
 				<div className="flex-1 flex gap-4 p-4 overflow-hidden">
 					{/* Left card - Form canvas */}
-					<div className="flex-1 rounded-lg border bg-card p-8 overflow-y-auto" onClick={() => setEditingFieldId(null)}>
+					<div className="flex-1 rounded-lg border bg-card p-8 overflow-y-auto" onClick={() => { setEditingFieldId(null); setEditingSectionId(null); }}>
 						<CanvasDropZone>
 							<SortableContext items={sectionIds} strategy={verticalListSortingStrategy}>
 								<DropIndicator id="drop-0" isDragging={isDraggingFromSidebar && activeType === "section"} />
 								{sections.map((section, index) => (
 									<div key={section.id}>
-										<SortableSection section={section}>
+										<SortableSection
+											section={section}
+											isEditing={editingSectionId === section.id}
+											onSelect={() => { setEditingSectionId(section.id); setEditingFieldId(null); }}
+											onUpdateTitle={(title) => updateSectionTitle(section.id, title)}
+										>
 											<SortableContext
 												items={section.fields.map((f) => f.id)}
 												strategy={verticalListSortingStrategy}
@@ -482,7 +515,7 @@ const FormDetailPage = () => {
 														<FieldWrapper
 															field={field}
 															isEditing={editingFieldId === field.id}
-															onSelect={() => setEditingFieldId(field.id)}
+															onSelect={() => { setEditingFieldId(field.id); setEditingSectionId(null); }}
 															onUpdate={(updates) => updateField(field.id, updates)}
 															onDelete={() => deleteField(section.id, field.id)}
 														/>
