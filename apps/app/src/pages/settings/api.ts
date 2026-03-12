@@ -43,6 +43,11 @@ export async function deleteCustomFieldDefinition(id: string) {
 	return res.data.data;
 }
 
+export async function reorderCustomFieldDefinitions(items: { id: string; sortOrder: number }[]) {
+	const res = await http.put("/api/v1/custom-fields/definitions/reorder", { items });
+	return res.data;
+}
+
 // Team
 export async function getTeamMembers() {
 	const res = await http.get<APIResponse<TeamMemberDTO[]>>("/api/v1/team");

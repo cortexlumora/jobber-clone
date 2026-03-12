@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { createCustomFieldSchema, updateCustomFieldSchema, setCustomFieldValueSchema } from "@repo/zod/custom-field";
+import { createCustomFieldSchema, updateCustomFieldSchema, setCustomFieldValueSchema, reorderCustomFieldsSchema } from "@repo/zod/custom-field";
 import type { APIResponse, CustomFieldDefinitionDTO, CustomFieldValueDTO } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
@@ -8,6 +8,7 @@ import {
 	createCustomFieldDefinition,
 	updateCustomFieldDefinition,
 	deleteCustomFieldDefinition,
+	reorderCustomFieldDefinitions,
 	getCustomFieldValues,
 	setCustomFieldValue,
 } from "../services/custom-field-service";
@@ -24,6 +25,12 @@ const customFieldRoute = new Hono()
 		const data = c.req.valid("json");
 		const definition = await createCustomFieldDefinition(userId, data);
 		return c.json<APIResponse<CustomFieldDefinitionDTO>>({ data: definition }, 201);
+	})
+	.put("/definitions/reorder", zValidator("json", reorderCustomFieldsSchema), async (c) => {
+		const userId = getUserIdFromCTX(c);
+		const { items } = c.req.valid("json");
+		await reorderCustomFieldDefinitions(userId, items);
+		return c.json({ success: true });
 	})
 	.put("/definitions/:id", zValidator("json", updateCustomFieldSchema), async (c) => {
 		const userId = getUserIdFromCTX(c);

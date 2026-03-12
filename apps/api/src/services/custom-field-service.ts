@@ -1,6 +1,6 @@
 import db, { customFieldDefinitionsSchema, customFieldValuesSchema } from "@repo/db";
 import type { CreateCustomFieldForm, UpdateCustomFieldForm, SetCustomFieldValueForm } from "@repo/zod/custom-field";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 export async function getCustomFieldDefinitions(userId: string, appliesTo?: string) {
 	const conditions = [eq(customFieldDefinitionsSchema.userId, userId)];
@@ -37,6 +37,17 @@ export async function deleteCustomFieldDefinition(userId: string, id: string) {
 		.where(and(eq(customFieldDefinitionsSchema.id, id), eq(customFieldDefinitionsSchema.userId, userId)))
 		.returning();
 	return deleted;
+}
+
+export async function reorderCustomFieldDefinitions(userId: string, items: { id: string; sortOrder: number }[]) {
+	await Promise.all(
+		items.map((item) =>
+			db
+				.update(customFieldDefinitionsSchema)
+				.set({ sortOrder: item.sortOrder })
+				.where(and(eq(customFieldDefinitionsSchema.id, item.id), eq(customFieldDefinitionsSchema.userId, userId)))
+		)
+	);
 }
 
 export async function getCustomFieldValues(entityType: string, entityId: string) {

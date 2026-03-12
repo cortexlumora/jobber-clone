@@ -19,6 +19,11 @@ export const setCustomFieldValueSchema = z.object({
 	value: z.string().nullable(),
 });
 
+export const reorderCustomFieldsSchema = z.object({
+	items: z.array(z.object({ id: z.string().uuid(), sortOrder: z.number() })),
+});
+
+export type ReorderCustomFieldsForm = z.infer<typeof reorderCustomFieldsSchema>;
 export type CreateCustomFieldForm = z.infer<typeof createCustomFieldSchema>;
 export type UpdateCustomFieldForm = z.infer<typeof updateCustomFieldSchema>;
 export type SetCustomFieldValueForm = z.infer<typeof setCustomFieldValueSchema>;

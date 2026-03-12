@@ -1,6 +1,23 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { CustomFieldDefinitionDTO } from "@repo/dto";
+import {
+	DndContext,
+	closestCenter,
+	type DragEndEvent,
+	PointerSensor,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
+import {
+	SortableContext,
+	useSortable,
+	verticalListSortingStrategy,
+	arrayMove,
+	defaultAnimateLayoutChanges,
+	type AnimateLayoutChanges,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -9,7 +26,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CustomFieldDialog } from "@/components/custom-field-dialog";
-import { getCustomFieldDefinitions, deleteCustomFieldDefinition } from "../api";
+import { getCustomFieldDefinitions, deleteCustomFieldDefinition, reorderCustomFieldDefinitions } from "../api";
 import {
 	GripVertical,
 	MoreHorizontal,
@@ -53,12 +70,76 @@ function getFieldDescription(field: CustomFieldDefinitionDTO): string {
 	return base;
 }
 
+function SortableFieldRow({
+	field,
+	onDelete,
+}: {
+	field: CustomFieldDefinitionDTO;
+	onDelete: (id: string) => void;
+}) {
+	const animateLayoutChanges: AnimateLayoutChanges = (args) =>
+		defaultAnimateLayoutChanges({ ...args, wasDragging: true });
+
+	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+		id: field.id,
+		animateLayoutChanges,
+	});
+
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+		opacity: isDragging ? 0.5 : 1,
+	};
+
+	return (
+		<div
+			ref={setNodeRef}
+			style={style}
+			className="flex items-center gap-3 py-3 group"
+		>
+			<button
+				{...attributes}
+				{...listeners}
+				className="cursor-grab active:cursor-grabbing shrink-0 touch-none"
+			>
+				<GripVertical className="size-5 text-muted-foreground/50" />
+			</button>
+			<span className="text-sm font-medium text-primary min-w-0 truncate">
+				{field.name}
+			</span>
+			<span className="text-sm text-muted-foreground flex-1 truncate">
+				{getFieldDescription(field)}
+			</span>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<Button variant="ghost" size="icon" className="size-8 shrink-0">
+						<MoreHorizontal className="size-4" />
+					</Button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end">
+					<DropdownMenuItem
+						className="text-destructive focus:text-destructive"
+						onClick={() => onDelete(field.id)}
+					>
+						<Trash2 className="size-4 mr-2" />
+						Delete
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+		</div>
+	);
+}
+
 const CustomFieldsPage = () => {
 	const queryClient = useQueryClient();
 	const [showTip, setShowTip] = useState(true);
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [dialogAppliesTo, setDialogAppliesTo] = useState<string>("client");
 	const [dialogLabel, setDialogLabel] = useState("All clients");
+
+	const sensors = useSensors(
+		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+	);
 
 	const { data: fields = [] } = useQuery<CustomFieldDefinitionDTO[]>({
 		queryKey: ["custom-field-definitions"],
@@ -70,6 +151,35 @@ const CustomFieldsPage = () => {
 		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["custom-field-definitions"] }),
 	});
 
+	const reorderMutation = useMutation({
+		mutationFn: reorderCustomFieldDefinitions,
+		onMutate: async (items) => {
+			await queryClient.cancelQueries({ queryKey: ["custom-field-definitions"] });
+			const previous = queryClient.getQueryData<CustomFieldDefinitionDTO[]>(["custom-field-definitions"]);
+			queryClient.setQueryData<CustomFieldDefinitionDTO[]>(
+				["custom-field-definitions"],
+				(old) => {
+					if (!old) return old;
+					const updated = [...old];
+					for (const item of items) {
+						const idx = updated.findIndex((f) => f.id === item.id);
+						if (idx !== -1) {
+							updated[idx] = { ...updated[idx], sortOrder: item.sortOrder };
+						}
+					}
+					return updated.sort((a, b) => a.sortOrder - b.sortOrder);
+				},
+			);
+			return { previous };
+		},
+		onError: (_err, _items, context) => {
+			if (context?.previous) {
+				queryClient.setQueryData(["custom-field-definitions"], context.previous);
+			}
+		},
+		onSettled: () => queryClient.invalidateQueries({ queryKey: ["custom-field-definitions"] }),
+	});
+
 	const openDialog = (appliesTo: string, label: string) => {
 		setDialogAppliesTo(appliesTo);
 		setDialogLabel(label);
@@ -78,6 +188,20 @@ const CustomFieldsPage = () => {
 
 	const fieldsByCategory = (category: string) =>
 		fields.filter((f) => f.appliesTo === category);
+
+	const handleDragEnd = (event: DragEndEvent, categoryKey: string) => {
+		const { active, over } = event;
+		if (!over || active.id === over.id) return;
+
+		const catFields = fieldsByCategory(categoryKey);
+		const oldIndex = catFields.findIndex((f) => f.id === active.id);
+		const newIndex = catFields.findIndex((f) => f.id === over.id);
+		if (oldIndex === -1 || newIndex === -1) return;
+
+		const reordered = arrayMove(catFields, oldIndex, newIndex);
+		const items = reordered.map((f, i) => ({ id: f.id, sortOrder: i }));
+		reorderMutation.mutate(items);
+	};
 
 	return (
 		<div className="max-w-3xl">
@@ -148,42 +272,26 @@ const CustomFieldsPage = () => {
 										</div>
 									</div>
 								) : (
-									<div className="divide-y">
-										{catFields.map((field) => (
-											<div
-												key={field.id}
-												className="flex items-center gap-3 py-3 group"
-											>
-												<GripVertical className="size-5 text-muted-foreground/50 cursor-grab shrink-0" />
-												<span className="text-sm font-medium text-primary min-w-0 truncate">
-													{field.name}
-												</span>
-												<span className="text-sm text-muted-foreground flex-1 truncate">
-													{getFieldDescription(field)}
-												</span>
-												<DropdownMenu>
-													<DropdownMenuTrigger asChild>
-														<Button
-															variant="ghost"
-															size="icon"
-															className="size-8 shrink-0"
-														>
-															<MoreHorizontal className="size-4" />
-														</Button>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent align="end">
-														<DropdownMenuItem
-															className="text-destructive focus:text-destructive"
-															onClick={() => deleteMutation.mutate(field.id)}
-														>
-															<Trash2 className="size-4 mr-2" />
-															Delete
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
+									<DndContext
+										sensors={sensors}
+										collisionDetection={closestCenter}
+										onDragEnd={(e) => handleDragEnd(e, cat.key)}
+									>
+										<SortableContext
+											items={catFields.map((f) => f.id)}
+											strategy={verticalListSortingStrategy}
+										>
+											<div className="divide-y">
+												{catFields.map((field) => (
+													<SortableFieldRow
+														key={field.id}
+														field={field}
+														onDelete={(id) => deleteMutation.mutate(id)}
+													/>
+												))}
 											</div>
-										))}
-									</div>
+										</SortableContext>
+									</DndContext>
 								)}
 							</div>
 						</div>
