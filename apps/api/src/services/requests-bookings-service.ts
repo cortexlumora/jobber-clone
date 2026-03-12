@@ -1,5 +1,5 @@
 import db, { requestFormsSchema, bookableServicesSchema, requestsBookingsSettingsSchema } from "@repo/db";
-import type { CreateRequestFormForm } from "@repo/zod/request-form";
+import type { CreateRequestFormForm, UpdateRequestFormForm } from "@repo/zod/request-form";
 import type { CreateBookableServiceForm, UpdateBookableServiceForm } from "@repo/zod/bookable-service";
 import type { UpdateRequestsBookingsSettingsForm } from "@repo/zod/requests-bookings-settings";
 import { eq, and } from "drizzle-orm";
@@ -12,6 +12,23 @@ export async function getRequestForms(userId: string) {
 export async function createRequestForm(userId: string, data: CreateRequestFormForm) {
 	const [form] = await db.insert(requestFormsSchema).values({ userId, ...data }).returning();
 	return form;
+}
+
+export async function getRequestFormById(userId: string, id: string) {
+	const [form] = await db
+		.select()
+		.from(requestFormsSchema)
+		.where(and(eq(requestFormsSchema.id, id), eq(requestFormsSchema.userId, userId)));
+	return form ?? null;
+}
+
+export async function updateRequestForm(userId: string, id: string, data: UpdateRequestFormForm) {
+	const [updated] = await db
+		.update(requestFormsSchema)
+		.set(data)
+		.where(and(eq(requestFormsSchema.id, id), eq(requestFormsSchema.userId, userId)))
+		.returning();
+	return updated;
 }
 
 export async function deleteRequestForm(userId: string, id: string) {

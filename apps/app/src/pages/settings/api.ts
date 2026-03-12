@@ -91,6 +91,16 @@ export async function createRequestForm(data: CreateRequestFormForm) {
 	return res.data.data;
 }
 
+export async function getRequestFormById(id: string) {
+	const res = await http.get<APIResponse<RequestFormDTO>>(`/api/v1/requests-bookings/forms/${id}`);
+	return res.data.data;
+}
+
+export async function updateRequestForm(id: string, data: any) {
+	const res = await http.put<APIResponse<RequestFormDTO>>(`/api/v1/requests-bookings/forms/${id}`, data);
+	return res.data.data;
+}
+
 export async function deleteRequestForm(id: string) {
 	const res = await http.delete<APIResponse<RequestFormDTO>>(`/api/v1/requests-bookings/forms/${id}`);
 	return res.data.data;

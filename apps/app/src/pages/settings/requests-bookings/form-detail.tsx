@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
 	DndContext,
 	DragOverlay,
@@ -47,7 +47,7 @@ import {
 	ShoppingCart,
 	Plus,
 } from "lucide-react";
-import { getRequestForms } from "../api";
+import { getRequestFormById, updateRequestForm } from "../api";
 
 interface FormSection {
 	id: string;
@@ -252,15 +252,64 @@ const FormDetailPage = () => {
 	const [isDraggingFromSidebar, setIsDraggingFromSidebar] = useState(false);
 	const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
 	const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+	const [configLoaded, setConfigLoaded] = useState(false);
+	const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	// Load form from API
+	const { data: form } = useQuery({
+		queryKey: ["request-form", formId],
+		queryFn: () => getRequestFormById(formId!),
+		enabled: !!formId,
+	});
+
+	// Hydrate sections from saved config
+	useEffect(() => {
+		if (form?.config?.sections && !configLoaded) {
+			setSections(form.config.sections as FormSection[]);
+			setConfigLoaded(true);
+		} else if (form && !form.config && !configLoaded) {
+			setConfigLoaded(true);
+		}
+	}, [form, configLoaded]);
+
+	// Auto-save mutation
+	const saveMutation = useMutation({
+		mutationFn: (config: { sections: FormSection[] }) =>
+			updateRequestForm(formId!, { config }),
+	});
+
+	// Debounced auto-save
+	const autoSave = useCallback(
+		(newSections: FormSection[]) => {
+			if (!formId || !configLoaded) return;
+			if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+			saveTimerRef.current = setTimeout(() => {
+				saveMutation.mutate({ sections: newSections });
+			}, 1000);
+		},
+		[formId, configLoaded],
+	);
+
+	// Wrap setSections to also trigger auto-save
+	const updateSections = useCallback(
+		(updater: FormSection[] | ((prev: FormSection[]) => FormSection[])) => {
+			setSections((prev) => {
+				const next = typeof updater === "function" ? updater(prev) : updater;
+				autoSave(next);
+				return next;
+			});
+		},
+		[autoSave],
+	);
 
 	const updateSectionTitle = (sectionId: string, title: string) => {
-		setSections((prev) =>
+		updateSections((prev) =>
 			prev.map((s) => (s.id === sectionId ? { ...s, title } : s))
 		);
 	};
 
 	const deleteField = (sectionId: string, fieldId: string) => {
-		setSections((prev) =>
+		updateSections((prev) =>
 			prev.map((s) =>
 				s.id === sectionId
 					? { ...s, fields: s.fields.filter((f) => f.id !== fieldId) }
@@ -271,7 +320,7 @@ const FormDetailPage = () => {
 	};
 
 	const updateField = (fieldId: string, updates: Partial<FormField>) => {
-		setSections((prev) =>
+		updateSections((prev) =>
 			prev.map((s) => ({
 				...s,
 				fields: s.fields.map((f) =>
@@ -280,13 +329,6 @@ const FormDetailPage = () => {
 			}))
 		);
 	};
-
-	const { data: forms = [] } = useQuery({
-		queryKey: ["request-forms"],
-		queryFn: getRequestForms,
-	});
-
-	const form = forms.find((f) => f.id === formId);
 
 	const sectionIds = sections.map((s) => s.id);
 	const isDraggingField = isDraggingFromSidebar && activeType !== null && activeType !== "section";
@@ -328,12 +370,12 @@ const FormDetailPage = () => {
 					const idx = parseInt(overId.split("-")[1]);
 					const newSections = [...sections];
 					newSections.splice(idx, 0, newSection);
-					setSections(newSections);
+					updateSections(newSections);
 					return;
 				}
 
 				if (overId === "canvas") {
-					setSections([...sections, newSection]);
+					updateSections([...sections, newSection]);
 				}
 				// Ignore drops on sections or fields — sections can't nest
 				return;
@@ -354,7 +396,7 @@ const FormDetailPage = () => {
 				const parts = overId.replace("field-drop-", "").split("-");
 				const fieldIdx = parseInt(parts.pop()!);
 				const sectionId = parts.join("-");
-				setSections((prev) =>
+				updateSections((prev) =>
 					prev.map((s) => {
 						if (s.id !== sectionId) return s;
 						const newFields = [...s.fields];
@@ -370,7 +412,7 @@ const FormDetailPage = () => {
 				const idx = parseInt(overId.split("-")[1]);
 				const targetIdx = Math.min(idx, sections.length - 1);
 				if (targetIdx >= 0) {
-					setSections((prev) =>
+					updateSections((prev) =>
 						prev.map((s, i) =>
 							i === targetIdx ? { ...s, fields: [...s.fields, newField] } : s
 						)
@@ -381,14 +423,14 @@ const FormDetailPage = () => {
 
 			const targetSectionId = findSectionId(overId);
 			if (targetSectionId) {
-				setSections((prev) =>
+				updateSections((prev) =>
 					prev.map((s) =>
 						s.id === targetSectionId ? { ...s, fields: [...s.fields, newField] } : s
 					)
 				);
 			} else if (sections.length > 0) {
 				// Drop on canvas but not on a specific section — add to last section
-				setSections((prev) => {
+				updateSections((prev) => {
 					const updated = [...prev];
 					updated[updated.length - 1] = {
 						...updated[updated.length - 1],
@@ -408,7 +450,7 @@ const FormDetailPage = () => {
 			const oldIndex = sectionIds.indexOf(activeId);
 			const newIndex = sectionIds.indexOf(overId);
 			if (oldIndex !== newIndex) {
-				setSections(arrayMove(sections, oldIndex, newIndex));
+				updateSections(arrayMove(sections, oldIndex, newIndex));
 			}
 			return;
 		}
@@ -419,7 +461,7 @@ const FormDetailPage = () => {
 			const overSectionId = findSectionIdForField(overId) ?? findSectionId(overId);
 
 			if (activeSectionId && overSectionId && activeSectionId === overSectionId) {
-				setSections((prev) =>
+				updateSections((prev) =>
 					prev.map((s) => {
 						if (s.id !== activeSectionId) return s;
 						const fieldIds = s.fields.map((f) => f.id);
@@ -431,7 +473,7 @@ const FormDetailPage = () => {
 				);
 			} else if (activeSectionId && overSectionId && activeSectionId !== overSectionId) {
 				// Move field between sections
-				setSections((prev) => {
+				updateSections((prev) => {
 					const sourceSection = prev.find((s) => s.id === activeSectionId)!;
 					const field = sourceSection.fields.find((f) => f.id === activeId)!;
 					return prev.map((s) => {
@@ -484,7 +526,16 @@ const FormDetailPage = () => {
 					<Button variant="outline" size="sm" onClick={() => navigate("/settings/requests-bookings")}>
 						Cancel
 					</Button>
-					<Button size="sm">Save</Button>
+					<Button
+						size="sm"
+						disabled={saveMutation.isPending}
+						onClick={() => {
+							if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+							saveMutation.mutate({ sections });
+						}}
+					>
+						{saveMutation.isPending ? "Saving..." : "Save"}
+					</Button>
 				</div>
 			</header>
 

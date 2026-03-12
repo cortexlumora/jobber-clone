@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { createRequestFormSchema } from "@repo/zod/request-form";
+import { createRequestFormSchema, updateRequestFormSchema } from "@repo/zod/request-form";
 import { createBookableServiceSchema, updateBookableServiceSchema } from "@repo/zod/bookable-service";
 import { updateRequestsBookingsSettingsSchema } from "@repo/zod/requests-bookings-settings";
 import type { APIResponse, RequestFormDTO, BookableServiceDTO, RequestsBookingsSettingsDTO } from "@repo/dto";
@@ -7,7 +7,9 @@ import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
 	getRequestForms,
+	getRequestFormById,
 	createRequestForm,
+	updateRequestForm,
 	deleteRequestForm,
 	getBookableServices,
 	createBookableService,
@@ -41,6 +43,19 @@ const requestsBookingsRoute = new Hono()
 		const data = c.req.valid("json");
 		const form = await createRequestForm(userId, data);
 		return c.json<APIResponse<RequestFormDTO>>({ data: form }, 201);
+	})
+	.get("/forms/:id", async (c) => {
+		const userId = getUserIdFromCTX(c);
+		const id = c.req.param("id");
+		const form = await getRequestFormById(userId, id);
+		return c.json<APIResponse<RequestFormDTO | null>>({ data: form });
+	})
+	.put("/forms/:id", zValidator("json", updateRequestFormSchema), async (c) => {
+		const userId = getUserIdFromCTX(c);
+		const id = c.req.param("id");
+		const data = c.req.valid("json");
+		const form = await updateRequestForm(userId, id, data);
+		return c.json<APIResponse<RequestFormDTO>>({ data: form! });
 	})
 	.delete("/forms/:id", async (c) => {
 		const userId = getUserIdFromCTX(c);
