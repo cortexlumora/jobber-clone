@@ -6,10 +6,8 @@ import {
 	DragOverlay,
 	useDraggable,
 	useDroppable,
-	closestCenter,
 	type DragStartEvent,
 	type DragEndEvent,
-	type DragOverEvent,
 	pointerWithin,
 } from "@dnd-kit/core";
 import {
@@ -31,6 +29,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import {
 	ArrowLeft,
 	GripVertical,
@@ -220,7 +219,17 @@ function SortableSection({
 }
 
 // ─── Sortable field ──────────────────────────────────────────────
-function SortableField({ field }: { field: FormField }) {
+function SortableField({
+	field,
+	isEditing,
+	onSelect,
+	onUpdate,
+}: {
+	field: FormField;
+	isEditing: boolean;
+	onSelect: () => void;
+	onUpdate: (updates: Partial<FormField>) => void;
+}) {
 	const {
 		attributes,
 		listeners,
@@ -237,11 +246,16 @@ function SortableField({ field }: { field: FormField }) {
 	};
 
 	return (
-		<div ref={setNodeRef} style={style} className="flex items-start gap-2">
+		<div
+			ref={setNodeRef}
+			style={style}
+			className={`flex items-start gap-2 rounded-md p-2 -mx-2 cursor-pointer transition-colors ${isEditing ? "ring-2 ring-primary/30 bg-accent/30" : "hover:bg-accent/20"}`}
+			onClick={(e) => { e.stopPropagation(); onSelect(); }}
+		>
 			<div className="flex-1">
-				<FieldRenderer field={field} />
+				<FieldRenderer field={field} isEditing={isEditing} onUpdate={onUpdate} />
 			</div>
-			<div {...listeners} {...attributes} className="cursor-grab mt-8 shrink-0">
+			<div {...listeners} {...attributes} className="cursor-grab mt-8 shrink-0" onClick={(e) => e.stopPropagation()}>
 				<GripVertical className="size-5 text-muted-foreground/50" />
 			</div>
 		</div>
@@ -249,7 +263,15 @@ function SortableField({ field }: { field: FormField }) {
 }
 
 // ─── Field renderer ──────────────────────────────────────────────
-function FieldRenderer({ field }: { field: FormField }) {
+function FieldRenderer({
+	field,
+	isEditing,
+	onUpdate,
+}: {
+	field: FormField;
+	isEditing?: boolean;
+	onUpdate?: (updates: Partial<FormField>) => void;
+}) {
 	switch (field.type) {
 		case "name_group":
 			return (
@@ -329,6 +351,28 @@ function FieldRenderer({ field }: { field: FormField }) {
 				</div>
 			);
 		case "short_answer":
+			if (isEditing) {
+				return (
+					<div className="space-y-3" onClick={(e) => e.stopPropagation()}>
+						<div className="space-y-2">
+							<Label className="text-xs text-muted-foreground">Question title</Label>
+							<Input
+								value={field.label}
+								onChange={(e) => onUpdate?.({ label: e.target.value })}
+								placeholder="Enter question title"
+							/>
+						</div>
+						<Input placeholder="Short answer" disabled />
+						<div className="flex items-center justify-between">
+							<Label className="text-sm">Required</Label>
+							<Switch
+								checked={field.required ?? false}
+								onCheckedChange={(checked) => onUpdate?.({ required: checked })}
+							/>
+						</div>
+					</div>
+				);
+			}
 			return (
 				<div className="space-y-2">
 					<Label>{field.label}</Label>
@@ -540,6 +584,18 @@ const FormDetailPage = () => {
 	const [sections, setSections] = useState<FormSection[]>(DEFAULT_SECTIONS);
 	const [activeType, setActiveType] = useState<string | null>(null);
 	const [isDraggingFromSidebar, setIsDraggingFromSidebar] = useState(false);
+	const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
+
+	const updateField = (fieldId: string, updates: Partial<FormField>) => {
+		setSections((prev) =>
+			prev.map((s) => ({
+				...s,
+				fields: s.fields.map((f) =>
+					f.id === fieldId ? { ...f, ...updates } : f
+				),
+			}))
+		);
+	};
 
 	const { data: forms = [] } = useQuery({
 		queryKey: ["request-forms"],
@@ -604,6 +660,9 @@ const FormDetailPage = () => {
 				type: type as FieldType,
 				label: SIDEBAR_ITEMS.flatMap((c) => c.items).find((i) => i.type === type)?.label ?? type,
 			};
+
+			// Auto-enter editing mode for newly dropped fields
+			setEditingFieldId(newField.id);
 
 			// Dropped on a drop indicator between sections — add to section above
 			if (overId.startsWith("drop-")) {
@@ -736,7 +795,7 @@ const FormDetailPage = () => {
 				{/* Canvas area */}
 				<div className="flex-1 flex gap-4 p-4 overflow-hidden">
 					{/* Left card - Form canvas */}
-					<div className="flex-1 rounded-lg border bg-card p-8 overflow-y-auto">
+					<div className="flex-1 rounded-lg border bg-card p-8 overflow-y-auto" onClick={() => setEditingFieldId(null)}>
 						<CanvasDropZone>
 							<SortableContext items={sectionIds} strategy={verticalListSortingStrategy}>
 								<DropIndicator id="drop-0" isDragging={isDraggingFromSidebar && activeType === "section"} />
@@ -748,7 +807,13 @@ const FormDetailPage = () => {
 												strategy={verticalListSortingStrategy}
 											>
 												{section.fields.map((field) => (
-													<SortableField key={field.id} field={field} />
+													<SortableField
+														key={field.id}
+														field={field}
+														isEditing={editingFieldId === field.id}
+														onSelect={() => setEditingFieldId(field.id)}
+														onUpdate={(updates) => updateField(field.id, updates)}
+													/>
 												))}
 											</SortableContext>
 											{section.fields.length === 0 && (
