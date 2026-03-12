@@ -23,6 +23,7 @@ export interface FormField {
 	type: FieldType;
 	label: string;
 	required?: boolean;
+	options?: string[];
 }
 
 export interface FieldRendererProps {
