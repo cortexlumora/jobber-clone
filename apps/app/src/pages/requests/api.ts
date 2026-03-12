@@ -11,3 +11,8 @@ export async function getRequests() {
 	const res = await http.get<APIResponse<RequestDTO[]>>("/api/v1/requests");
 	return res.data.data;
 }
+
+export async function getRequestById(id: string) {
+	const res = await http.get<APIResponse<RequestDTO | null>>(`/api/v1/requests/${id}`);
+	return res.data.data;
+}
