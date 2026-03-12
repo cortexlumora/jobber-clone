@@ -64,10 +64,10 @@ function FieldWrapperContent({
 	onUpdate: (updates: Partial<FormField>) => void;
 }) {
 	return (
-		<div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+		<div className="flex-1 min-w-0">
 			<FieldRenderer field={field} isEditing={isEditing} onUpdate={onUpdate} />
 			{isEditing && (
-				<div className="flex items-center justify-between mt-3 pt-3 border-t">
+				<div className="flex items-center justify-between mt-3 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
 					<Label className="text-sm">Required</Label>
 					<Switch
 						checked={field.required ?? false}
