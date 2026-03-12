@@ -18,6 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { FieldWrapper, type FieldType, type FormField } from "./components/fields";
+import { DropIndicator } from "./components/drop-indicator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -183,28 +184,6 @@ function SortableSection({
 	);
 }
 
-// ─── Drop indicator (shown between sections/fields while dragging) ─
-function DropIndicator({ id, isDragging }: { id: string; isDragging: boolean }) {
-	const { setNodeRef, isOver } = useDroppable({ id });
-
-	if (!isDragging) return null;
-
-	return (
-		<div
-			ref={setNodeRef}
-			className={`rounded-md border-2 border-dashed transition-all ${
-				isOver
-					? "border-primary bg-primary/5 py-6"
-					: "border-muted-foreground/20 py-2"
-			}`}
-		>
-			{isOver && (
-				<p className="text-xs text-primary text-center font-medium">Drop here</p>
-			)}
-		</div>
-	);
-}
-
 // ─── Canvas drop zone ────────────────────────────────────────────
 function CanvasDropZone({ children }: { children: React.ReactNode }) {
 	const { setNodeRef, isOver } = useDroppable({ id: "canvas" });
@@ -279,6 +258,7 @@ const FormDetailPage = () => {
 	const form = forms.find((f) => f.id === formId);
 
 	const sectionIds = sections.map((s) => s.id);
+	const isDraggingField = isDraggingFromSidebar && activeType !== null && activeType !== "section";
 
 	const handleDragStart = (event: DragStartEvent) => {
 		const data = event.active.data.current;
@@ -337,6 +317,22 @@ const FormDetailPage = () => {
 
 			// Auto-enter editing mode for newly dropped fields
 			setEditingFieldId(newField.id);
+
+			// Dropped on a field drop indicator inside a section
+			if (overId.startsWith("field-drop-")) {
+				const parts = overId.replace("field-drop-", "").split("-");
+				const fieldIdx = parseInt(parts.pop()!);
+				const sectionId = parts.join("-");
+				setSections((prev) =>
+					prev.map((s) => {
+						if (s.id !== sectionId) return s;
+						const newFields = [...s.fields];
+						newFields.splice(fieldIdx, 0, newField);
+						return { ...s, fields: newFields };
+					})
+				);
+				return;
+			}
 
 			// Dropped on a drop indicator between sections — add to section above
 			if (overId.startsWith("drop-")) {
@@ -480,22 +476,20 @@ const FormDetailPage = () => {
 												items={section.fields.map((f) => f.id)}
 												strategy={verticalListSortingStrategy}
 											>
-												{section.fields.map((field) => (
-													<FieldWrapper
-														key={field.id}
-														field={field}
-														isEditing={editingFieldId === field.id}
-														onSelect={() => setEditingFieldId(field.id)}
-														onUpdate={(updates) => updateField(field.id, updates)}
-														onDelete={() => deleteField(section.id, field.id)}
-													/>
+												<DropIndicator id={`field-drop-${section.id}-0`} isDragging={isDraggingField} />
+												{section.fields.map((field, fieldIndex) => (
+													<div key={field.id}>
+														<FieldWrapper
+															field={field}
+															isEditing={editingFieldId === field.id}
+															onSelect={() => setEditingFieldId(field.id)}
+															onUpdate={(updates) => updateField(field.id, updates)}
+															onDelete={() => deleteField(section.id, field.id)}
+														/>
+														<DropIndicator id={`field-drop-${section.id}-${fieldIndex + 1}`} isDragging={isDraggingField} />
+													</div>
 												))}
 											</SortableContext>
-											{section.fields.length === 0 && (
-												<div className="rounded-lg border-2 border-dashed p-6 text-center text-sm text-muted-foreground">
-													Drag fields here
-												</div>
-											)}
 										</SortableSection>
 										<DropIndicator id={`drop-${index + 1}`} isDragging={isDraggingFromSidebar && activeType === "section"} />
 									</div>
