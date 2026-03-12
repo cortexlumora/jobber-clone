@@ -255,7 +255,7 @@ function SortableField({
 			className={`flex items-start gap-2 rounded-lg p-3 -mx-3 cursor-pointer transition-all ${isEditing ? "ring-2 ring-primary bg-primary/5 shadow-sm" : "hover:bg-accent/20"}`}
 			onClick={(e) => { e.stopPropagation(); onSelect(); }}
 		>
-			<div className="flex-1">
+			<div className="flex-1 min-w-0">
 				<FieldRenderer field={field} isEditing={isEditing} onUpdate={onUpdate} />
 			</div>
 			<div className="flex flex-col items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
