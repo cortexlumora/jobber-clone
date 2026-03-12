@@ -17,12 +17,12 @@ import {
 	arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { FieldWrapper, type FieldType, type FormField } from "./components/fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FieldRenderer, type FieldType, type FormField } from "./components/fields";
 import {
 	ArrowLeft,
 	GripVertical,
@@ -45,7 +45,6 @@ import {
 	UserSearch,
 	ShoppingCart,
 	Plus,
-	Trash2,
 } from "lucide-react";
 import { getRequestForms } from "../api";
 
@@ -180,62 +179,6 @@ function SortableSection({
 				</Button>
 			</div>
 			{children}
-		</div>
-	);
-}
-
-// ─── Sortable field ──────────────────────────────────────────────
-function SortableField({
-	field,
-	isEditing,
-	onSelect,
-	onUpdate,
-	onDelete,
-}: {
-	field: FormField;
-	isEditing: boolean;
-	onSelect: () => void;
-	onUpdate: (updates: Partial<FormField>) => void;
-	onDelete: () => void;
-}) {
-	const {
-		attributes,
-		listeners,
-		setNodeRef,
-		transform,
-		transition,
-		isDragging,
-	} = useSortable({ id: field.id, data: { type: "field" } });
-
-	const style = {
-		transform: CSS.Transform.toString(transform),
-		transition,
-		opacity: isDragging ? 0.5 : 1,
-	};
-
-	return (
-		<div
-			ref={setNodeRef}
-			style={style}
-			className={`flex items-start gap-2 rounded-lg p-3 -mx-3 cursor-pointer transition-all ${isEditing ? "ring-2 ring-primary bg-primary/5 shadow-sm" : "hover:bg-accent/20"}`}
-			onClick={(e) => { e.stopPropagation(); onSelect(); }}
-		>
-			<div className="flex-1 min-w-0">
-				<FieldRenderer field={field} isEditing={isEditing} onUpdate={onUpdate} />
-			</div>
-			<div className="flex flex-col items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-				<div {...listeners} {...attributes} className="cursor-grab">
-					<GripVertical className="size-5 text-muted-foreground/50" />
-				</div>
-				{isEditing && (
-					<button
-						onClick={onDelete}
-						className="p-1 rounded-md text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
-					>
-						<Trash2 className="size-4" />
-					</button>
-				)}
-			</div>
 		</div>
 	);
 }
@@ -538,13 +481,13 @@ const FormDetailPage = () => {
 												strategy={verticalListSortingStrategy}
 											>
 												{section.fields.map((field) => (
-													<SortableField
+													<FieldWrapper
 														key={field.id}
 														field={field}
 														isEditing={editingFieldId === field.id}
 														onSelect={() => setEditingFieldId(field.id)}
 														onUpdate={(updates) => updateField(field.id, updates)}
-													onDelete={() => deleteField(section.id, field.id)}
+														onDelete={() => deleteField(section.id, field.id)}
 													/>
 												))}
 											</SortableContext>
