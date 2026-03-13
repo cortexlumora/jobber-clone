@@ -65,6 +65,7 @@ export interface ClientDetailDTO extends ClientDTO {
 		};
 	};
 	notes: import("./client-note").ClientNoteDTO[];
+	tags: import("./tag").TagDTO[];
 }
 
 export interface ClientDTO {
@@ -89,4 +90,5 @@ export interface ClientDTO {
 	updatedAt: Date;
 	archivedAt: Date | null;
 	deletedAt: Date | null;
+	tags?: import("./tag").TagDTO[];
 }

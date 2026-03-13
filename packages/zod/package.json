@@ -19,7 +19,8 @@
 		"./request-form": "./src/request-form.ts",
 		"./bookable-service": "./src/bookable-service.ts",
 		"./requests-bookings-settings": "./src/requests-bookings-settings.ts",
-		"./product-service": "./src/product-service.ts"
+		"./product-service": "./src/product-service.ts",
+		"./tag": "./src/tag.ts"
 	},
 	"dependencies": {
 		"zod": "^4.3.6"

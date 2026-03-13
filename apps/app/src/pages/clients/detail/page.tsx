@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InternalNotesCard from "./internal-notes-card";
+import TagsCard from "./tags-card";
 import {
 	Table,
 	TableBody,
@@ -33,7 +34,6 @@ import {
 	Phone,
 	Archive,
 	Trash2,
-	Tag,
 } from "lucide-react";
 
 const statusColors: Record<string, string> = {
@@ -346,20 +346,7 @@ const ClientDetailPage = () => {
 					</Card>
 
 					{/* Tags */}
-					<Card>
-						<CardHeader className="pb-3">
-							<div className="flex items-center justify-between">
-								<CardTitle className="text-sm font-semibold">Tags</CardTitle>
-								<Button variant="ghost" size="sm" className="h-7 text-xs">
-									<Tag className="h-3 w-3 mr-1" />
-									New Tag
-								</Button>
-							</div>
-						</CardHeader>
-						<CardContent>
-							<p className="text-sm text-muted-foreground">This client has no tags</p>
-						</CardContent>
-					</Card>
+					<TagsCard clientId={id!} initialTags={client.tags ?? []} />
 
 					{/* Last Client Communication */}
 					<Card>

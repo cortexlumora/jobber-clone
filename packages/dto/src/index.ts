@@ -14,3 +14,4 @@ export * from "./bookable-service";
 export * from "./requests-bookings-settings";
 export * from "./product-service";
 export * from "./dashboard";
+export * from "./tag";

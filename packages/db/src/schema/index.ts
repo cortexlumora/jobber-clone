@@ -14,6 +14,8 @@ export { requestStatusEnum, reminderEnum, requestLineItemsSchema } from "./reque
 export { default as requestFilesSchema } from "./request/request-files";
 export { default as propertiesSchema } from "./client/properties";
 export { default as clientContactsSchema } from "./client/client-contacts";
+export { default as tagsSchema } from "./client/tags";
+export { default as clientTagsSchema } from "./client/client-tags";
 export { default as companySettingsSchema } from "./company-settings";
 export { default as customFieldDefinitionsSchema } from "./custom-fields";
 export { fieldTypeEnum, appliesToEnum } from "./custom-fields";

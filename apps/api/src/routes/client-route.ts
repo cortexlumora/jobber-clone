@@ -2,8 +2,9 @@ import { zValidator } from "@hono/zod-validator";
 import { createClientSchema } from "@repo/zod/client";
 import { createClientContactSchema } from "@repo/zod/client-contact";
 import { createClientNoteSchema, updateClientNoteSchema } from "@repo/zod/client-note";
+import { assignTagSchema } from "@repo/zod/tag";
 import { paginationSchema } from "@repo/zod/pagination";
-import type { APIResponse, ClientContactDTO, ClientDTO, ClientDetailDTO, ClientNoteDTO, ClientStatsDTO, PaginatedResponse, PropertyDTO } from "@repo/dto";
+import type { APIResponse, ClientContactDTO, ClientDTO, ClientDetailDTO, ClientNoteDTO, ClientStatsDTO, PaginatedResponse, PropertyDTO, TagDTO } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
@@ -28,6 +29,11 @@ import {
 	togglePinNote,
 	deleteClientNote,
 } from "../services/client-note-service";
+import {
+	getClientTags,
+	assignTagToClient,
+	removeTagFromClient,
+} from "../services/tag-service";
 
 const clientRoute = new Hono()
 	.get("/stats", async (c) => {
@@ -148,6 +154,25 @@ const clientRoute = new Hono()
 				files: [],
 			},
 		});
+	})
+	// Tags
+	.get("/:id/tags", async (c) => {
+		const clientId = c.req.param("id");
+		const tags = await getClientTags(clientId);
+		return c.json<APIResponse<TagDTO[]>>({ data: tags });
+	})
+	.post("/:id/tags", zValidator("json", assignTagSchema), async (c) => {
+		const clientId = c.req.param("id");
+		const { tagId } = c.req.valid("json");
+		await assignTagToClient(clientId, tagId);
+		const tags = await getClientTags(clientId);
+		return c.json<APIResponse<TagDTO[]>>({ data: tags });
+	})
+	.delete("/:id/tags/:tagId", async (c) => {
+		const clientId = c.req.param("id");
+		const tagId = c.req.param("tagId");
+		await removeTagFromClient(clientId, tagId);
+		return c.json<APIResponse<null>>({ data: null });
 	});
 
 export default clientRoute;

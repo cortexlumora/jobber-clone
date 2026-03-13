@@ -11,6 +11,7 @@ import jobRoute from "./job-route";
 import requestsBookingsRoute from "./requests-bookings-route";
 import productsServicesRoute from "./products-services-route";
 import dashboardRoute from "./dashboard-route";
+import tagRoute from "./tag-route";
 const appRoutes = new Hono();
 
 appRoutes.route("/clients", clientRoute);
@@ -25,5 +26,6 @@ appRoutes.route("/jobs", jobRoute);
 appRoutes.route("/requests-bookings", requestsBookingsRoute);
 appRoutes.route("/products-services", productsServicesRoute);
 appRoutes.route("/dashboard", dashboardRoute);
+appRoutes.route("/tags", tagRoute);
 
 export default appRoutes;
