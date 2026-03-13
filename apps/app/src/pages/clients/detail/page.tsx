@@ -238,7 +238,7 @@ const ClientDetailPage = () => {
 						</CardHeader>
 						<CardContent>
 							<Tabs defaultValue="active-work">
-								<TabsList>
+								<TabsList variant="line">
 									<TabsTrigger value="new">New</TabsTrigger>
 									<TabsTrigger value="active-work">Active Work</TabsTrigger>
 									<TabsTrigger value="requests">Requests</TabsTrigger>
