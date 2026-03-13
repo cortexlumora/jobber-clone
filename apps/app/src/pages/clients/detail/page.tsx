@@ -139,42 +139,42 @@ const ClientDetailPage = () => {
 				{/* Left - Main Content */}
 				<div className="space-y-6">
 					{/* Properties */}
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm font-semibold">
+					<Card className="gap-0 py-0">
+						<CardHeader className="px-5 py-4">
+							<CardTitle className="text-sm font-medium">
 								Properties{totalProperties > 0 && ` (${totalProperties})`}
 							</CardTitle>
 						</CardHeader>
-						<CardContent>
+						<CardContent className="px-0 pb-0">
 							{properties.length === 0 ? (
-								<p className="text-sm text-muted-foreground">No properties</p>
+								<p className="text-sm text-muted-foreground px-5 pb-4">No properties</p>
 							) : (
 								<>
 									<Table>
 										<TableHeader>
 											<TableRow>
-												<TableHead className="text-xs">Address</TableHead>
-												<TableHead className="text-xs">City</TableHead>
-												<TableHead className="text-xs">State</TableHead>
-												<TableHead className="text-xs">ZIP</TableHead>
+												<TableHead>Address</TableHead>
+												<TableHead>City</TableHead>
+												<TableHead>State</TableHead>
+												<TableHead>ZIP</TableHead>
 											</TableRow>
 										</TableHeader>
 										<TableBody>
 											{properties.map((prop) => (
 												<TableRow key={prop.id}>
-													<TableCell className="text-xs">
+													<TableCell>
 														{[prop.street1, prop.street2].filter(Boolean).join(", ") || "—"}
 													</TableCell>
-													<TableCell className="text-xs">{prop.city ?? "—"}</TableCell>
-													<TableCell className="text-xs">{prop.state ?? "—"}</TableCell>
-													<TableCell className="text-xs">{prop.zip ?? "—"}</TableCell>
+													<TableCell>{prop.city ?? "—"}</TableCell>
+													<TableCell>{prop.state ?? "—"}</TableCell>
+													<TableCell>{prop.zip ?? "—"}</TableCell>
 												</TableRow>
 											))}
 										</TableBody>
 									</Table>
 									{totalProperties > properties.length && (
-										<div className="pt-3 text-center">
-											<Button variant="link" size="sm" className="text-xs">
+										<div className="py-3 text-center border-t">
+											<Button variant="link" size="sm">
 												View all {totalProperties} properties
 											</Button>
 										</div>
@@ -185,43 +185,43 @@ const ClientDetailPage = () => {
 					</Card>
 
 					{/* Contacts */}
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm font-semibold">
+					<Card className="gap-0 py-0">
+						<CardHeader className="px-5 py-4">
+							<CardTitle className="text-sm font-medium">
 								Contacts{totalContacts > 0 && ` (${totalContacts})`}
 							</CardTitle>
 						</CardHeader>
-						<CardContent>
+						<CardContent className="px-0 pb-0">
 							{contacts.length === 0 ? (
-								<p className="text-sm text-muted-foreground">No contacts found</p>
+								<p className="text-sm text-muted-foreground px-5 pb-4">No contacts found</p>
 							) : (
 								<>
 									<Table>
 										<TableHeader>
 											<TableRow>
-												<TableHead className="text-xs">Name</TableHead>
-												<TableHead className="text-xs">Role</TableHead>
-												<TableHead className="text-xs">Phone</TableHead>
-												<TableHead className="text-xs">Email</TableHead>
+												<TableHead>Name</TableHead>
+												<TableHead>Role</TableHead>
+												<TableHead>Phone</TableHead>
+												<TableHead>Email</TableHead>
 											</TableRow>
 										</TableHeader>
 										<TableBody>
 											{contacts.map((contact) => (
 												<TableRow key={contact.id}>
-													<TableCell className="text-xs">
+													<TableCell>
 														{contact.title !== "none" ? `${contact.title} ` : ""}
 														{contact.firstName} {contact.lastName}
 													</TableCell>
-													<TableCell className="text-xs">{contact.role ?? "—"}</TableCell>
-													<TableCell className="text-xs">{contact.phone ?? "—"}</TableCell>
-													<TableCell className="text-xs">{contact.email ?? "—"}</TableCell>
+													<TableCell>{contact.role ?? "—"}</TableCell>
+													<TableCell>{contact.phone ?? "—"}</TableCell>
+													<TableCell>{contact.email ?? "—"}</TableCell>
 												</TableRow>
 											))}
 										</TableBody>
 									</Table>
 									{totalContacts > contacts.length && (
-										<div className="pt-3 text-center">
-											<Button variant="link" size="sm" className="text-xs" onClick={() => navigate(`/clients/${id}/contacts`)}>
+										<div className="py-3 text-center border-t">
+											<Button variant="link" size="sm" onClick={() => navigate(`/clients/${id}/contacts`)}>
 												View all {totalContacts} contacts
 											</Button>
 										</div>
