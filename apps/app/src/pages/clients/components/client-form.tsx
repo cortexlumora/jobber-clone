@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createClientSchema, type CreateClientForm } from "@repo/zod/client";
 import { getCustomFieldDefinitions } from "@/pages/settings/api";
 import { CustomFieldDialog } from "@/components/custom-field-dialog";
+import { CompanyNameField } from "@/components/common/company-name-field";
 import { PersonNameFields } from "@/components/common/person-name-fields";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -195,25 +196,11 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 							lastName: errors.lastName?.message,
 						}}
 					/>
-					<div className="space-y-2">
-						<Label htmlFor="companyName">Company Name</Label>
-						<Input id="companyName" placeholder="Acme Inc." {...register("companyName")} />
-					</div>
-					<Controller
-						control={control}
-						name="useCompanyAsPrimary"
-						render={({ field }) => (
-							<div className="flex items-center gap-2">
-								<Checkbox
-									id="useCompanyAsPrimary"
-									checked={field.value}
-									onCheckedChange={field.onChange}
-								/>
-								<Label htmlFor="useCompanyAsPrimary" className="font-normal">
-									Use company name as the primary name
-								</Label>
-							</div>
-						)}
+
+					<CompanyNameField
+						inputProps={register("companyName")}
+						useAsPrimary={watch("useCompanyAsPrimary")}
+						onUseAsPrimaryChange={(v) => setValue("useCompanyAsPrimary", v)}
 					/>
 
 					{/* Contact Details */}
