@@ -34,7 +34,7 @@ export function PersonNameFields({
 			<div className="space-y-2">
 				<Label>Title</Label>
 				<Select onValueChange={onTitleChange} value={title}>
-					<SelectTrigger className=" w-[100px]">
+					<SelectTrigger className=" w-25">
 						<SelectValue placeholder="Title" />
 					</SelectTrigger>
 					<SelectContent>
