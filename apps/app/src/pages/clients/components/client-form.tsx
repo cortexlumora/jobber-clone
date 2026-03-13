@@ -6,6 +6,7 @@ import { createClientSchema, type CreateClientForm } from "@repo/zod/client";
 import { getCustomFieldDefinitions } from "@/pages/settings/api";
 import { CustomFieldDialog } from "@/components/custom-field-dialog";
 import { CompanyNameField } from "@/components/common/company-name-field";
+import { MultiInputField } from "@/components/common/multi-input-field";
 import { PersonNameFields } from "@/components/common/person-name-fields";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -207,112 +208,43 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 					<div className="space-y-4 pt-4">
 						<h3 className="text-lg font-medium">Contact Details</h3>
 
-						{/* Phone Numbers */}
-						<div className="space-y-2">
-							<Label>Phone</Label>
-							{phoneFields.map((field, index) => (
-								<div key={field.id} className="flex gap-2">
-									<Controller
-										control={control}
-										name={`phones.${index}.type`}
-										render={({ field }) => (
-											<Select onValueChange={field.onChange} value={field.value}>
-												<SelectTrigger className="w-35">
-													<SelectValue />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="mobile">Mobile</SelectItem>
-													<SelectItem value="landline">Landline</SelectItem>
-												</SelectContent>
-											</Select>
-										)}
-									/>
-									<Input
-										placeholder="(555) 123-4567"
-										{...register(`phones.${index}.number`)}
-									/>
-									{phoneFields.length > 1 && (
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											onClick={() => removePhone(index)}
-										>
-											<Trash2 className="h-4 w-4" />
-										</Button>
-									)}
-								</div>
-							))}
-							{errors.phones && (
-								<p className="text-sm text-destructive">
-									{errors.phones.root?.message || "Please check phone numbers"}
-								</p>
-							)}
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								onClick={() => appendPhone({ type: "mobile", number: "" })}
-							>
-								<Plus className="h-4 w-4 mr-1" />
-								Add Phone
-							</Button>
-						</div>
+						<MultiInputField
+							label="Phone"
+							typeOptions={[
+								{ value: "mobile", label: "Mobile" },
+								{ value: "landline", label: "Landline" },
+							]}
+							items={phoneFields.map((field, index) => ({
+								id: field.id,
+								type: watch(`phones.${index}.type`),
+								onTypeChange: (v) => setValue(`phones.${index}.type`, v as "mobile" | "landline"),
+								inputProps: { placeholder: "(555) 123-4567", ...register(`phones.${index}.number`) },
+								onRemove: () => removePhone(index),
+							}))}
+							error={errors.phones?.root?.message || (errors.phones ? "Please check phone numbers" : undefined)}
+							addLabel="Add Phone"
+							onAdd={() => appendPhone({ type: "mobile", number: "" })}
+						/>
 
-						{/* Emails */}
-						<div className="space-y-2">
-							<Label>Email</Label>
-							{emailFields.map((field, index) => (
-								<div key={field.id} className="flex gap-2">
-									<Controller
-										control={control}
-										name={`emails.${index}.type`}
-										render={({ field }) => (
-											<Select onValueChange={field.onChange} value={field.value}>
-												<SelectTrigger className="w-35">
-													<SelectValue />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="primary">Primary</SelectItem>
-													<SelectItem value="secondary">Secondary</SelectItem>
-													<SelectItem value="work">Work</SelectItem>
-													<SelectItem value="other">Other</SelectItem>
-												</SelectContent>
-											</Select>
-										)}
-									/>
-									<Input
-										type="email"
-										placeholder="john@example.com"
-										{...register(`emails.${index}.value`)}
-									/>
-									{emailFields.length > 1 && (
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											onClick={() => removeEmail(index)}
-										>
-											<Trash2 className="h-4 w-4" />
-										</Button>
-									)}
-								</div>
-							))}
-							{errors.emails && (
-								<p className="text-sm text-destructive">
-									{errors.emails.root?.message || "Please check email addresses"}
-								</p>
-							)}
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								onClick={() => appendEmail({ type: "primary", value: "" })}
-							>
-								<Plus className="h-4 w-4 mr-1" />
-								Add Email
-							</Button>
-						</div>
+						<MultiInputField
+							label="Email"
+							typeOptions={[
+								{ value: "primary", label: "Primary" },
+								{ value: "secondary", label: "Secondary" },
+								{ value: "work", label: "Work" },
+								{ value: "other", label: "Other" },
+							]}
+							items={emailFields.map((field, index) => ({
+								id: field.id,
+								type: watch(`emails.${index}.type`),
+								onTypeChange: (v) => setValue(`emails.${index}.type`, v as "primary" | "secondary" | "work" | "other"),
+								inputProps: { type: "email", placeholder: "john@example.com", ...register(`emails.${index}.value`) },
+								onRemove: () => removeEmail(index),
+							}))}
+							error={errors.emails?.root?.message || (errors.emails ? "Please check email addresses" : undefined)}
+							addLabel="Add Email"
+							onAdd={() => appendEmail({ type: "primary", value: "" })}
+						/>
 
 						{/* Communication Settings */}
 						<Button
