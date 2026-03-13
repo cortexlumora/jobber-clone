@@ -210,17 +210,18 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 
 						<MultiInputField
 							label="Phone"
+							control={control}
 							typeOptions={[
 								{ value: "mobile", label: "Mobile" },
 								{ value: "landline", label: "Landline" },
 							]}
 							items={phoneFields.map((field, index) => ({
 								id: field.id,
-								type: watch(`phones.${index}.type`),
+								typeName: `phones.${index}.type` as const,
+								valueName: `phones.${index}.number` as const,
 								onTypeChange: (v) => setValue(`phones.${index}.type`, v as "mobile" | "landline"),
 								inputProps: { placeholder: "(555) 123-4567", ...register(`phones.${index}.number`) },
 								onRemove: () => removePhone(index),
-								hasValue: !!watch(`phones.${index}.number`),
 							}))}
 							error={errors.phones?.root?.message || (errors.phones ? "Please check phone numbers" : undefined)}
 							addLabel="Add Phone"
@@ -229,6 +230,7 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 
 						<MultiInputField
 							label="Email"
+							control={control}
 							typeOptions={[
 								{ value: "primary", label: "Primary" },
 								{ value: "secondary", label: "Secondary" },
@@ -237,11 +239,11 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 							]}
 							items={emailFields.map((field, index) => ({
 								id: field.id,
-								type: watch(`emails.${index}.type`),
+								typeName: `emails.${index}.type` as const,
+								valueName: `emails.${index}.value` as const,
 								onTypeChange: (v) => setValue(`emails.${index}.type`, v as "primary" | "secondary" | "work" | "other"),
 								inputProps: { type: "email", placeholder: "john@example.com", ...register(`emails.${index}.value`) },
 								onRemove: () => removeEmail(index),
-								hasValue: !!watch(`emails.${index}.value`),
 							}))}
 							error={errors.emails?.root?.message || (errors.emails ? "Please check email addresses" : undefined)}
 							addLabel="Add Email"
