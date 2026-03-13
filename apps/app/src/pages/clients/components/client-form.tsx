@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createClientSchema, type CreateClientForm } from "@repo/zod/client";
 import { getCustomFieldDefinitions } from "@/pages/settings/api";
 import { CustomFieldDialog } from "@/components/custom-field-dialog";
+import { PersonNameFields } from "@/components/common/person-name-fields";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -184,44 +185,16 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 					title="Primary contact details"
 					description="Provide the main point of contact to ensure smooth communication and reliable client records."
 				>
-					<div className="grid grid-cols-[120px_1fr_1fr] gap-4">
-						<div className="space-y-2">
-							<Label>Title</Label>
-							<Controller
-								control={control}
-								name="title"
-								render={({ field }) => (
-									<Select onValueChange={field.onChange} value={field.value}>
-										<SelectTrigger>
-											<SelectValue placeholder="Title" />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="none">None</SelectItem>
-											<SelectItem value="Mr.">Mr.</SelectItem>
-											<SelectItem value="Ms.">Ms.</SelectItem>
-											<SelectItem value="Mrs.">Mrs.</SelectItem>
-											<SelectItem value="Miss.">Miss.</SelectItem>
-											<SelectItem value="Dr.">Dr.</SelectItem>
-										</SelectContent>
-									</Select>
-								)}
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="firstName">First Name</Label>
-							<Input id="firstName" placeholder="John" {...register("firstName")} />
-							{errors.firstName && (
-								<p className="text-sm text-destructive">{errors.firstName.message}</p>
-							)}
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="lastName">Last Name</Label>
-							<Input id="lastName" placeholder="Smith" {...register("lastName")} />
-							{errors.lastName && (
-								<p className="text-sm text-destructive">{errors.lastName.message}</p>
-							)}
-						</div>
-					</div>
+					<PersonNameFields
+						title={watch("title")}
+						onTitleChange={(v) => setValue("title", v)}
+						firstNameProps={register("firstName")}
+						lastNameProps={register("lastName")}
+						errors={{
+							firstName: errors.firstName?.message,
+							lastName: errors.lastName?.message,
+						}}
+					/>
 					<div className="space-y-2">
 						<Label htmlFor="companyName">Company Name</Label>
 						<Input id="companyName" placeholder="Acme Inc." {...register("companyName")} />
@@ -777,30 +750,18 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 					<div className="space-y-6 py-2">
 						<div className="space-y-4">
 							<h4 className="text-sm font-semibold">Details</h4>
-							<div className="space-y-2">
-								<Label>Title</Label>
-								<Select value={contactForm.title} onValueChange={(v) => setContactForm((s) => ({ ...s, title: v as typeof s.title }))}>
-									<SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-									<SelectContent>
-										<SelectItem value="none">None</SelectItem>
-										<SelectItem value="Mr.">Mr.</SelectItem>
-										<SelectItem value="Ms.">Ms.</SelectItem>
-										<SelectItem value="Mrs.">Mrs.</SelectItem>
-										<SelectItem value="Miss.">Miss.</SelectItem>
-										<SelectItem value="Dr.">Dr.</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-							<div className="grid grid-cols-2 gap-4">
-								<div className="space-y-2">
-									<Label>First name</Label>
-									<Input value={contactForm.firstName} onChange={(e) => setContactForm((s) => ({ ...s, firstName: e.target.value }))} />
-								</div>
-								<div className="space-y-2">
-									<Label>Last name</Label>
-									<Input value={contactForm.lastName} onChange={(e) => setContactForm((s) => ({ ...s, lastName: e.target.value }))} />
-								</div>
-							</div>
+							<PersonNameFields
+								title={contactForm.title}
+								onTitleChange={(v) => setContactForm((s) => ({ ...s, title: v }))}
+								firstNameProps={{
+									value: contactForm.firstName,
+									onChange: (e) => setContactForm((s) => ({ ...s, firstName: e.target.value })),
+								}}
+								lastNameProps={{
+									value: contactForm.lastName,
+									onChange: (e) => setContactForm((s) => ({ ...s, lastName: e.target.value })),
+								}}
+							/>
 							<div className="space-y-2">
 								<Label>Role</Label>
 								<Input placeholder="e.g., Spouse, Property Manager" value={contactForm.role} onChange={(e) => setContactForm((s) => ({ ...s, role: e.target.value }))} />
