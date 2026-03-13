@@ -30,11 +30,11 @@ export function PersonNameFields({
 	errors,
 }: PersonNameFieldsProps) {
 	return (
-		<div className="grid grid-cols-[120px_1fr_1fr] gap-4">
+		<div className="flex gap-4">
 			<div className="space-y-2">
 				<Label>Title</Label>
 				<Select onValueChange={onTitleChange} value={title}>
-					<SelectTrigger>
+					<SelectTrigger className=" w-[100px]">
 						<SelectValue placeholder="Title" />
 					</SelectTrigger>
 					<SelectContent>
@@ -47,14 +47,14 @@ export function PersonNameFields({
 					</SelectContent>
 				</Select>
 			</div>
-			<div className="space-y-2">
+			<div className="space-y-2 flex-1">
 				<Label>First Name</Label>
 				<Input placeholder="John" {...firstNameProps} />
 				{errors?.firstName && (
 					<p className="text-sm text-destructive">{errors.firstName}</p>
 				)}
 			</div>
-			<div className="space-y-2">
+			<div className="space-y-2 flex-1">
 				<Label>Last Name</Label>
 				<Input placeholder="Smith" {...lastNameProps} />
 				{errors?.lastName && (
