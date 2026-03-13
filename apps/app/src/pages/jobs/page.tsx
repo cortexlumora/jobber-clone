@@ -356,7 +356,7 @@ const JobsPage = () => {
 								const schedule = getScheduleLabel(job);
 
 								return (
-									<TableRow key={job.id} className="cursor-pointer hover:bg-muted/50">
+									<TableRow key={job.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/jobs/${job.id}`)}>
 										<TableCell>
 											<div className="font-medium">{clientName}</div>
 											<div className="text-sm text-muted-foreground">{job.title}</div>
