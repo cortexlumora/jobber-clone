@@ -220,6 +220,7 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 								onTypeChange: (v) => setValue(`phones.${index}.type`, v as "mobile" | "landline"),
 								inputProps: { placeholder: "(555) 123-4567", ...register(`phones.${index}.number`) },
 								onRemove: () => removePhone(index),
+								hasValue: !!watch(`phones.${index}.number`),
 							}))}
 							error={errors.phones?.root?.message || (errors.phones ? "Please check phone numbers" : undefined)}
 							addLabel="Add Phone"
@@ -240,6 +241,7 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 								onTypeChange: (v) => setValue(`emails.${index}.type`, v as "primary" | "secondary" | "work" | "other"),
 								inputProps: { type: "email", placeholder: "john@example.com", ...register(`emails.${index}.value`) },
 								onRemove: () => removeEmail(index),
+								hasValue: !!watch(`emails.${index}.value`),
 							}))}
 							error={errors.emails?.root?.message || (errors.emails ? "Please check email addresses" : undefined)}
 							addLabel="Add Email"
