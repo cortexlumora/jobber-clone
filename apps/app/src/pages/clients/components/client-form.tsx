@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createClientSchema, type CreateClientForm } from "@repo/zod/client";
-import { getCustomFieldDefinitions, createCustomFieldDefinition } from "@/pages/settings/api";
+import { getCustomFieldDefinitions } from "@/pages/settings/api";
+import { CustomFieldDialog } from "@/components/custom-field-dialog";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,8 +80,6 @@ interface ClientFormProps {
 }
 
 export default function ClientForm({ defaultValues, initialContacts, onSubmit: onSubmitProp, onReset, error }: ClientFormProps) {
-	const queryClient = useQueryClient();
-
 	const [additionalContacts, setAdditionalContacts] = useState<ContactEntry[]>(initialContacts?.additional ?? []);
 	const [propertyContacts, setPropertyContacts] = useState<ContactEntry[]>(initialContacts?.property ?? []);
 	const [contactDialogOpen, setContactDialogOpen] = useState(false);
@@ -97,13 +96,6 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 	const { data: propertyCustomFields = [] } = useQuery({
 		queryKey: ["custom-field-definitions", "property"],
 		queryFn: () => getCustomFieldDefinitions("property"),
-	});
-
-	const createFieldMutation = useMutation({
-		mutationFn: createCustomFieldDefinition,
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["custom-field-definitions"] });
-		},
 	});
 
 	const {
@@ -167,9 +159,6 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 
 	const [customFieldDialogOpen, setCustomFieldDialogOpen] = useState(false);
 	const [customFieldTarget, setCustomFieldTarget] = useState<"client" | "property">("client");
-	const [customFieldName, setCustomFieldName] = useState("");
-	const [customFieldType, setCustomFieldType] = useState<string>("");
-	const [customFieldDefault, setCustomFieldDefault] = useState("");
 
 	const [commDialogOpen, setCommDialogOpen] = useState(false);
 	const [commState, setCommState] = useState({
@@ -185,26 +174,6 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 			...data,
 			additionalContacts: allContacts.length > 0 ? allContacts : undefined,
 		});
-	};
-
-	const handleAddCustomField = () => {
-		if (!customFieldName || !customFieldType) return;
-		createFieldMutation.mutate(
-			{
-				name: customFieldName,
-				fieldType: customFieldType as "text" | "number" | "dropdown" | "checkbox" | "date",
-				appliesTo: customFieldTarget,
-				defaultValue: customFieldDefault || undefined,
-			},
-			{
-				onSuccess: () => {
-					setCustomFieldDialogOpen(false);
-					setCustomFieldName("");
-					setCustomFieldType("");
-					setCustomFieldDefault("");
-				},
-			}
-		);
 	};
 
 	return (
@@ -793,48 +762,11 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 			</Dialog>
 
 			{/* Custom Field Dialog */}
-			<Dialog open={customFieldDialogOpen} onOpenChange={setCustomFieldDialogOpen}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>New custom field</DialogTitle>
-					</DialogHeader>
-					<div className="space-y-4 py-2">
-						<div className="space-y-1">
-							<Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Applies to</Label>
-							<p className="text-sm font-medium">{customFieldTarget === "client" ? "All clients" : "All properties"}</p>
-						</div>
-						<p className="text-sm text-muted-foreground">Transferable fields appear in multiple places and follow your workflow</p>
-						<div className="space-y-2">
-							<Label>Custom field name</Label>
-							<Input placeholder="Serial Number" value={customFieldName} onChange={(e) => setCustomFieldName(e.target.value)} />
-						</div>
-						<div className="space-y-2">
-							<Label>Field type</Label>
-							<Select value={customFieldType} onValueChange={setCustomFieldType}>
-								<SelectTrigger className="w-full"><SelectValue placeholder="Select field type" /></SelectTrigger>
-								<SelectContent>
-									<SelectItem value="text">Text</SelectItem>
-									<SelectItem value="number">Number</SelectItem>
-									<SelectItem value="dropdown">Dropdown</SelectItem>
-									<SelectItem value="checkbox">Checkbox</SelectItem>
-									<SelectItem value="date">Date</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-						<div className="space-y-2">
-							<Label>Default value</Label>
-							<Input placeholder="54A17-HEX" value={customFieldDefault} onChange={(e) => setCustomFieldDefault(e.target.value)} />
-						</div>
-						<p className="text-xs text-muted-foreground">All custom fields can be edited and reordered in Settings &gt; Custom Fields</p>
-					</div>
-					<DialogFooter>
-						<Button type="button" variant="outline" onClick={() => setCustomFieldDialogOpen(false)}>Cancel</Button>
-						<Button type="button" disabled={!customFieldName || !customFieldType || createFieldMutation.isPending} onClick={handleAddCustomField}>
-							{createFieldMutation.isPending ? "Adding..." : "Add Custom Field"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<CustomFieldDialog
+				open={customFieldDialogOpen}
+				onOpenChange={setCustomFieldDialogOpen}
+				appliesTo={customFieldTarget}
+			/>
 
 			{/* Contact Dialog */}
 			<Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
