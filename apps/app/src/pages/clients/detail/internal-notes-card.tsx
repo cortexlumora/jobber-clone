@@ -379,7 +379,7 @@ const InternalNotesCard = ({ clientId, initialNotes }: InternalNotesCardProps) =
 	return (
 		<Card>
 			<CardHeader className="pb-3">
-				<CardTitle className="text-sm font-semibold">Internal notes</CardTitle>
+				<CardTitle className="text-lg font-medium">Internal notes</CardTitle>
 				<p className="text-xs text-muted-foreground">
 					Internal notes will only be seen by your team
 				</p>

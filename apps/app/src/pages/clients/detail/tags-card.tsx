@@ -92,7 +92,7 @@ export default function TagsCard({ clientId, initialTags }: TagsCardProps) {
 		<Card className="gap-0 py-0">
 			<CardHeader className="px-5 py-4">
 				<div className="flex items-center justify-between">
-					<CardTitle className="text-sm font-medium">Tags</CardTitle>
+					<CardTitle className="text-lg font-medium">Tags</CardTitle>
 					<Button
 						variant="ghost"
 						size="sm"

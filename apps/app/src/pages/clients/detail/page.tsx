@@ -135,7 +135,7 @@ const ClientDetailPage = () => {
 					{/* Overview */}
 					<Card>
 						<CardHeader className="pb-3">
-							<CardTitle className="text-sm font-semibold">Overview</CardTitle>
+							<CardTitle className="text-lg font-medium">Overview</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<Tabs defaultValue="active-work">
@@ -178,7 +178,7 @@ const ClientDetailPage = () => {
 					<Card>
 						<CardHeader className="pb-3">
 							<div className="flex items-center justify-between">
-								<CardTitle className="text-sm font-semibold">Schedule</CardTitle>
+								<CardTitle className="text-lg font-medium">Schedule</CardTitle>
 								<Button variant="ghost" size="sm" className="h-7 text-xs">
 									<Plus className="h-3 w-3 mr-1" />
 									New
@@ -201,7 +201,7 @@ const ClientDetailPage = () => {
 					{/* Contact Info */}
 					<Card>
 						<CardHeader className="pb-3">
-							<CardTitle className="text-sm font-semibold">Contact info</CardTitle>
+							<CardTitle className="text-lg font-medium">Contact info</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-3">
 							{client.phones.map((phone, i) => (
@@ -252,7 +252,7 @@ const ClientDetailPage = () => {
 					{/* Last Client Communication */}
 					<Card>
 						<CardHeader className="pb-3">
-							<CardTitle className="text-sm font-semibold">Last client communication</CardTitle>
+							<CardTitle className="text-lg font-medium">Last client communication</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<p className="text-sm text-muted-foreground">
@@ -265,7 +265,7 @@ const ClientDetailPage = () => {
 					<Card>
 						<CardHeader className="pb-3">
 							<div className="flex items-center justify-between">
-								<CardTitle className="text-sm font-semibold">Billing history</CardTitle>
+								<CardTitle className="text-lg font-medium">Billing history</CardTitle>
 								<Button variant="ghost" size="sm" className="h-7 text-xs">
 									<Plus className="h-3 w-3 mr-1" />
 									New
@@ -278,7 +278,7 @@ const ClientDetailPage = () => {
 							</p>
 							<div className="flex items-center justify-between pt-2 border-t">
 								<p className="text-sm font-medium">Current balance</p>
-								<p className="text-sm font-semibold">$0.00</p>
+								<p className="text-lg font-medium">$0.00</p>
 							</div>
 						</CardContent>
 					</Card>
