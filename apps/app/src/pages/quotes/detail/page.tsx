@@ -352,7 +352,9 @@ const QuoteDetailPage = () => {
 				</div>
 
 				{/* Right - Notes (30%) */}
-				<NotesPanel clientId={quote.clientId} />
+				<div className="sticky top-[4.5rem] h-[calc(100vh-5.5rem)]">
+					<NotesPanel clientId={quote.clientId} className="h-full" />
+				</div>
 			</div>
 		</div>
 	);
