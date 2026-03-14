@@ -11,16 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InternalNotesCard from "./internal-notes-card";
+import ContactsCard from "./contacts-card";
 import PropertiesCard from "./properties-card";
 import TagsCard from "./tags-card";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -52,9 +45,6 @@ const ClientDetailPage = () => {
 		queryFn: () => getClientById(id!),
 		enabled: !!id,
 	});
-
-	const contacts = client?.additionalContacts?.data ?? [];
-	const totalContacts = client?.additionalContacts?.pagination?.total ?? 0;
 
 	const { data: customFields = [] } = useQuery({
 		queryKey: ["custom-field-definitions", "client"],
@@ -140,51 +130,7 @@ const ClientDetailPage = () => {
 					<PropertiesCard clientId={id!} />
 
 					{/* Contacts */}
-					<Card className="gap-0 py-0">
-						<CardHeader className="px-5 py-4">
-							<CardTitle className="text-sm font-medium">
-								Contacts{totalContacts > 0 && ` (${totalContacts})`}
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="px-0 pb-0">
-							{contacts.length === 0 ? (
-								<p className="text-sm text-muted-foreground px-5 pb-4">No contacts found</p>
-							) : (
-								<>
-									<Table>
-										<TableHeader>
-											<TableRow>
-												<TableHead>Name</TableHead>
-												<TableHead>Role</TableHead>
-												<TableHead>Phone</TableHead>
-												<TableHead>Email</TableHead>
-											</TableRow>
-										</TableHeader>
-										<TableBody>
-											{contacts.map((contact) => (
-												<TableRow key={contact.id}>
-													<TableCell>
-														{contact.title !== "none" ? `${contact.title} ` : ""}
-														{contact.firstName} {contact.lastName}
-													</TableCell>
-													<TableCell>{contact.role ?? "—"}</TableCell>
-													<TableCell>{contact.phone ?? "—"}</TableCell>
-													<TableCell>{contact.email ?? "—"}</TableCell>
-												</TableRow>
-											))}
-										</TableBody>
-									</Table>
-									{totalContacts > contacts.length && (
-										<div className="py-3 text-center border-t">
-											<Button variant="link" size="sm" onClick={() => navigate(`/clients/${id}/contacts`)}>
-												View all {totalContacts} contacts
-											</Button>
-										</div>
-									)}
-								</>
-							)}
-						</CardContent>
-					</Card>
+					<ContactsCard clientId={id!} />
 
 					{/* Overview */}
 					<Card>
