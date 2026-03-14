@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InternalNotesCard from "./internal-notes-card";
+import PropertiesCard from "./properties-card";
 import TagsCard from "./tags-card";
 import {
 	Table,
@@ -51,9 +52,6 @@ const ClientDetailPage = () => {
 		queryFn: () => getClientById(id!),
 		enabled: !!id,
 	});
-
-	const properties = client?.propertyDetails?.data ?? [];
-	const totalProperties = client?.propertyDetails?.pagination?.total ?? 0;
 
 	const contacts = client?.additionalContacts?.data ?? [];
 	const totalContacts = client?.additionalContacts?.pagination?.total ?? 0;
@@ -139,50 +137,7 @@ const ClientDetailPage = () => {
 				{/* Left - Main Content */}
 				<div className="space-y-6">
 					{/* Properties */}
-					<Card className="gap-0 py-0">
-						<CardHeader className="px-5 py-4">
-							<CardTitle className="text-sm font-medium">
-								Properties{totalProperties > 0 && ` (${totalProperties})`}
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="px-0 pb-0">
-							{properties.length === 0 ? (
-								<p className="text-sm text-muted-foreground px-5 pb-4">No properties</p>
-							) : (
-								<>
-									<Table>
-										<TableHeader>
-											<TableRow>
-												<TableHead>Address</TableHead>
-												<TableHead>City</TableHead>
-												<TableHead>State</TableHead>
-												<TableHead>ZIP</TableHead>
-											</TableRow>
-										</TableHeader>
-										<TableBody>
-											{properties.map((prop) => (
-												<TableRow key={prop.id}>
-													<TableCell>
-														{[prop.street1, prop.street2].filter(Boolean).join(", ") || "—"}
-													</TableCell>
-													<TableCell>{prop.city ?? "—"}</TableCell>
-													<TableCell>{prop.state ?? "—"}</TableCell>
-													<TableCell>{prop.zip ?? "—"}</TableCell>
-												</TableRow>
-											))}
-										</TableBody>
-									</Table>
-									{totalProperties > properties.length && (
-										<div className="py-3 text-center border-t">
-											<Button variant="link" size="sm">
-												View all {totalProperties} properties
-											</Button>
-										</div>
-									)}
-								</>
-							)}
-						</CardContent>
-					</Card>
+					<PropertiesCard clientId={id!} />
 
 					{/* Contacts */}
 					<Card className="gap-0 py-0">
