@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getJobById } from "../api";
 import { getClientById } from "@/pages/clients/api";
 import NotesPanel from "@/components/notes-panel";
+import { formatScheduleDate, formatCurrency, getInitials } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,44 +30,6 @@ import {
 	Plus,
 } from "lucide-react";
 
-// ── Helpers ──────────────────────────────────────────────────────────
-
-function formatDate(date: Date | string) {
-	const d = new Date(date);
-	return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-function formatScheduleDate(dateStr: string, startTime: string | null, endTime: string | null) {
-	const d = new Date(dateStr + "T00:00:00");
-	const formatted = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-	const parts = [formatted];
-	if (startTime) {
-		const [h, m] = startTime.split(":");
-		const dt = new Date();
-		dt.setHours(Number(h), Number(m));
-		parts.push(dt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }));
-	}
-	if (endTime) {
-		const [h, m] = endTime.split(":");
-		const dt = new Date();
-		dt.setHours(Number(h), Number(m));
-		parts.push("– " + dt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }));
-	}
-	return parts.join(" ");
-}
-
-function getInitials(name: string) {
-	return name
-		.split(" ")
-		.map((n) => n[0])
-		.join("")
-		.slice(0, 2)
-		.toUpperCase();
-}
-
-function formatCurrency(amount: number) {
-	return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
-}
 
 const statusConfig: Record<string, { label: string; className: string }> = {
 	draft: { label: "Draft", className: "bg-gray-100 text-gray-800" },

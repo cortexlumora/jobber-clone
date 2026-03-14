@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getQuoteById } from "../api";
 import { getClientById } from "@/pages/clients/api";
 import NotesPanel from "@/components/notes-panel";
+import { formatDate, formatCurrency, getInitials } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,25 +28,6 @@ import {
 	ImageIcon,
 } from "lucide-react";
 
-// ── Helpers ──────────────────────────────────────────────────────────
-
-function formatDate(date: Date | string) {
-	const d = new Date(date);
-	return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-function getInitials(name: string) {
-	return name
-		.split(" ")
-		.map((n) => n[0])
-		.join("")
-		.slice(0, 2)
-		.toUpperCase();
-}
-
-function formatCurrency(amount: number) {
-	return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
-}
 
 const statusConfig: Record<string, { label: string; className: string }> = {
 	draft: { label: "Draft", className: "bg-gray-100 text-gray-800" },

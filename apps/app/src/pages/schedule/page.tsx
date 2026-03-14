@@ -13,6 +13,7 @@ import {
 	X,
 	Info,
 } from "lucide-react";
+import { getInitials, formatTimeStr } from "@/lib/format";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -35,15 +36,6 @@ type ViewMode = "month" | "week" | "day";
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 7); // 7 AM - 11 PM
 
-function getInitials(name: string) {
-	return name
-		.split(" ")
-		.map((n) => n[0])
-		.join("")
-		.slice(0, 2)
-		.toUpperCase();
-}
-
 function formatHour(hour: number) {
 	if (hour === 0) return "12 AM";
 	if (hour < 12) return `${hour} AM`;
@@ -51,14 +43,6 @@ function formatHour(hour: number) {
 	return `${hour - 12} PM`;
 }
 
-function formatTimeStr(timeStr: string) {
-	const [h, m] = timeStr.split(":");
-	const hour = Number(h);
-	const min = Number(m);
-	const ampm = hour >= 12 ? "PM" : "AM";
-	const h12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-	return min > 0 ? `${h12}:${m.padStart(2, "0")} ${ampm}` : `${h12} ${ampm}`;
-}
 
 function isSameDay(d1: Date, d2: Date) {
 	return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();

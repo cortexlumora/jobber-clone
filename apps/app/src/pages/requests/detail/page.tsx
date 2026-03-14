@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getRequestById } from "../api";
 import { getClientById } from "@/pages/clients/api";
 import NotesPanel from "@/components/notes-panel";
+import { formatDate, formatAssessmentDate, formatTimeStr, formatCurrency, getInitials } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,38 +30,6 @@ import {
 	ImageIcon,
 } from "lucide-react";
 
-// ── Helpers ──────────────────────────────────────────────────────────
-
-function formatDate(date: Date | string) {
-	const d = new Date(date);
-	return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-function formatAssessmentDate(dateStr: string, timeStr: string | null) {
-	const d = new Date(dateStr + "T00:00:00");
-	const formatted = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-	if (timeStr) {
-		const [hours, minutes] = timeStr.split(":");
-		const date = new Date();
-		date.setHours(Number(hours), Number(minutes));
-		const time = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-		return `${formatted} @ ${time}`;
-	}
-	return formatted;
-}
-
-function getInitials(name: string) {
-	return name
-		.split(" ")
-		.map((n) => n[0])
-		.join("")
-		.slice(0, 2)
-		.toUpperCase();
-}
-
-function formatCurrency(amount: number) {
-	return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
-}
 
 const statusConfig: Record<string, { label: string; className: string }> = {
 	new: { label: "New", className: "bg-blue-100 text-blue-800" },
@@ -273,12 +242,7 @@ const RequestDetailPage = () => {
 											{request.assessmentEndTime && (
 												<>
 													{" – "}
-													{(() => {
-														const [hours, minutes] = request.assessmentEndTime.split(":");
-														const d = new Date();
-														d.setHours(Number(hours), Number(minutes));
-														return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-													})()}
+													{formatTimeStr(request.assessmentEndTime)}
 												</>
 											)}
 										</p>

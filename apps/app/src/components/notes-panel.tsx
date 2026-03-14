@@ -1,26 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { getClientNotes } from "@/pages/clients/api";
 import type { ClientNoteDTO } from "@repo/dto";
+import { formatDate, formatTime, getInitials } from "@/lib/format";
 import { Pin } from "lucide-react";
-
-function formatDate(date: Date | string) {
-	const d = new Date(date);
-	return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-function formatTime(date: Date | string) {
-	const d = new Date(date);
-	return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-}
-
-function getInitials(name: string) {
-	return name
-		.split(" ")
-		.map((n) => n[0])
-		.join("")
-		.slice(0, 2)
-		.toUpperCase();
-}
 
 function NoteItem({ note }: { note: ClientNoteDTO }) {
 	return (
