@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getClientContacts } from "../api";
+import { getClientContacts } from "../../api";
 import { Button } from "@/components/ui/button";
 import {
 	Table,

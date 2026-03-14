@@ -10,10 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import InternalNotesCard from "./internal-notes-card";
-import ContactsCard from "./contacts-card";
-import PropertiesCard from "./properties-card";
-import TagsCard from "./tags-card";
+import InternalNotesCard from "./components/internal-notes-card";
+import ContactsCard from "./components/contacts-card";
+import PropertiesCard from "./components/properties-card";
+import TagsCard from "./components/tags-card";
 import {
 	DropdownMenu,
 	DropdownMenuContent,

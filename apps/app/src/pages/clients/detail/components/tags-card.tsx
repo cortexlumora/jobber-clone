@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { TagDTO } from "@repo/dto";
-import { getTags, createTag, assignTagToClient, removeTagFromClient } from "../api";
+import { getTags, createTag, assignTagToClient, removeTagFromClient } from "../../api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
