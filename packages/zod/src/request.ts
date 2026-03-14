@@ -29,3 +29,10 @@ export const createRequestSchema = z.object({
 });
 
 export type CreateRequestForm = z.infer<typeof createRequestSchema>;
+
+export const updateRequestOverviewSchema = z.object({
+	serviceDescription: z.string().min(1, "Service description is required"),
+	fileIds: z.array(z.string().uuid()).optional(),
+});
+
+export type UpdateRequestOverviewForm = z.infer<typeof updateRequestOverviewSchema>;

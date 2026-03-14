@@ -6,6 +6,7 @@ import { useDropzone } from "react-dropzone";
 import { getClients } from "@/pages/clients/api";
 import { presignUpload, uploadFileToS3 } from "@/lib/api";
 import { createRequest } from "../api";
+import ImageDropzone, { type UploadedFile } from "@/components/image-dropzone";
 import { Upload, X, Loader2, Plus } from "lucide-react";
 import { StickyFooter } from "@/components/sticky-footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,12 +24,6 @@ import {
 } from "@/components/ui/select";
 import type { CreateRequestForm } from "@repo/zod/request";
 
-interface UploadedFile {
-	fileId: string;
-	name: string;
-	preview: string;
-}
-
 interface LineItemUI {
 	name: string;
 	description: string;
@@ -43,7 +38,6 @@ const CreateRequestPage = () => {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [uploadedImages, setUploadedImages] = useState<UploadedFile[]>([]);
-	const [uploadingImages, setUploadingImages] = useState(false);
 	const [noteFiles, setNoteFiles] = useState<UploadedFile[]>([]);
 	const [uploadingNotes, setUploadingNotes] = useState(false);
 	const [lineItems, setLineItems] = useState<LineItemUI[]>([]);
@@ -58,27 +52,6 @@ const CreateRequestPage = () => {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["requests"] });
 			navigate("/requests");
-		},
-	});
-
-	const imageDropzone = useDropzone({
-		accept: { "image/*": [] },
-		onDrop: async (acceptedFiles) => {
-			setUploadingImages(true);
-			try {
-				const results = await Promise.all(
-					acceptedFiles.map(async (file) => {
-						const { fileId, uploadUrl } = await presignUpload(file.name, file.type);
-						await uploadFileToS3(uploadUrl, file);
-						return { fileId, name: file.name, preview: URL.createObjectURL(file) };
-					}),
-				);
-				setUploadedImages((prev) => [...prev, ...results]);
-			} catch (err) {
-				console.error("Image upload failed:", err);
-			} finally {
-				setUploadingImages(false);
-			}
 		},
 	});
 
@@ -101,10 +74,6 @@ const CreateRequestPage = () => {
 			}
 		},
 	});
-
-	const removeImage = (index: number) => {
-		setUploadedImages((prev) => prev.filter((_, i) => i !== index));
-	};
 
 	const removeNoteFile = (index: number) => {
 		setNoteFiles((prev) => prev.filter((_, i) => i !== index));
@@ -177,7 +146,7 @@ const CreateRequestPage = () => {
 		});
 	};
 
-	const isUploading = uploadingImages || uploadingNotes || lineItems.some((i) => i.imageUploading);
+	const isUploading = uploadingNotes || lineItems.some((i) => i.imageUploading);
 
 	return (
 		<StickyFooter.Root>
@@ -244,52 +213,7 @@ const CreateRequestPage = () => {
 					)}
 
 					{/* Image Upload */}
-					<div className="space-y-3">
-						<p className="text-sm text-muted-foreground">Share images of the work to be done</p>
-						{uploadedImages.length > 0 && (
-							<div className="flex flex-wrap gap-3">
-								{uploadedImages.map((file, index) => (
-									<div key={file.fileId} className="relative group">
-										<img
-											src={file.preview}
-											alt={file.name}
-											className="h-24 w-24 rounded-lg object-cover border"
-										/>
-										<Button
-											type="button"
-											variant="destructive"
-											size="icon"
-											className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-											onClick={() => removeImage(index)}
-										>
-											<X className="h-3 w-3" />
-										</Button>
-									</div>
-								))}
-							</div>
-						)}
-						<div
-							{...imageDropzone.getRootProps()}
-							className={`rounded-lg border-2 border-dashed p-6 text-center cursor-pointer transition-colors ${
-								imageDropzone.isDragActive ? "border-primary bg-primary/5" : "border-border"
-							}`}
-						>
-							<input {...imageDropzone.getInputProps()} />
-							{uploadingImages ? (
-								<>
-									<Loader2 className="mx-auto h-6 w-6 text-muted-foreground mb-1 animate-spin" />
-									<p className="text-sm text-muted-foreground">Uploading...</p>
-								</>
-							) : (
-								<>
-									<Upload className="mx-auto h-6 w-6 text-muted-foreground mb-1" />
-									<p className="text-sm text-muted-foreground">
-										{imageDropzone.isDragActive ? "Drop images here" : "Drag images here or click to browse"}
-									</p>
-								</>
-							)}
-						</div>
-					</div>
+					<ImageDropzone images={uploadedImages} onChange={setUploadedImages} />
 				</div>
 
 				{/* On-site Assessment */}

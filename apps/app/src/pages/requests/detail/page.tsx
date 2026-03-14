@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { useParams } from "react-router";
-import { useQuery } from "@tanstack/react-query";
-import { getRequestById } from "../api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getRequestById, updateRequestOverview } from "../api";
 import { getClientById } from "@/pages/clients/api";
 import NotesPanel from "@/components/notes-panel";
+import ImageDropzone, { type UploadedFile } from "@/components/image-dropzone";
 import { formatDate, formatAssessmentDate, formatTimeStr, formatCurrency, getInitials } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -28,6 +31,7 @@ import {
 	Calendar,
 	Bell,
 	ImageIcon,
+	Pencil,
 } from "lucide-react";
 
 
@@ -50,11 +54,12 @@ const reminderLabels: Record<string, string> = {
 
 // ── Section wrapper ──────────────────────────────────────────────────
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
 	return (
 		<div className="rounded-lg border bg-background">
-			<div className="px-5 py-3 border-b">
+			<div className="px-5 py-3 border-b flex items-center justify-between">
 				<h3 className="text-sm font-semibold">{title}</h3>
+				{action}
 			</div>
 			<div className="px-5 py-4">{children}</div>
 		</div>
@@ -65,12 +70,46 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 const RequestDetailPage = () => {
 	const { id } = useParams<{ id: string }>();
+	const queryClient = useQueryClient();
+
+	const [editingOverview, setEditingOverview] = useState(false);
+	const [editDescription, setEditDescription] = useState("");
+	const [editImages, setEditImages] = useState<UploadedFile[]>([]);
 
 	const { data: request, isLoading } = useQuery({
 		queryKey: ["request", id],
 		queryFn: () => getRequestById(id!),
 		enabled: !!id,
 	});
+
+	const overviewMutation = useMutation({
+		mutationFn: (data: { serviceDescription: string; fileIds: string[] }) =>
+			updateRequestOverview(id!, data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["request", id] });
+			setEditingOverview(false);
+		},
+	});
+
+	const startEditing = () => {
+		if (!request) return;
+		setEditDescription(request.serviceDescription);
+		setEditImages(
+			request.fileIds.map((fileId) => ({ fileId, name: "", preview: "" })),
+		);
+		setEditingOverview(true);
+	};
+
+	const cancelEditing = () => {
+		setEditingOverview(false);
+	};
+
+	const saveOverview = () => {
+		overviewMutation.mutate({
+			serviceDescription: editDescription,
+			fileIds: editImages.map((f) => f.fileId),
+		});
+	};
 
 	const { data: client } = useQuery({
 		queryKey: ["client", request?.clientId],
@@ -185,39 +224,78 @@ const RequestDetailPage = () => {
 					</div>
 
 					{/* Overview - Service Details */}
-					<Section title="Overview">
-						<div className="space-y-4">
-							<div>
-								<p className="text-xs text-muted-foreground mb-1">Service details</p>
-								<p className="text-xs text-muted-foreground italic mb-2">
-									Please provide as much information as you can
-								</p>
-								<p className="text-sm">{request.serviceDescription}</p>
+					<Section
+						title="Overview"
+						action={
+							!editingOverview && (
+								<Button variant="ghost" size="sm" className="h-7 text-xs" onClick={startEditing}>
+									<Pencil className="h-3 w-3 mr-1" />
+									Edit
+								</Button>
+							)
+						}
+					>
+						{editingOverview ? (
+							<div className="space-y-4">
+								<div className="space-y-2">
+									<p className="text-xs text-muted-foreground">Service details</p>
+									<Textarea
+										rows={4}
+										value={editDescription}
+										onChange={(e) => setEditDescription(e.target.value)}
+										placeholder="Describe the service needed..."
+									/>
+								</div>
+
+								<ImageDropzone images={editImages} onChange={setEditImages} />
+
+								<div className="flex items-center gap-2 pt-2">
+									<Button
+										size="sm"
+										onClick={saveOverview}
+										disabled={overviewMutation.isPending || !editDescription.trim()}
+									>
+										{overviewMutation.isPending ? "Saving..." : "Save"}
+									</Button>
+									<Button variant="outline" size="sm" onClick={cancelEditing}>
+										Cancel
+									</Button>
+								</div>
 							</div>
-
-							{request.fileIds.length > 0 && (
+						) : (
+							<div className="space-y-4">
 								<div>
-									<p className="text-xs text-muted-foreground mb-2">Share images of the work to be done</p>
-									<div className="flex flex-wrap gap-2">
-										{request.fileIds.map((fileId) => (
-											<div
-												key={fileId}
-												className="h-16 w-16 rounded border bg-muted flex items-center justify-center"
-											>
-												<ImageIcon className="h-5 w-5 text-muted-foreground" />
-											</div>
-										))}
+									<p className="text-xs text-muted-foreground mb-1">Service details</p>
+									<p className="text-xs text-muted-foreground italic mb-2">
+										Please provide as much information as you can
+									</p>
+									<p className="text-sm">{request.serviceDescription}</p>
+								</div>
+
+								{request.fileIds.length > 0 && (
+									<div>
+										<p className="text-xs text-muted-foreground mb-2">Share images of the work to be done</p>
+										<div className="flex flex-wrap gap-2">
+											{request.fileIds.map((fileId) => (
+												<div
+													key={fileId}
+													className="h-16 w-16 rounded border bg-muted flex items-center justify-center"
+												>
+													<ImageIcon className="h-5 w-5 text-muted-foreground" />
+												</div>
+											))}
+										</div>
 									</div>
-								</div>
-							)}
+								)}
 
-							{client?.leadSource && (
-								<div>
-									<p className="text-xs text-muted-foreground mb-1">How did you hear about us?</p>
-									<p className="text-sm capitalize">{client.leadSource.replace("_", " ")}</p>
-								</div>
-							)}
-						</div>
+								{client?.leadSource && (
+									<div>
+										<p className="text-xs text-muted-foreground mb-1">How did you hear about us?</p>
+										<p className="text-sm capitalize">{client.leadSource.replace("_", " ")}</p>
+									</div>
+								)}
+							</div>
+						)}
 					</Section>
 
 					{/* On-site Assessment */}

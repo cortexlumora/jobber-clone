@@ -1,5 +1,5 @@
 import db, { requestsSchema, requestFilesSchema, requestLineItemsSchema } from "@repo/db";
-import type { CreateRequestForm } from "@repo/zod/request";
+import type { CreateRequestForm, UpdateRequestOverviewForm } from "@repo/zod/request";
 import { and, eq, isNull } from "drizzle-orm";
 
 export async function createRequest(userId: string, data: CreateRequestForm) {
@@ -92,4 +92,24 @@ export async function getRequestById(requestId: string) {
 		.where(eq(requestLineItemsSchema.requestId, request.id));
 
 	return { ...request, fileIds: files.map((f) => f.fileId), lineItems: items };
+}
+
+export async function updateRequestOverview(requestId: string, data: UpdateRequestOverviewForm) {
+	const [updated] = await db
+		.update(requestsSchema)
+		.set({ serviceDescription: data.serviceDescription })
+		.where(eq(requestsSchema.id, requestId))
+		.returning();
+
+	if (!updated) return null;
+
+	// Replace file associations
+	await db.delete(requestFilesSchema).where(eq(requestFilesSchema.requestId, requestId));
+	if (data.fileIds && data.fileIds.length > 0) {
+		await db.insert(requestFilesSchema).values(
+			data.fileIds.map((fileId) => ({ requestId, fileId })),
+		);
+	}
+
+	return getRequestById(requestId);
 }
