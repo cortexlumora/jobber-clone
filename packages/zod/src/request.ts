@@ -42,3 +42,16 @@ export const updateRequestLineItemsSchema = z.object({
 });
 
 export type UpdateRequestLineItemsForm = z.infer<typeof updateRequestLineItemsSchema>;
+
+export const updateRequestAssessmentSchema = z.object({
+	assessmentInstructions: z.string().optional(),
+	assessmentStartDate: z.string().optional(),
+	assessmentEndDate: z.string().optional(),
+	assessmentStartTime: z.string().optional(),
+	assessmentEndTime: z.string().optional(),
+	scheduleLater: z.boolean().optional(),
+	anytime: z.boolean().optional(),
+	teamReminder: z.enum(["none", "at_start", "30min", "1hour", "2hour", "5hour", "24hour"]).optional(),
+});
+
+export type UpdateRequestAssessmentForm = z.infer<typeof updateRequestAssessmentSchema>;

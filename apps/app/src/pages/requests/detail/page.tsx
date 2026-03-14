@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useParams } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getRequestById, updateRequestOverview, updateRequestLineItems } from "../api";
+import { getRequestById, updateRequestOverview, updateRequestLineItems, updateRequestAssessment } from "../api";
 import { getClientById } from "@/pages/clients/api";
 import NotesPanel from "@/components/notes-panel";
 import ImageDropzone, { type UploadedFile } from "@/components/image-dropzone";
 import LineItemsCard, { type LineItemUI } from "@/components/line-items-card";
+import AssessmentCard, { type AssessmentData } from "@/components/assessment-card";
 import { formatDate, formatAssessmentDate, formatTimeStr, formatCurrency, getInitials } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -151,6 +152,42 @@ const RequestDetailPage = () => {
 				imageFileId: item.imageFileId || undefined,
 			})),
 		});
+	};
+
+	// Assessment editing
+	const [editingAssessment, setEditingAssessment] = useState(false);
+	const [editAssessment, setEditAssessment] = useState<AssessmentData>({
+		assessmentInstructions: "",
+		assessmentStartDate: "",
+		assessmentEndDate: "",
+		assessmentStartTime: "",
+		assessmentEndTime: "",
+		scheduleLater: false,
+		anytime: false,
+		teamReminder: "none",
+	});
+
+	const assessmentMutation = useMutation({
+		mutationFn: (data: AssessmentData) => updateRequestAssessment(id!, data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["request", id] });
+			setEditingAssessment(false);
+		},
+	});
+
+	const startEditingAssessment = () => {
+		if (!request) return;
+		setEditAssessment({
+			assessmentInstructions: request.assessmentInstructions ?? "",
+			assessmentStartDate: request.assessmentStartDate ?? "",
+			assessmentEndDate: request.assessmentEndDate ?? "",
+			assessmentStartTime: request.assessmentStartTime ?? "",
+			assessmentEndTime: request.assessmentEndTime ?? "",
+			scheduleLater: request.scheduleLater ?? false,
+			anytime: request.anytime ?? false,
+			teamReminder: request.teamReminder ?? "none",
+		});
+		setEditingAssessment(true);
 	};
 
 	const { data: client } = useQuery({
@@ -341,8 +378,24 @@ const RequestDetailPage = () => {
 					</Section>
 
 					{/* On-site Assessment */}
-					{(request.assessmentInstructions || request.assessmentStartDate || request.teamReminder !== "none") && (
-						<Section title="On-site assessment">
+					{editingAssessment ? (
+						<AssessmentCard
+							value={editAssessment}
+							onChange={setEditAssessment}
+							onSave={() => assessmentMutation.mutate(editAssessment)}
+							onCancel={() => setEditingAssessment(false)}
+							saving={assessmentMutation.isPending}
+						/>
+					) : (request.assessmentInstructions || request.assessmentStartDate || request.teamReminder !== "none") ? (
+						<Section
+							title="On-site assessment"
+							action={
+								<Button variant="ghost" size="sm" className="h-7 text-xs" onClick={startEditingAssessment}>
+									<Pencil className="h-3 w-3 mr-1" />
+									Edit
+								</Button>
+							}
+						>
 							<div className="space-y-4">
 								{request.assessmentInstructions && (
 									<div>
@@ -379,6 +432,18 @@ const RequestDetailPage = () => {
 									</div>
 								)}
 							</div>
+						</Section>
+					) : (
+						<Section
+							title="On-site assessment"
+							action={
+								<Button variant="ghost" size="sm" className="h-7 text-xs" onClick={startEditingAssessment}>
+									<Pencil className="h-3 w-3 mr-1" />
+									Edit
+								</Button>
+							}
+						>
+							<p className="text-sm text-muted-foreground">No assessment details</p>
 						</Section>
 					)}
 

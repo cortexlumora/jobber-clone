@@ -1,5 +1,5 @@
 import db, { requestsSchema, requestFilesSchema, requestLineItemsSchema } from "@repo/db";
-import type { CreateRequestForm, UpdateRequestOverviewForm, UpdateRequestLineItemsForm } from "@repo/zod/request";
+import type { CreateRequestForm, UpdateRequestOverviewForm, UpdateRequestLineItemsForm, UpdateRequestAssessmentForm } from "@repo/zod/request";
 import { and, eq, isNull } from "drizzle-orm";
 
 export async function createRequest(userId: string, data: CreateRequestForm) {
@@ -130,6 +130,24 @@ export async function updateRequestLineItems(requestId: string, data: UpdateRequ
 			})),
 		);
 	}
+
+	return getRequestById(requestId);
+}
+
+export async function updateRequestAssessment(requestId: string, data: UpdateRequestAssessmentForm) {
+	await db
+		.update(requestsSchema)
+		.set({
+			assessmentInstructions: data.assessmentInstructions || null,
+			assessmentStartDate: data.assessmentStartDate || null,
+			assessmentEndDate: data.assessmentEndDate || null,
+			assessmentStartTime: data.assessmentStartTime || null,
+			assessmentEndTime: data.assessmentEndTime || null,
+			scheduleLater: data.scheduleLater ?? false,
+			anytime: data.anytime ?? false,
+			teamReminder: data.teamReminder ?? "none",
+		})
+		.where(eq(requestsSchema.id, requestId));
 
 	return getRequestById(requestId);
 }

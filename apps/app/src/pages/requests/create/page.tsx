@@ -8,6 +8,7 @@ import { presignUpload, uploadFileToS3 } from "@/lib/api";
 import { createRequest } from "../api";
 import ImageDropzone, { type UploadedFile } from "@/components/image-dropzone";
 import LineItemsCard, { type LineItemUI, createEmptyLineItem } from "@/components/line-items-card";
+import AssessmentCard, { type AssessmentData } from "@/components/assessment-card";
 import { Upload, X, Loader2, Plus } from "lucide-react";
 import { StickyFooter } from "@/components/sticky-footer";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,16 @@ const CreateRequestPage = () => {
 	const [noteFiles, setNoteFiles] = useState<UploadedFile[]>([]);
 	const [uploadingNotes, setUploadingNotes] = useState(false);
 	const [lineItems, setLineItems] = useState<LineItemUI[]>([]);
+	const [assessment, setAssessment] = useState<AssessmentData>({
+		assessmentInstructions: "",
+		assessmentStartDate: "",
+		assessmentEndDate: "",
+		assessmentStartTime: "",
+		assessmentEndTime: "",
+		scheduleLater: false,
+		anytime: false,
+		teamReminder: "none",
+	});
 
 	const { data: clients } = useQuery({
 		queryKey: ["clients"],
@@ -79,14 +90,6 @@ const CreateRequestPage = () => {
 			title: "",
 			clientId: "",
 			serviceDescription: "",
-			assessmentInstructions: "",
-			assessmentStartDate: "",
-			assessmentEndDate: "",
-			assessmentStartTime: "",
-			assessmentEndTime: "",
-			scheduleLater: false,
-			anytime: false,
-			teamReminder: "none",
 			internalNotes: "",
 			fileIds: [],
 			lineItems: [],
@@ -100,6 +103,13 @@ const CreateRequestPage = () => {
 		];
 		mutation.mutate({
 			...data,
+			...assessment,
+			assessmentInstructions: assessment.assessmentInstructions || undefined,
+			assessmentStartDate: assessment.assessmentStartDate || undefined,
+			assessmentEndDate: assessment.assessmentEndDate || undefined,
+			assessmentStartTime: assessment.assessmentStartTime || undefined,
+			assessmentEndTime: assessment.assessmentEndTime || undefined,
+			teamReminder: assessment.teamReminder as CreateRequestForm["teamReminder"],
 			fileIds: allFileIds,
 			lineItems: lineItems.map((item) => ({
 				name: item.name,
@@ -182,112 +192,7 @@ const CreateRequestPage = () => {
 				</div>
 
 				{/* On-site Assessment */}
-				<div className="space-y-4">
-					<h3 className="text-lg font-medium">On-site assessment</h3>
-					<div className="space-y-2">
-						<Label htmlFor="assessmentInstructions">Instructions</Label>
-						<Textarea
-							id="assessmentInstructions"
-							placeholder="Add instructions for the assessment..."
-							rows={3}
-							{...register("assessmentInstructions")}
-						/>
-					</div>
-
-					<div className="grid grid-cols-2 gap-6">
-						{/* Left Column - Schedule */}
-						<div className="space-y-4">
-							<h4 className="text-sm font-semibold">Schedule</h4>
-							<div className="grid grid-cols-2 gap-3">
-								<div className="space-y-2">
-									<Label>Start date</Label>
-									<Input type="date" {...register("assessmentStartDate")} />
-								</div>
-								<div className="space-y-2">
-									<Label>End date</Label>
-									<Input type="date" {...register("assessmentEndDate")} />
-								</div>
-							</div>
-							<Controller
-								control={control}
-								name="scheduleLater"
-								render={({ field }) => (
-									<div className="flex items-center gap-2">
-										<Checkbox id="scheduleLater" checked={field.value} onCheckedChange={field.onChange} />
-										<Label htmlFor="scheduleLater" className="font-normal">Schedule later</Label>
-									</div>
-								)}
-							/>
-							<div className="grid grid-cols-2 gap-3">
-								<div className="space-y-2">
-									<Label>Start time</Label>
-									<Input type="time" {...register("assessmentStartTime")} />
-								</div>
-								<div className="space-y-2">
-									<Label>End time</Label>
-									<Input type="time" {...register("assessmentEndTime")} />
-								</div>
-							</div>
-							<Controller
-								control={control}
-								name="anytime"
-								render={({ field }) => (
-									<div className="flex items-center gap-2">
-										<Checkbox id="anytime" checked={field.value} onCheckedChange={field.onChange} />
-										<Label htmlFor="anytime" className="font-normal">Anytime</Label>
-									</div>
-								)}
-							/>
-						</div>
-
-						{/* Right Column - Team */}
-						<div className="space-y-4">
-							<h4 className="text-sm font-semibold">Team</h4>
-							<div className="space-y-2">
-								<Label>Assign team</Label>
-								<Select>
-									<SelectTrigger>
-										<SelectValue placeholder="Select team member" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="unassigned">Unassigned</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-							<div className="flex items-center gap-2">
-								<Checkbox id="emailOnAssign" />
-								<Label htmlFor="emailOnAssign" className="font-normal">Email when team is assigned</Label>
-							</div>
-
-							<hr />
-
-							<div className="space-y-2">
-								<h4 className="text-sm font-semibold">Team reminder</h4>
-								<Label>Remind team</Label>
-								<Controller
-									control={control}
-									name="teamReminder"
-									render={({ field }) => (
-										<Select onValueChange={field.onChange} value={field.value}>
-											<SelectTrigger>
-												<SelectValue placeholder="No reminder set" />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="none">No reminder set</SelectItem>
-												<SelectItem value="at_start">At start of task</SelectItem>
-												<SelectItem value="30min">30 minutes before</SelectItem>
-												<SelectItem value="1hour">1 hour before</SelectItem>
-												<SelectItem value="2hour">2 hours before</SelectItem>
-												<SelectItem value="5hour">5 hours before</SelectItem>
-												<SelectItem value="24hour">24 hours before</SelectItem>
-											</SelectContent>
-										</Select>
-									)}
-								/>
-							</div>
-						</div>
-					</div>
-				</div>
+				<AssessmentCard value={assessment} onChange={setAssessment} />
 
 				{/* Product / Service */}
 				<LineItemsCard items={lineItems} onChange={setLineItems} />
