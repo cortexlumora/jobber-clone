@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useParams } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getRequestById, updateRequestOverview } from "../api";
+import { getRequestById, updateRequestOverview, updateRequestLineItems } from "../api";
 import { getClientById } from "@/pages/clients/api";
 import NotesPanel from "@/components/notes-panel";
 import ImageDropzone, { type UploadedFile } from "@/components/image-dropzone";
+import LineItemsCard, { type LineItemUI } from "@/components/line-items-card";
 import { formatDate, formatAssessmentDate, formatTimeStr, formatCurrency, getInitials } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -108,6 +109,47 @@ const RequestDetailPage = () => {
 		overviewMutation.mutate({
 			serviceDescription: editDescription,
 			fileIds: editImages.map((f) => f.fileId),
+		});
+	};
+
+	// Line items editing
+	const [editingLineItems, setEditingLineItems] = useState(false);
+	const [editLineItems, setEditLineItems] = useState<LineItemUI[]>([]);
+
+	const lineItemsMutation = useMutation({
+		mutationFn: (data: { lineItems: { name: string; description?: string; qty: number; unitPrice: number; imageFileId?: string }[] }) =>
+			updateRequestLineItems(id!, data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["request", id] });
+			setEditingLineItems(false);
+		},
+	});
+
+	const startEditingLineItems = () => {
+		if (!request) return;
+		setEditLineItems(
+			request.lineItems.map((item) => ({
+				name: item.name,
+				description: item.description ?? "",
+				qty: item.qty,
+				unitPrice: Number(item.unitPrice),
+				imageFileId: item.imageFileId ?? null,
+				imagePreview: null,
+				imageUploading: false,
+			})),
+		);
+		setEditingLineItems(true);
+	};
+
+	const saveLineItems = () => {
+		lineItemsMutation.mutate({
+			lineItems: editLineItems.map((item) => ({
+				name: item.name,
+				description: item.description || undefined,
+				qty: item.qty,
+				unitPrice: item.unitPrice,
+				imageFileId: item.imageFileId || undefined,
+			})),
 		});
 	};
 
@@ -341,8 +383,24 @@ const RequestDetailPage = () => {
 					)}
 
 					{/* Line Items */}
-					{request.lineItems.length > 0 && (
-						<Section title="Product / Service">
+					{editingLineItems ? (
+						<LineItemsCard
+							items={editLineItems}
+							onChange={setEditLineItems}
+							onSave={saveLineItems}
+							onCancel={() => setEditingLineItems(false)}
+							saving={lineItemsMutation.isPending}
+						/>
+					) : request.lineItems.length > 0 ? (
+						<Section
+							title="Product / Service"
+							action={
+								<Button variant="ghost" size="sm" className="h-7 text-xs" onClick={startEditingLineItems}>
+									<Pencil className="h-3 w-3 mr-1" />
+									Edit
+								</Button>
+							}
+						>
 							<Table>
 								<TableHeader>
 									<TableRow>
@@ -395,14 +453,20 @@ const RequestDetailPage = () => {
 								</div>
 							</div>
 						</Section>
-					)}
-
-					{/* Internal Notes */}
-					{request.internalNotes && (
-						<Section title="Internal Notes">
-							<p className="text-sm">{request.internalNotes}</p>
+					) : (
+						<Section
+							title="Product / Service"
+							action={
+								<Button variant="ghost" size="sm" className="h-7 text-xs" onClick={startEditingLineItems}>
+									<Pencil className="h-3 w-3 mr-1" />
+									Edit
+								</Button>
+							}
+						>
+							<p className="text-sm text-muted-foreground">No line items</p>
 						</Section>
 					)}
+
 				</div>
 
 				{/* Right - Notes (30%) */}

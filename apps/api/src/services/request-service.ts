@@ -1,5 +1,5 @@
 import db, { requestsSchema, requestFilesSchema, requestLineItemsSchema } from "@repo/db";
-import type { CreateRequestForm, UpdateRequestOverviewForm } from "@repo/zod/request";
+import type { CreateRequestForm, UpdateRequestOverviewForm, UpdateRequestLineItemsForm } from "@repo/zod/request";
 import { and, eq, isNull } from "drizzle-orm";
 
 export async function createRequest(userId: string, data: CreateRequestForm) {
@@ -108,6 +108,26 @@ export async function updateRequestOverview(requestId: string, data: UpdateReque
 	if (data.fileIds && data.fileIds.length > 0) {
 		await db.insert(requestFilesSchema).values(
 			data.fileIds.map((fileId) => ({ requestId, fileId })),
+		);
+	}
+
+	return getRequestById(requestId);
+}
+
+export async function updateRequestLineItems(requestId: string, data: UpdateRequestLineItemsForm) {
+	// Delete existing line items and replace
+	await db.delete(requestLineItemsSchema).where(eq(requestLineItemsSchema.requestId, requestId));
+
+	if (data.lineItems.length > 0) {
+		await db.insert(requestLineItemsSchema).values(
+			data.lineItems.map((item) => ({
+				requestId,
+				name: item.name,
+				description: item.description || null,
+				qty: item.qty,
+				unitPrice: String(item.unitPrice),
+				imageFileId: item.imageFileId || null,
+			})),
 		);
 	}
 

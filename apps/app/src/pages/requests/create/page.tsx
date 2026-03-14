@@ -7,9 +7,9 @@ import { getClients } from "@/pages/clients/api";
 import { presignUpload, uploadFileToS3 } from "@/lib/api";
 import { createRequest } from "../api";
 import ImageDropzone, { type UploadedFile } from "@/components/image-dropzone";
+import LineItemsCard, { type LineItemUI, createEmptyLineItem } from "@/components/line-items-card";
 import { Upload, X, Loader2, Plus } from "lucide-react";
 import { StickyFooter } from "@/components/sticky-footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,16 +23,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import type { CreateRequestForm } from "@repo/zod/request";
-
-interface LineItemUI {
-	name: string;
-	description: string;
-	qty: number;
-	unitPrice: number;
-	imageFileId: string | null;
-	imagePreview: string | null;
-	imageUploading: boolean;
-}
 
 const CreateRequestPage = () => {
 	const navigate = useNavigate();
@@ -78,31 +68,6 @@ const CreateRequestPage = () => {
 	const removeNoteFile = (index: number) => {
 		setNoteFiles((prev) => prev.filter((_, i) => i !== index));
 	};
-
-	const addLineItem = () => {
-		setLineItems((prev) => [...prev, { name: "", description: "", qty: 1, unitPrice: 0, imageFileId: null, imagePreview: null, imageUploading: false }]);
-	};
-
-	const updateLineItem = (index: number, updates: Partial<LineItemUI>) => {
-		setLineItems((prev) => prev.map((item, i) => i === index ? { ...item, ...updates } : item));
-	};
-
-	const removeLineItem = (index: number) => {
-		setLineItems((prev) => prev.filter((_, i) => i !== index));
-	};
-
-	const handleLineItemImage = async (index: number, file: File) => {
-		updateLineItem(index, { imageUploading: true });
-		try {
-			const { fileId, uploadUrl } = await presignUpload(file.name, file.type);
-			await uploadFileToS3(uploadUrl, file);
-			updateLineItem(index, { imageFileId: fileId, imagePreview: URL.createObjectURL(file), imageUploading: false });
-		} catch {
-			updateLineItem(index, { imageUploading: false });
-		}
-	};
-
-	const subtotal = lineItems.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
 
 	const {
 		register,
@@ -325,129 +290,7 @@ const CreateRequestPage = () => {
 				</div>
 
 				{/* Product / Service */}
-				<Card>
-					<CardHeader className="pb-3">
-						<CardTitle className="text-lg font-medium">Product / Service</CardTitle>
-						<p className="text-sm text-muted-foreground">
-							Keep everything on track by adding products and services.
-						</p>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						{lineItems.length > 0 && (
-							<div className="space-y-4">
-								{lineItems.map((item, index) => (
-									<div key={index} className="rounded-lg border p-4 space-y-3">
-										<div className="flex items-start gap-3">
-											<div className="grid grid-cols-[1fr_80px_100px_80px] gap-3 flex-1">
-												<div className="space-y-1">
-													<Label className="text-xs">Name</Label>
-													<Input
-														placeholder="Product or service name"
-														value={item.name}
-														onChange={(e) => updateLineItem(index, { name: e.target.value })}
-													/>
-												</div>
-												<div className="space-y-1">
-													<Label className="text-xs">Qty</Label>
-													<Input
-														type="number"
-														min={1}
-														value={item.qty}
-														onChange={(e) => updateLineItem(index, { qty: Number(e.target.value) })}
-													/>
-												</div>
-												<div className="space-y-1">
-													<Label className="text-xs">Unit Price</Label>
-													<Input
-														type="number"
-														min={0}
-														step="0.01"
-														value={item.unitPrice}
-														onChange={(e) => updateLineItem(index, { unitPrice: Number(e.target.value) })}
-													/>
-												</div>
-												<div className="space-y-1">
-													<Label className="text-xs">Total</Label>
-													<div className="flex items-center h-9 px-3 text-sm border rounded-md bg-muted/50">
-														${(item.qty * item.unitPrice).toFixed(2)}
-													</div>
-												</div>
-											</div>
-											<Button
-												type="button"
-												variant="ghost"
-												size="icon"
-												className="mt-5 h-9 w-9 shrink-0"
-												onClick={() => removeLineItem(index)}
-											>
-												<X className="h-4 w-4" />
-											</Button>
-										</div>
-										<div className="grid grid-cols-[1fr_auto] gap-3">
-											<div className="space-y-1">
-												<Label className="text-xs">Description</Label>
-												<Textarea
-													placeholder="Line item description"
-													rows={2}
-													value={item.description}
-													onChange={(e) => updateLineItem(index, { description: e.target.value })}
-												/>
-											</div>
-											<div className="self-end">
-												<Label className="text-xs mb-1 block">Image</Label>
-												{item.imageUploading ? (
-													<div className="flex items-center justify-center h-[60px] w-[60px] rounded border">
-														<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-													</div>
-												) : item.imagePreview ? (
-													<div className="relative group h-[60px] w-[60px]">
-														<img src={item.imagePreview} alt="" className="h-full w-full rounded object-cover border" />
-														<Button
-															type="button"
-															variant="destructive"
-															size="icon"
-															className="absolute -top-1 -right-1 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
-															onClick={() => updateLineItem(index, { imageFileId: null, imagePreview: null })}
-														>
-															<X className="h-2.5 w-2.5" />
-														</Button>
-													</div>
-												) : (
-													<label className="flex items-center justify-center h-[60px] w-[60px] rounded border border-dashed cursor-pointer hover:bg-muted/50 transition-colors">
-														<Plus className="h-4 w-4 text-muted-foreground" />
-														<input
-															type="file"
-															accept="image/*"
-															className="hidden"
-															onChange={(e) => {
-																const file = e.target.files?.[0];
-																if (file) handleLineItemImage(index, file);
-															}}
-														/>
-													</label>
-												)}
-											</div>
-										</div>
-									</div>
-								))}
-							</div>
-						)}
-						<Button type="button" variant="outline" size="sm" onClick={addLineItem}>
-							<Plus className="h-4 w-4 mr-1" />
-							Add Line Item
-						</Button>
-						<div className="space-y-2 pt-2 border-t">
-							<div className="flex items-center justify-between">
-								<span className="text-sm text-muted-foreground">Subtotal</span>
-								<span className="text-sm">${subtotal.toFixed(2)}</span>
-							</div>
-							<div className="flex items-center justify-between">
-								<span className="text-sm font-semibold">Total</span>
-								<span className="text-sm font-semibold">${subtotal.toFixed(2)}</span>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
+				<LineItemsCard items={lineItems} onChange={setLineItems} />
 
 				{/* Internal Notes */}
 				<div className="space-y-4">

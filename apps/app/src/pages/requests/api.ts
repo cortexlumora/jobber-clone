@@ -1,5 +1,5 @@
 import type { APIResponse, RequestDTO } from "@repo/dto";
-import type { CreateRequestForm, UpdateRequestOverviewForm } from "@repo/zod/request";
+import type { CreateRequestForm, UpdateRequestOverviewForm, UpdateRequestLineItemsForm } from "@repo/zod/request";
 import { http } from "@/lib/http";
 
 export async function createRequest(data: CreateRequestForm) {
@@ -19,5 +19,10 @@ export async function getRequestById(id: string) {
 
 export async function updateRequestOverview(id: string, data: UpdateRequestOverviewForm) {
 	const res = await http.put<APIResponse<RequestDTO>>(`/api/v1/requests/${id}/overview`, data);
+	return res.data.data;
+}
+
+export async function updateRequestLineItems(id: string, data: UpdateRequestLineItemsForm) {
+	const res = await http.put<APIResponse<RequestDTO>>(`/api/v1/requests/${id}/line-items`, data);
 	return res.data.data;
 }

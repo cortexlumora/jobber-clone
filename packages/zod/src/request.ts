@@ -36,3 +36,9 @@ export const updateRequestOverviewSchema = z.object({
 });
 
 export type UpdateRequestOverviewForm = z.infer<typeof updateRequestOverviewSchema>;
+
+export const updateRequestLineItemsSchema = z.object({
+	lineItems: z.array(lineItemSchema),
+});
+
+export type UpdateRequestLineItemsForm = z.infer<typeof updateRequestLineItemsSchema>;
