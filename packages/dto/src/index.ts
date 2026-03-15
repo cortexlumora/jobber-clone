@@ -18,3 +18,4 @@ export * from "./tag";
 export * from "./visit";
 export * from "./time-entry";
 export * from "./expense";
+export * from "./invoice";

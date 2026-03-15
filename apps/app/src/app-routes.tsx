@@ -14,6 +14,8 @@ import RequestsPage from "./pages/requests/page";
 import QuotesPage from "./pages/quotes/page";
 import JobsPage from "./pages/jobs/page";
 import InvoicesPage from "./pages/invoices/page";
+import InvoiceClientSelectPage from "./pages/invoices/clients/select-page";
+import CreateInvoicePage from "./pages/invoices/create/page";
 import MarketingPage from "./pages/marketing/page";
 import ReportsPage from "./pages/reports/page";
 import ExpensesPage from "./pages/expenses/page";
@@ -60,6 +62,8 @@ const routes = createBrowserRouter([
 			{ path: "/jobs/create", element: <CreateJobPage /> },
 			{ path: "/jobs/:id", element: <JobDetailPage /> },
 			{ path: "/invoices", element: <InvoicesPage /> },
+			{ path: "/invoices/clients/select", element: <InvoiceClientSelectPage /> },
+			{ path: "/invoices/create", element: <CreateInvoicePage /> },
 			{ path: "/marketing", element: <MarketingPage /> },
 			{ path: "/reports", element: <ReportsPage /> },
 			{ path: "/expenses", element: <ExpensesPage /> },

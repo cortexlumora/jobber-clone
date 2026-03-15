@@ -23,7 +23,8 @@
 		"./tag": "./src/tag.ts",
 		"./visit": "./src/visit.ts",
 		"./time-entry": "./src/time-entry.ts",
-		"./expense": "./src/expense.ts"
+		"./expense": "./src/expense.ts",
+		"./invoice": "./src/invoice.ts"
 	},
 	"dependencies": {
 		"zod": "^4.3.6"

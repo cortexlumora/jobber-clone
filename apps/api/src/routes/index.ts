@@ -15,6 +15,7 @@ import tagRoute from "./tag-route";
 import visitRoute from "./visit-route";
 import timeEntryRoute from "./time-entry-route";
 import expenseRoute from "./expense-route";
+import invoiceRoute from "./invoice-route";
 const appRoutes = new Hono();
 
 appRoutes.route("/clients", clientRoute);
@@ -33,5 +34,6 @@ appRoutes.route("/tags", tagRoute);
 appRoutes.route("/jobs", visitRoute);
 appRoutes.route("/jobs", timeEntryRoute);
 appRoutes.route("/jobs", expenseRoute);
+appRoutes.route("/invoices", invoiceRoute);
 
 export default appRoutes;
