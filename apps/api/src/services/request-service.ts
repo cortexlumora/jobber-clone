@@ -1,6 +1,7 @@
-import db, { requestsSchema, requestFilesSchema, requestLineItemsSchema } from "@repo/db";
+import db, { requestsSchema, requestFilesSchema, requestLineItemsSchema, clientsSchema, propertiesSchema } from "@repo/db";
 import type { CreateRequestForm, UpdateRequestOverviewForm, UpdateRequestLineItemsForm, UpdateRequestAssessmentForm } from "@repo/zod/request";
 import { and, eq, isNull } from "drizzle-orm";
+import { getSignedFiles } from "./file-service";
 
 export async function createRequest(userId: string, data: CreateRequestForm) {
 	const { fileIds, lineItems, ...requestData } = data;
@@ -47,7 +48,7 @@ export async function createRequest(userId: string, data: CreateRequestForm) {
 		).returning();
 	}
 
-	return { ...request, fileIds: fileIds ?? [], lineItems: insertedLineItems };
+	return { ...request, fileIds: fileIds ?? [], files: [], client: null, lineItems: insertedLineItems };
 }
 
 export async function getRequestsByUser(userId: string) {
@@ -66,7 +67,7 @@ export async function getRequestsByUser(userId: string) {
 				.select()
 				.from(requestLineItemsSchema)
 				.where(eq(requestLineItemsSchema.requestId, request.id));
-			return { ...request, fileIds: files.map((f) => f.fileId), lineItems: items };
+			return { ...request, fileIds: files.map((f) => f.fileId), files: [], client: null, lineItems: items };
 		}),
 	);
 
@@ -81,17 +82,43 @@ export async function getRequestById(requestId: string) {
 
 	if (!request) return null;
 
-	const files = await db
-		.select({ fileId: requestFilesSchema.fileId })
-		.from(requestFilesSchema)
-		.where(eq(requestFilesSchema.requestId, request.id));
+	const [fileRows, items, [client], properties] = await Promise.all([
+		db.select({ fileId: requestFilesSchema.fileId })
+			.from(requestFilesSchema)
+			.where(eq(requestFilesSchema.requestId, request.id)),
+		db.select()
+			.from(requestLineItemsSchema)
+			.where(eq(requestLineItemsSchema.requestId, request.id)),
+		db.select()
+			.from(clientsSchema)
+			.where(eq(clientsSchema.id, request.clientId)),
+		db.select()
+			.from(propertiesSchema)
+			.where(eq(propertiesSchema.clientId, request.clientId))
+			.limit(1),
+	]);
 
-	const items = await db
-		.select()
-		.from(requestLineItemsSchema)
-		.where(eq(requestLineItemsSchema.requestId, request.id));
+	const fileIds = fileRows.map((f) => f.fileId);
+	const signedFiles = await getSignedFiles(fileIds);
 
-	return { ...request, fileIds: files.map((f) => f.fileId), lineItems: items };
+	return {
+		...request,
+		fileIds,
+		files: signedFiles,
+		lineItems: items,
+		client: client ? {
+			id: client.id,
+			title: client.title,
+			firstName: client.firstName,
+			lastName: client.lastName,
+			companyName: client.companyName,
+			useCompanyAsPrimary: client.useCompanyAsPrimary,
+			phones: client.phones,
+			emails: client.emails,
+			leadSource: client.leadSource,
+			property: properties[0] ?? null,
+		} : null,
+	};
 }
 
 export async function updateRequestOverview(requestId: string, data: UpdateRequestOverviewForm) {

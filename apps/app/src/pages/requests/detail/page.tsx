@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useParams } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getRequestById, updateRequestOverview, updateRequestLineItems, updateRequestAssessment } from "../api";
-import { getClientById } from "@/pages/clients/api";
 import NotesPanel from "@/components/notes-panel";
 import Section from "@/components/section";
 import ImageDropzone, { type UploadedFile } from "@/components/image-dropzone";
@@ -171,12 +170,6 @@ const RequestDetailPage = () => {
 		setEditingAssessment(true);
 	};
 
-	const { data: client } = useQuery({
-		queryKey: ["client", request?.clientId],
-		queryFn: () => getClientById(request!.clientId),
-		enabled: !!request?.clientId,
-	});
-
 	if (isLoading) {
 		return <p className="text-muted-foreground p-4">Loading...</p>;
 	}
@@ -185,8 +178,9 @@ const RequestDetailPage = () => {
 		return <p className="text-muted-foreground p-4">Request not found</p>;
 	}
 
+	const client = request.client;
 	const status = statusConfig[request.status] ?? statusConfig.new;
-	const property = client?.propertyDetails?.data?.[0];
+	const property = client?.property;
 	const address = property
 		? [property.street1, property.street2, property.city, property.state, property.zip]
 				.filter(Boolean)
