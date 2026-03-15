@@ -166,7 +166,7 @@ const LineItemsCard = ({ items, onChange, onSave, onCancel, saving, hideHeader }
 					</div>
 				</div>
 				{onSave && (
-					<div className="flex items-center gap-2 pt-4 border-t">
+					<div className="sticky bottom-0 flex items-center gap-2 pt-4 pb-1 border-t bg-background">
 						<Button size="sm" onClick={onSave} disabled={saving}>
 							{saving ? "Saving..." : "Save"}
 						</Button>

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getRequestById, updateRequestOverview, updateRequestLineItems, updateRequestAssessment } from "../api";
 import { getClientById } from "@/pages/clients/api";
 import NotesPanel from "@/components/notes-panel";
+import Section from "@/components/section";
 import ImageDropzone, { type UploadedFile } from "@/components/image-dropzone";
 import LineItemsCard, { type LineItemUI } from "@/components/line-items-card";
 import AssessmentCard, { type AssessmentData } from "@/components/assessment-card";
@@ -54,19 +55,6 @@ const reminderLabels: Record<string, string> = {
 	"24hour": "1 day before",
 };
 
-// ── Section wrapper ──────────────────────────────────────────────────
-
-function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
-	return (
-		<div className="rounded-lg border bg-background">
-			<div className="px-5 py-3 border-b flex items-center justify-between min-h-14">
-				<h3 className="text-sm font-semibold">{title}</h3>
-				{action}
-			</div>
-			<div className="px-5 py-4">{children}</div>
-		</div>
-	);
-}
 
 // ── Main Page ────────────────────────────────────────────────────────
 

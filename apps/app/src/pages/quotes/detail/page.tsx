@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getQuoteById } from "../api";
 import { getClientById } from "@/pages/clients/api";
 import NotesPanel from "@/components/notes-panel";
+import Section from "@/components/section";
 import { formatDate, formatCurrency, getInitials } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,18 +38,6 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 	archived: { label: "Archived", className: "bg-gray-100 text-gray-800" },
 };
 
-// ── Section wrapper ──────────────────────────────────────────────────
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-	return (
-		<div className="rounded-lg border bg-background">
-			<div className="px-5 py-3 border-b">
-				<h3 className="text-sm font-semibold">{title}</h3>
-			</div>
-			<div className="px-5 py-4">{children}</div>
-		</div>
-	);
-}
 
 // ── Main Page ────────────────────────────────────────────────────────
 
