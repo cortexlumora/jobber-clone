@@ -108,8 +108,9 @@ const clientRoute = new Hono()
 	// Notes
 	.get("/:id/notes", async (c) => {
 		const clientId = c.req.param("id");
+		const relatedTo = c.req.query("relatedTo") as "all" | "requests" | "quotes" | "jobs" | "invoices" | undefined;
 
-		const notes = await getClientNotes(clientId);
+		const notes = await getClientNotes(clientId, relatedTo);
 		return c.json<APIResponse<ClientNoteDTO[]>>({ data: notes });
 	})
 	.post("/:id/notes", zValidator("json", createClientNoteSchema), async (c) => {

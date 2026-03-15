@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import { createJobSchema, updateJobLineItemsSchema } from "@repo/zod/job";
-import type { APIResponse, JobDTO } from "@repo/dto";
+import type { APIResponse, JobDTO, ClientNoteDTO } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
@@ -9,6 +9,7 @@ import {
 	getJobs,
 	updateJobLineItems,
 } from "../services/job-service";
+import { getClientNotes } from "../services/client-note-service";
 
 const jobRoute = new Hono()
 	.post("/", zValidator("json", createJobSchema), async (c) => {
@@ -27,6 +28,15 @@ const jobRoute = new Hono()
 
 		const job = await getJobById(jobId);
 		return c.json<APIResponse<JobDTO | null>>({ data: job });
+	})
+	.get("/:id/notes", async (c) => {
+		const jobId = c.req.param("id");
+
+		const job = await getJobById(jobId);
+		if (!job) return c.json<APIResponse<ClientNoteDTO[]>>({ data: [] });
+
+		const notes = await getClientNotes(job.clientId, "jobs");
+		return c.json<APIResponse<ClientNoteDTO[]>>({ data: notes });
 	})
 	.put("/:id/line-items", zValidator("json", updateJobLineItemsSchema), async (c) => {
 		const jobId = c.req.param("id");

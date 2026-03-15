@@ -65,7 +65,16 @@ export async function createClientNote(userId: string, clientId: string, data: C
 	};
 }
 
-export async function getClientNotes(clientId: string) {
+export type RelatedToFilter = "all" | "requests" | "quotes" | "jobs" | "invoices";
+
+export async function getClientNotes(clientId: string, relatedTo?: RelatedToFilter) {
+	const conditions = [eq(clientNotesSchema.clientId, clientId), isNull(clientNotesSchema.deletedAt)];
+
+	if (relatedTo === "requests") conditions.push(eq(clientNotesSchema.relatedToRequests, true));
+	if (relatedTo === "quotes") conditions.push(eq(clientNotesSchema.relatedToQuotes, true));
+	if (relatedTo === "jobs") conditions.push(eq(clientNotesSchema.relatedToJobs, true));
+	if (relatedTo === "invoices") conditions.push(eq(clientNotesSchema.relatedToInvoices, true));
+
 	const notes = await db
 		.select({
 			id: clientNotesSchema.id,
@@ -83,7 +92,7 @@ export async function getClientNotes(clientId: string) {
 		})
 		.from(clientNotesSchema)
 		.innerJoin(usersSchema, eq(clientNotesSchema.createdById, usersSchema.id))
-		.where(and(eq(clientNotesSchema.clientId, clientId), isNull(clientNotesSchema.deletedAt)))
+		.where(and(...conditions))
 		.orderBy(desc(clientNotesSchema.isPinned), desc(clientNotesSchema.createdAt));
 
 	return Promise.all(

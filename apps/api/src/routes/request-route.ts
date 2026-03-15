@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import { createRequestSchema, updateRequestOverviewSchema, updateRequestLineItemsSchema, updateRequestAssessmentSchema } from "@repo/zod/request";
-import type { APIResponse, RequestDTO } from "@repo/dto";
+import type { APIResponse, RequestDTO, ClientNoteDTO } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
@@ -11,6 +11,7 @@ import {
 	updateRequestLineItems,
 	updateRequestAssessment,
 } from "../services/request-service";
+import { getClientNotes } from "../services/client-note-service";
 
 const requestRoute = new Hono()
 	.post("/", zValidator("json", createRequestSchema), async (c) => {
@@ -29,6 +30,15 @@ const requestRoute = new Hono()
 
 		const request = await getRequestById(requestId);
 		return c.json<APIResponse<RequestDTO | null>>({ data: request });
+	})
+	.get("/:id/notes", async (c) => {
+		const requestId = c.req.param("id");
+
+		const request = await getRequestById(requestId);
+		if (!request) return c.json<APIResponse<ClientNoteDTO[]>>({ data: [] });
+
+		const notes = await getClientNotes(request.clientId, "requests");
+		return c.json<APIResponse<ClientNoteDTO[]>>({ data: notes });
 	})
 	.put("/:id/overview", zValidator("json", updateRequestOverviewSchema), async (c) => {
 		const requestId = c.req.param("id");
