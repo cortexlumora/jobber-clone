@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useParams } from "react-router";
-import { useQuery } from "@tanstack/react-query";
-import { getJobById } from "../api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getJobById, updateJobLineItems } from "../api";
 import { getClientById } from "@/pages/clients/api";
 import NotesPanel from "@/components/notes-panel";
 import Section from "@/components/section";
+import LineItemsView from "@/components/line-items-view";
+import LineItemsCard, { type LineItemUI } from "@/components/line-items-card";
 import { formatScheduleDate, formatCurrency, getInitials } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,11 +48,54 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 const JobDetailPage = () => {
 	const { id } = useParams<{ id: string }>();
+	const queryClient = useQueryClient();
+
+	const [editingLineItems, setEditingLineItems] = useState(false);
+	const [editLineItems, setEditLineItems] = useState<LineItemUI[]>([]);
+
 	const { data: job, isLoading } = useQuery({
 		queryKey: ["job", id],
 		queryFn: () => getJobById(id!),
 		enabled: !!id,
 	});
+
+	const lineItemsMutation = useMutation({
+		mutationFn: (data: { lineItems: { name: string; description?: string; qty: number; unitCost: number; unitPrice: number; imageFileId?: string }[] }) =>
+			updateJobLineItems(id!, data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["job", id] });
+			setEditingLineItems(false);
+		},
+	});
+
+	const startEditingLineItems = () => {
+		if (!job) return;
+		setEditLineItems(
+			job.lineItems.map((item) => ({
+				name: item.name,
+				description: item.description ?? "",
+				qty: item.qty,
+				unitPrice: Number(item.unitPrice),
+				imageFileId: item.imageFileId ?? null,
+				imagePreview: null,
+				imageUploading: false,
+			})),
+		);
+		setEditingLineItems(true);
+	};
+
+	const saveLineItems = () => {
+		lineItemsMutation.mutate({
+			lineItems: editLineItems.map((item) => ({
+				name: item.name,
+				description: item.description || undefined,
+				qty: item.qty,
+				unitCost: 0,
+				unitPrice: item.unitPrice,
+				imageFileId: item.imageFileId || undefined,
+			})),
+		});
+	};
 
 	const { data: client } = useQuery({
 		queryKey: ["client", job?.clientId],
@@ -260,64 +306,34 @@ const JobDetailPage = () => {
 					</Section>
 
 					{/* Line Items */}
-					<Section
-						title="Line Items"
-						action={
-							<Button variant="ghost" size="sm" className="h-7 text-xs">
-								<Plus className="h-3 w-3 mr-1" />
-								New Line Item
-							</Button>
-						}
-					>
-						{job.lineItems.length > 0 ? (
-							<>
-								<Table>
-									<TableHeader>
-										<TableRow>
-											<TableHead className="text-xs">Product / Service</TableHead>
-											<TableHead className="text-xs text-right w-20">Quantity</TableHead>
-											<TableHead className="text-xs text-right w-24">Cost</TableHead>
-											<TableHead className="text-xs text-right w-24">Price</TableHead>
-											<TableHead className="text-xs text-right w-24">Total</TableHead>
-										</TableRow>
-									</TableHeader>
-									<TableBody>
-										{job.lineItems.map((item) => {
-											const itemTotal = item.qty * Number(item.unitPrice);
-											return (
-												<TableRow key={item.id}>
-													<TableCell>
-														<div>
-															<p className="text-sm font-medium">{item.name}</p>
-															{item.description && (
-																<p className="text-xs text-muted-foreground">{item.description}</p>
-															)}
-														</div>
-													</TableCell>
-													<TableCell className="text-sm text-right">{item.qty}</TableCell>
-													<TableCell className="text-sm text-right">
-														{formatCurrency(Number(item.unitCost))}
-													</TableCell>
-													<TableCell className="text-sm text-right">
-														{formatCurrency(Number(item.unitPrice))}
-													</TableCell>
-													<TableCell className="text-sm text-right font-medium">
-														{formatCurrency(itemTotal)}
-													</TableCell>
-												</TableRow>
-											);
-										})}
-									</TableBody>
-								</Table>
-								<div className="mt-3 pt-3 border-t flex justify-end gap-8 text-sm">
-									<span className="text-muted-foreground">{formatCurrency(totalCost)}</span>
-									<span className="font-medium">{formatCurrency(totalPrice)}</span>
-								</div>
-							</>
-						) : (
-							<p className="text-sm text-muted-foreground">No line items</p>
-						)}
-					</Section>
+					{editingLineItems ? (
+						<Section title="Line Items">
+							<LineItemsCard
+								items={editLineItems}
+								onChange={setEditLineItems}
+								onSave={saveLineItems}
+								onCancel={() => setEditingLineItems(false)}
+								saving={lineItemsMutation.isPending}
+								hideHeader
+							/>
+						</Section>
+					) : (
+						<Section
+							title="Line Items"
+							action={
+								<Button variant="ghost" size="sm" className="h-7 text-xs" onClick={startEditingLineItems}>
+									<Pencil className="h-3 w-3 mr-1" />
+									Edit
+								</Button>
+							}
+						>
+							{job.lineItems.length > 0 ? (
+								<LineItemsView items={job.lineItems} showCost />
+							) : (
+								<p className="text-sm text-muted-foreground">No line items</p>
+							)}
+						</Section>
+					)}
 
 					{/* Labor */}
 					<Section

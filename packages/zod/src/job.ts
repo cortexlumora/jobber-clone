@@ -43,3 +43,9 @@ export const createJobSchema = z.object({
 });
 
 export type CreateJobForm = z.infer<typeof createJobSchema>;
+
+export const updateJobLineItemsSchema = z.object({
+	lineItems: z.array(jobLineItemSchema),
+});
+
+export type UpdateJobLineItemsForm = z.infer<typeof updateJobLineItemsSchema>;

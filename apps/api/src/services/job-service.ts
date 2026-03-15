@@ -1,5 +1,5 @@
 import db, { jobsSchema, jobFilesSchema, jobLineItemsSchema } from "@repo/db";
-import type { CreateJobForm } from "@repo/zod/job";
+import type { CreateJobForm, UpdateJobLineItemsForm } from "@repo/zod/job";
 import { and, eq, isNull } from "drizzle-orm";
 
 export async function createJob(userId: string, data: CreateJobForm) {
@@ -103,4 +103,25 @@ export async function getJobById(jobId: string) {
 		.where(eq(jobLineItemsSchema.jobId, job.id));
 
 	return { ...job, lineItems: items, fileIds: files.map((f) => f.fileId) };
+}
+
+export async function updateJobLineItems(jobId: string, data: UpdateJobLineItemsForm) {
+	await db.delete(jobLineItemsSchema).where(eq(jobLineItemsSchema.jobId, jobId));
+
+	if (data.lineItems.length > 0) {
+		await db.insert(jobLineItemsSchema).values(
+			data.lineItems.map((item, index) => ({
+				jobId,
+				name: item.name,
+				description: item.description || null,
+				qty: item.qty,
+				unitCost: String(item.unitCost),
+				unitPrice: String(item.unitPrice),
+				imageFileId: item.imageFileId || null,
+				sortOrder: index,
+			})),
+		);
+	}
+
+	return getJobById(jobId);
 }
