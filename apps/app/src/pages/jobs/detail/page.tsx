@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import { useParams } from "react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getJobById, updateJobLineItems } from "../api";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getJobById, getJobNotes, updateJobLineItems } from "../api";
 import { getClientById } from "@/pages/clients/api";
 import NotesPanel from "@/components/notes-panel";
 import Section from "@/components/section";
@@ -79,6 +79,17 @@ const JobDetailPage = () => {
 			setEditingLineItems(false);
 		},
 	});
+
+	const { data: notesData, hasNextPage, fetchNextPage, isFetchingNextPage } = useInfiniteQuery({
+		queryKey: ["job-notes", id],
+		queryFn: ({ pageParam }) => getJobNotes(id!, pageParam),
+		initialPageParam: 1,
+		getNextPageParam: (last) => last.pagination.page < last.pagination.totalPages ? last.pagination.page + 1 : undefined,
+		enabled: !!id,
+	});
+
+	const allNotes = notesData?.pages.flatMap((p) => p.data) ?? [];
+	const notesTotal = notesData?.pages[0]?.pagination.total;
 
 	const startEditingLineItems = () => {
 		if (!job) return;
@@ -445,7 +456,7 @@ const JobDetailPage = () => {
 
 				{/* Right - Notes (30%) */}
 				<div className="sticky top-[4.5rem] h-[calc(100vh-5.5rem)]">
-					<NotesPanel clientId={job.clientId} className="h-full" />
+					<NotesPanel notes={allNotes} total={notesTotal} hasMore={hasNextPage} onLoadMore={fetchNextPage} isLoadingMore={isFetchingNextPage} className="h-full" />
 				</div>
 			</div>
 

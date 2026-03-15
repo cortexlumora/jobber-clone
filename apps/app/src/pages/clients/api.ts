@@ -66,9 +66,11 @@ export async function deleteClientContact(clientId: string, id: string) {
 }
 
 // Client Notes
-export async function getClientNotes(clientId: string) {
-	const res = await http.get<APIResponse<ClientNoteDTO[]>>(`/api/v1/clients/${clientId}/notes`);
-	return res.data.data;
+export async function getClientNotes(clientId: string, page = 1, limit = 20) {
+	const res = await http.get<PaginatedResponse<ClientNoteDTO>>(`/api/v1/clients/${clientId}/notes`, {
+		params: { page, limit },
+	});
+	return res.data;
 }
 
 export async function createClientNote(clientId: string, data: CreateClientNoteForm) {

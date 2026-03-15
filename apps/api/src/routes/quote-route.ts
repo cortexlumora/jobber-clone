@@ -1,6 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { createQuoteSchema, updateQuoteLineItemsSchema } from "@repo/zod/quote";
-import type { APIResponse, QuoteDTO, ClientNoteDTO } from "@repo/dto";
+import { paginationSchema } from "@repo/zod/pagination";
+import type { APIResponse, QuoteDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
@@ -31,14 +32,15 @@ const quoteRoute = new Hono()
 		const quote = await getQuoteById(quoteId);
 		return c.json<APIResponse<QuoteDTO | null>>({ data: quote });
 	})
-	.get("/:id/notes", async (c) => {
+	.get("/:id/notes", zValidator("query", paginationSchema), async (c) => {
 		const quoteId = c.req.param("id");
+		const pagination = c.req.valid("query");
 
 		const quote = await getQuoteById(quoteId);
-		if (!quote) return c.json<APIResponse<ClientNoteDTO[]>>({ data: [] });
+		if (!quote) return c.json<PaginatedResponse<ClientNoteDTO>>({ data: [], pagination: { page: 1, limit: pagination.limit, total: 0, totalPages: 0 } });
 
-		const notes = await getClientNotes(quote.clientId, "quotes");
-		return c.json<APIResponse<ClientNoteDTO[]>>({ data: notes });
+		const result = await getClientNotes(quote.clientId, "quotes", pagination);
+		return c.json<PaginatedResponse<ClientNoteDTO>>(result);
 	})
 	.put("/:id/line-items", zValidator("json", updateQuoteLineItemsSchema), async (c) => {
 		const quoteId = c.req.param("id");

@@ -1,4 +1,4 @@
-import type { APIResponse, JobDTO } from "@repo/dto";
+import type { APIResponse, JobDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
 import type { CreateJobForm, UpdateJobLineItemsForm } from "@repo/zod/job";
 import { http } from "@/lib/http";
 
@@ -15,6 +15,13 @@ export async function getJobs() {
 export async function getJobById(id: string) {
 	const res = await http.get<APIResponse<JobDTO | null>>(`/api/v1/jobs/${id}`);
 	return res.data.data;
+}
+
+export async function getJobNotes(jobId: string, page = 1, limit = 20) {
+	const res = await http.get<PaginatedResponse<ClientNoteDTO>>(`/api/v1/jobs/${jobId}/notes`, {
+		params: { page, limit },
+	});
+	return res.data;
 }
 
 export async function updateJobLineItems(id: string, data: UpdateJobLineItemsForm) {

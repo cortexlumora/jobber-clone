@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getRequestById, updateRequestOverview, updateRequestLineItems, updateRequestAssessment } from "../api";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getRequestById, getRequestNotes, updateRequestOverview, updateRequestLineItems, updateRequestAssessment } from "../api";
 import NotesPanel from "@/components/notes-panel";
 import Section from "@/components/section";
 import ImageDropzone, { type UploadedFile } from "@/components/image-dropzone";
@@ -61,6 +61,17 @@ const RequestDetailPage = () => {
 		queryFn: () => getRequestById(id!),
 		enabled: !!id,
 	});
+
+	const { data: notesData, hasNextPage, fetchNextPage, isFetchingNextPage } = useInfiniteQuery({
+		queryKey: ["request-notes", id],
+		queryFn: ({ pageParam }) => getRequestNotes(id!, pageParam),
+		initialPageParam: 1,
+		getNextPageParam: (last) => last.pagination.page < last.pagination.totalPages ? last.pagination.page + 1 : undefined,
+		enabled: !!id,
+	});
+
+	const allNotes = notesData?.pages.flatMap((p) => p.data) ?? [];
+	const notesTotal = notesData?.pages[0]?.pagination.total;
 
 	const overviewMutation = useMutation({
 		mutationFn: (data: { serviceDescription: string; fileIds: string[] }) =>
@@ -448,7 +459,7 @@ const RequestDetailPage = () => {
 
 				{/* Right - Notes (30%) */}
 				<div className="sticky top-[4.5rem] h-[calc(100vh-5.5rem)]">
-					<NotesPanel clientId={request.clientId} className="h-full" />
+					<NotesPanel notes={allNotes} total={notesTotal} hasMore={hasNextPage} onLoadMore={fetchNextPage} isLoadingMore={isFetchingNextPage} className="h-full" />
 				</div>
 			</div>
 		</div>

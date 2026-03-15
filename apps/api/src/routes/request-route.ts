@@ -1,6 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { createRequestSchema, updateRequestOverviewSchema, updateRequestLineItemsSchema, updateRequestAssessmentSchema } from "@repo/zod/request";
-import type { APIResponse, RequestDTO, ClientNoteDTO } from "@repo/dto";
+import { paginationSchema } from "@repo/zod/pagination";
+import type { APIResponse, RequestDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
@@ -31,14 +32,15 @@ const requestRoute = new Hono()
 		const request = await getRequestById(requestId);
 		return c.json<APIResponse<RequestDTO | null>>({ data: request });
 	})
-	.get("/:id/notes", async (c) => {
+	.get("/:id/notes", zValidator("query", paginationSchema), async (c) => {
 		const requestId = c.req.param("id");
+		const pagination = c.req.valid("query");
 
 		const request = await getRequestById(requestId);
-		if (!request) return c.json<APIResponse<ClientNoteDTO[]>>({ data: [] });
+		if (!request) return c.json<PaginatedResponse<ClientNoteDTO>>({ data: [], pagination: { page: 1, limit: pagination.limit, total: 0, totalPages: 0 } });
 
-		const notes = await getClientNotes(request.clientId, "requests");
-		return c.json<APIResponse<ClientNoteDTO[]>>({ data: notes });
+		const result = await getClientNotes(request.clientId, "requests", pagination);
+		return c.json<PaginatedResponse<ClientNoteDTO>>(result);
 	})
 	.put("/:id/overview", zValidator("json", updateRequestOverviewSchema), async (c) => {
 		const requestId = c.req.param("id");

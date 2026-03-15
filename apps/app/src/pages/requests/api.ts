@@ -1,4 +1,4 @@
-import type { APIResponse, RequestDTO } from "@repo/dto";
+import type { APIResponse, RequestDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
 import type { CreateRequestForm, UpdateRequestOverviewForm, UpdateRequestLineItemsForm, UpdateRequestAssessmentForm } from "@repo/zod/request";
 import { http } from "@/lib/http";
 
@@ -15,6 +15,13 @@ export async function getRequests() {
 export async function getRequestById(id: string) {
 	const res = await http.get<APIResponse<RequestDTO | null>>(`/api/v1/requests/${id}`);
 	return res.data.data;
+}
+
+export async function getRequestNotes(requestId: string, page = 1, limit = 20) {
+	const res = await http.get<PaginatedResponse<ClientNoteDTO>>(`/api/v1/requests/${requestId}/notes`, {
+		params: { page, limit },
+	});
+	return res.data;
 }
 
 export async function updateRequestOverview(id: string, data: UpdateRequestOverviewForm) {

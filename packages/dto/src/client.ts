@@ -1,3 +1,5 @@
+import type { PaginatedResponse } from "./common";
+
 export interface Address {
 	street1?: string;
 	street2?: string;
@@ -64,7 +66,7 @@ export interface ClientDetailDTO extends ClientDTO {
 			totalPages: number;
 		};
 	};
-	notes: import("./client-note").ClientNoteDTO[];
+	notes: PaginatedResponse<import("./client-note").ClientNoteDTO>;
 	tags: import("./tag").TagDTO[];
 }
 

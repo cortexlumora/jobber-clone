@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { ClientNoteDTO, ClientNoteFileDTO } from "@repo/dto";
+import type { ClientNoteDTO, ClientNoteFileDTO, PaginatedResponse } from "@repo/dto";
 import {
 	getClientNotes,
 	createClientNote,
@@ -311,18 +311,20 @@ const EditNote = ({ note, clientId, onClose, onTogglePin }: EditNoteProps) => {
 // ── Main Card ───────────────────────────────────────────────────────
 interface InternalNotesCardProps {
 	clientId: string;
-	initialNotes?: ClientNoteDTO[];
+	initialNotes?: PaginatedResponse<ClientNoteDTO>;
 }
 
 const InternalNotesCard = ({ clientId, initialNotes }: InternalNotesCardProps) => {
 	const queryClient = useQueryClient();
 	const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
-	const { data: notes = [] } = useQuery({
+	const { data: result } = useQuery({
 		queryKey: ["client-notes", clientId],
 		queryFn: () => getClientNotes(clientId),
 		initialData: initialNotes,
 	});
+
+	const notes = result?.data ?? [];
 
 	const pinMutation = useMutation({
 		mutationFn: (noteId: string) => togglePinNote(clientId, noteId),

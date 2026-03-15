@@ -91,20 +91,20 @@ export async function getClientsByUser(userId: string) {
 }
 
 export async function getClientById(clientId: string) {
-	const [[client], contactsResult, propertiesResult, notes, tags] = await Promise.all([
+	const [[client], contactsResult, propertiesResult, notesResult, tags] = await Promise.all([
 		db
 			.select()
 			.from(clientsSchema)
 			.where(and(eq(clientsSchema.id, clientId), isNull(clientsSchema.deletedAt))),
 		getClientContacts(clientId, { page: 1, limit: 10, search: "" }),
 		getClientProperties(clientId, { page: 1, limit: 10, search: "" }),
-		getClientNotes(clientId),
+		getClientNotes(clientId, undefined, { page: 1, limit: 20, search: "" }),
 		getClientTags(clientId),
 	]);
 
 	if (!client) return null;
 
-	return { ...client, additionalContacts: contactsResult, propertyDetails: propertiesResult, notes, tags };
+	return { ...client, additionalContacts: contactsResult, propertyDetails: propertiesResult, notes: notesResult, tags };
 }
 
 export async function getClientProperties(clientId: string, pagination: { page: number; limit: number; search: string }) {
