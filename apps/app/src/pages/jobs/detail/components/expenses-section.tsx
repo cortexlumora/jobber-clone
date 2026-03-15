@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { parseAsBoolean, useQueryState } from "nuqs";
+import type { ExpenseDTO } from "@repo/dto";
 import { getExpenses, deleteExpense } from "../../expenses-api";
 import { formatCurrency, formatDate } from "@/lib/format";
 import Section from "@/components/section";
@@ -26,6 +27,7 @@ const ExpensesSection = ({ jobId }: ExpensesSectionProps) => {
 	const queryClient = useQueryClient();
 	const [page, setPage] = useState(1);
 	const [dialogOpen, setDialogOpen] = useQueryState("new-expense", parseAsBoolean.withDefault(false));
+	const [editingExpense, setEditingExpense] = useState<ExpenseDTO | null>(null);
 
 	const { data: result } = useQuery({
 		queryKey: ["job-expenses", jobId, page],
@@ -46,12 +48,22 @@ const ExpensesSection = ({ jobId }: ExpensesSectionProps) => {
 	const total = result?.pagination?.total ?? 0;
 	const totalPages = Math.ceil(total / PAGE_SIZE);
 
+	const handleOpenChange = (open: boolean) => {
+		setDialogOpen(open);
+		if (!open) setEditingExpense(null);
+	};
+
+	const handleEdit = (expense: ExpenseDTO) => {
+		setEditingExpense(expense);
+		setDialogOpen(true);
+	};
+
 	return (
 		<>
 			<Section
 				title={`Expenses${total > 0 ? ` (${total})` : ""}`}
 				action={
-					<Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setDialogOpen(true)}>
+					<Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setEditingExpense(null); setDialogOpen(true); }}>
 						<Plus className="h-3 w-3 mr-1" />
 						New Expense
 					</Button>
@@ -71,7 +83,7 @@ const ExpensesSection = ({ jobId }: ExpensesSectionProps) => {
 							</TableHeader>
 							<TableBody>
 								{expenses.map((expense) => (
-									<TableRow key={expense.id}>
+									<TableRow key={expense.id} className="cursor-pointer" onClick={() => handleEdit(expense)}>
 										<TableCell className="font-medium">{expense.itemName}</TableCell>
 										<TableCell>{formatDate(new Date(expense.date + "T00:00:00"))}</TableCell>
 										<TableCell>{expense.reimburseTo ?? "Not reimbursable"}</TableCell>
@@ -81,7 +93,7 @@ const ExpensesSection = ({ jobId }: ExpensesSectionProps) => {
 												variant="ghost"
 												size="sm"
 												className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-												onClick={() => deleteMutation.mutate(expense.id)}
+												onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(expense.id); }}
 											>
 												<Trash2 className="h-3.5 w-3.5" />
 											</Button>
@@ -115,8 +127,9 @@ const ExpensesSection = ({ jobId }: ExpensesSectionProps) => {
 
 			<ExpenseDialog
 				open={dialogOpen}
-				onOpenChange={setDialogOpen}
+				onOpenChange={handleOpenChange}
 				jobId={jobId}
+				expense={editingExpense}
 			/>
 		</>
 	);

@@ -14,6 +14,11 @@ export async function getExpenses(jobId: string, page = 1, limit = 10) {
 	return res.data;
 }
 
+export async function updateExpense(jobId: string, id: string, data: CreateExpenseForm) {
+	const res = await http.put<APIResponse<ExpenseDTO>>(`/api/v1/jobs/${jobId}/expenses/${id}`, data);
+	return res.data.data;
+}
+
 export async function deleteExpense(jobId: string, id: string) {
 	const res = await http.delete<APIResponse<null>>(`/api/v1/jobs/${jobId}/expenses/${id}`);
 	return res.data.data;

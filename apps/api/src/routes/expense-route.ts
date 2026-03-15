@@ -5,6 +5,7 @@ import type { APIResponse, ExpenseDTO, PaginatedResponse } from "@repo/dto";
 import { Hono } from "hono";
 import {
 	createExpense,
+	updateExpense,
 	getExpensesByJobId,
 	deleteExpense,
 } from "../services/expense-service";
@@ -23,6 +24,13 @@ const expenseRoute = new Hono()
 
 		const result = await getExpensesByJobId(jobId, pagination);
 		return c.json<PaginatedResponse<ExpenseDTO>>(result);
+	})
+	.put("/:jobId/expenses/:id", zValidator("json", createExpenseSchema), async (c) => {
+		const id = c.req.param("id");
+		const data = c.req.valid("json");
+
+		const expense = await updateExpense(id, data);
+		return c.json<APIResponse<ExpenseDTO>>({ data: expense });
 	})
 	.delete("/:jobId/expenses/:id", async (c) => {
 		const id = c.req.param("id");

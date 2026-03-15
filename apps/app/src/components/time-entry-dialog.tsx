@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createTimeEntrySchema, type CreateTimeEntryForm } from "@repo/zod/time-entry";
-import { createTimeEntry } from "@/pages/jobs/time-entries-api";
+import type { TimeEntryDTO } from "@repo/dto";
+import { createTimeEntry, updateTimeEntry } from "@/pages/jobs/time-entries-api";
 import { formatCurrency } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,16 +22,31 @@ interface TimeEntryDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	jobId: string;
+	timeEntry?: TimeEntryDTO | null;
 }
 
-const TimeEntryDialog = ({ open, onOpenChange, jobId }: TimeEntryDialogProps) => {
+const defaultValues: CreateTimeEntryForm = {
+	startTime: "",
+	endTime: "",
+	hours: 0,
+	minutes: 0,
+	notes: "",
+	date: new Date().toISOString().slice(0, 10),
+	employee: "",
+	employeeCostPerHour: 0,
+};
+
+const TimeEntryDialog = ({ open, onOpenChange, jobId, timeEntry }: TimeEntryDialogProps) => {
 	const queryClient = useQueryClient();
+	const isEditing = !!timeEntry;
 
 	const mutation = useMutation({
-		mutationFn: (data: CreateTimeEntryForm) => createTimeEntry(jobId, data),
+		mutationFn: (data: CreateTimeEntryForm) =>
+			isEditing ? updateTimeEntry(jobId, timeEntry.id, data) : createTimeEntry(jobId, data),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["job", jobId] });
-			reset();
+			queryClient.invalidateQueries({ queryKey: ["job-time-entries", jobId] });
+			reset(defaultValues);
 			onOpenChange(false);
 		},
 	});
@@ -42,17 +59,25 @@ const TimeEntryDialog = ({ open, onOpenChange, jobId }: TimeEntryDialogProps) =>
 		formState: { errors },
 	} = useForm<CreateTimeEntryForm>({
 		resolver: zodResolver(createTimeEntrySchema),
-		defaultValues: {
-			startTime: "",
-			endTime: "",
-			hours: 0,
-			minutes: 0,
-			notes: "",
-			date: new Date().toISOString().slice(0, 10),
-			employee: "",
-			employeeCostPerHour: 0,
-		},
+		defaultValues,
 	});
+
+	useEffect(() => {
+		if (open && timeEntry) {
+			reset({
+				startTime: timeEntry.startTime ?? "",
+				endTime: timeEntry.endTime ?? "",
+				hours: Math.floor(timeEntry.durationMinutes / 60),
+				minutes: timeEntry.durationMinutes % 60,
+				notes: timeEntry.notes ?? "",
+				date: timeEntry.date,
+				employee: timeEntry.employee,
+				employeeCostPerHour: Number(timeEntry.employeeCostPerHour),
+			});
+		} else if (open) {
+			reset(defaultValues);
+		}
+	}, [open, timeEntry, reset]);
 
 	const hours = useWatch({ control, name: "hours" });
 	const minutes = useWatch({ control, name: "minutes" });
@@ -66,10 +91,10 @@ const TimeEntryDialog = ({ open, onOpenChange, jobId }: TimeEntryDialogProps) =>
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
+		<Dialog open={open} onOpenChange={(v) => { if (!v) reset(defaultValues); onOpenChange(v); }}>
 			<DialogContent className="max-w-lg">
 				<DialogHeader>
-					<DialogTitle>New Time Entry</DialogTitle>
+					<DialogTitle>{isEditing ? "Edit Time Entry" : "New Time Entry"}</DialogTitle>
 				</DialogHeader>
 				<form onSubmit={handleSubmit(onSubmit)}>
 					<div className="space-y-5 py-4">
@@ -119,11 +144,11 @@ const TimeEntryDialog = ({ open, onOpenChange, jobId }: TimeEntryDialogProps) =>
 						</div>
 					</div>
 					<DialogFooter>
-						<Button type="button" variant="outline" onClick={() => { reset(); onOpenChange(false); }}>
+						<Button type="button" variant="outline" onClick={() => { reset(defaultValues); onOpenChange(false); }}>
 							Cancel
 						</Button>
 						<Button type="submit" disabled={mutation.isPending}>
-							{mutation.isPending ? "Saving..." : "Save Time Entry"}
+							{mutation.isPending ? "Saving..." : isEditing ? "Update Time Entry" : "Save Time Entry"}
 						</Button>
 					</DialogFooter>
 				</form>

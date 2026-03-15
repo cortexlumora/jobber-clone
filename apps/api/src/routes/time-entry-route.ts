@@ -5,6 +5,7 @@ import type { APIResponse, TimeEntryDTO, PaginatedResponse } from "@repo/dto";
 import { Hono } from "hono";
 import {
 	createTimeEntry,
+	updateTimeEntry,
 	getTimeEntriesByJobId,
 	deleteTimeEntry,
 } from "../services/time-entry-service";
@@ -23,6 +24,13 @@ const timeEntryRoute = new Hono()
 
 		const result = await getTimeEntriesByJobId(jobId, pagination);
 		return c.json<PaginatedResponse<TimeEntryDTO>>(result);
+	})
+	.put("/:jobId/time-entries/:id", zValidator("json", createTimeEntrySchema), async (c) => {
+		const id = c.req.param("id");
+		const data = c.req.valid("json");
+
+		const entry = await updateTimeEntry(id, data);
+		return c.json<APIResponse<TimeEntryDTO>>({ data: entry });
 	})
 	.delete("/:jobId/time-entries/:id", async (c) => {
 		const id = c.req.param("id");

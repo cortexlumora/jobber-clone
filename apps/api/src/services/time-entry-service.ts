@@ -47,6 +47,28 @@ export async function getTimeEntriesByJobId(jobId: string, pagination: Paginatio
 	};
 }
 
+export async function updateTimeEntry(id: string, data: CreateTimeEntryForm) {
+	const durationMinutes = data.hours * 60 + data.minutes;
+	const totalCost = (durationMinutes / 60) * data.employeeCostPerHour;
+
+	const [entry] = await db
+		.update(timeEntriesSchema)
+		.set({
+			startTime: data.startTime || null,
+			endTime: data.endTime || null,
+			durationMinutes,
+			notes: data.notes || null,
+			date: data.date,
+			employee: data.employee,
+			employeeCostPerHour: String(data.employeeCostPerHour),
+			totalCost: String(totalCost.toFixed(2)),
+		})
+		.where(eq(timeEntriesSchema.id, id))
+		.returning();
+
+	return entry;
+}
+
 export async function deleteTimeEntry(id: string) {
 	await db.delete(timeEntriesSchema).where(eq(timeEntriesSchema.id, id));
 }

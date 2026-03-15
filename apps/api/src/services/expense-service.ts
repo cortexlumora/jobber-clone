@@ -42,6 +42,23 @@ export async function getExpensesByJobId(jobId: string, pagination: PaginationQu
 	};
 }
 
+export async function updateExpense(id: string, data: CreateExpenseForm) {
+	const [expense] = await db
+		.update(expensesSchema)
+		.set({
+			itemName: data.itemName,
+			accountingCode: data.accountingCode || null,
+			description: data.description || null,
+			date: data.date,
+			total: String(data.total.toFixed(2)),
+			reimburseTo: data.reimburseTo || null,
+		})
+		.where(eq(expensesSchema.id, id))
+		.returning();
+
+	return expense;
+}
+
 export async function deleteExpense(id: string) {
 	await db.delete(expensesSchema).where(eq(expensesSchema.id, id));
 }
