@@ -1,7 +1,7 @@
 import db, { expensesSchema } from "@repo/db";
 import type { CreateExpenseForm } from "@repo/zod/expense";
 import type { PaginationQuery } from "@repo/zod/pagination";
-import { eq, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 
 export async function createExpense(jobId: string, data: CreateExpenseForm) {
 	const [expense] = await db
@@ -27,7 +27,7 @@ export async function getExpensesByJobId(jobId: string, pagination: PaginationQu
 	const where = eq(expensesSchema.jobId, jobId);
 
 	const [data, [{ count }]] = await Promise.all([
-		db.select().from(expensesSchema).where(where).limit(limit).offset(offset).orderBy(expensesSchema.createdAt),
+		db.select().from(expensesSchema).where(where).limit(limit).offset(offset).orderBy(desc(expensesSchema.createdAt), desc(expensesSchema.id)),
 		db.select({ count: sql<number>`count(*)` }).from(expensesSchema).where(where),
 	]);
 

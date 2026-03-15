@@ -1,7 +1,7 @@
 import db, { timeEntriesSchema } from "@repo/db";
 import type { CreateTimeEntryForm } from "@repo/zod/time-entry";
 import type { PaginationQuery } from "@repo/zod/pagination";
-import { eq, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 
 export async function createTimeEntry(jobId: string, data: CreateTimeEntryForm) {
 	const durationMinutes = data.hours * 60 + data.minutes;
@@ -32,7 +32,7 @@ export async function getTimeEntriesByJobId(jobId: string, pagination: Paginatio
 	const where = eq(timeEntriesSchema.jobId, jobId);
 
 	const [data, [{ count }]] = await Promise.all([
-		db.select().from(timeEntriesSchema).where(where).limit(limit).offset(offset).orderBy(timeEntriesSchema.createdAt),
+		db.select().from(timeEntriesSchema).where(where).limit(limit).offset(offset).orderBy(desc(timeEntriesSchema.createdAt), desc(timeEntriesSchema.id)),
 		db.select({ count: sql<number>`count(*)` }).from(timeEntriesSchema).where(where),
 	]);
 
