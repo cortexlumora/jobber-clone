@@ -1,6 +1,7 @@
-import db, { jobsSchema, jobFilesSchema, jobLineItemsSchema } from "@repo/db";
+import db, { jobsSchema, jobFilesSchema, jobLineItemsSchema, filesSchema } from "@repo/db";
 import type { CreateJobForm, UpdateJobLineItemsForm } from "@repo/zod/job";
 import { and, eq, isNull } from "drizzle-orm";
+import { signKey } from "./file-service";
 
 export async function createJob(userId: string, data: CreateJobForm) {
 	const { lineItems, noteFileIds, ...jobData } = data;
@@ -58,7 +59,7 @@ export async function createJob(userId: string, data: CreateJobForm) {
 		);
 	}
 
-	return { ...job, lineItems: insertedLineItems, fileIds: noteFileIds ?? [] };
+	return { ...job, lineItems: insertedLineItems.map((item) => ({ ...item, image: null })), fileIds: noteFileIds ?? [] };
 }
 
 export async function getJobsByUser(userId: string) {
@@ -77,11 +78,43 @@ export async function getJobsByUser(userId: string) {
 				.select()
 				.from(jobLineItemsSchema)
 				.where(eq(jobLineItemsSchema.jobId, job.id));
-			return { ...job, lineItems: items, fileIds: files.map((f) => f.fileId) };
+			return { ...job, lineItems: items.map((item) => ({ ...item, image: null })), fileIds: files.map((f) => f.fileId) };
 		}),
 	);
 
 	return result;
+}
+
+async function getJobLineItemsByJobId(jobId: string) {
+	const items = await db
+		.select({
+			id: jobLineItemsSchema.id,
+			name: jobLineItemsSchema.name,
+			description: jobLineItemsSchema.description,
+			qty: jobLineItemsSchema.qty,
+			unitCost: jobLineItemsSchema.unitCost,
+			unitPrice: jobLineItemsSchema.unitPrice,
+			sortOrder: jobLineItemsSchema.sortOrder,
+			createdAt: jobLineItemsSchema.createdAt,
+			image: {
+				id: filesSchema.id,
+				name: filesSchema.name,
+				contentType: filesSchema.contentType,
+				key: filesSchema.key,
+			},
+		})
+		.from(jobLineItemsSchema)
+		.leftJoin(filesSchema, eq(jobLineItemsSchema.imageFileId, filesSchema.id))
+		.where(eq(jobLineItemsSchema.jobId, jobId));
+
+	return Promise.all(
+		items.map(async (item) => ({
+			...item,
+			image: item.image?.key
+				? { id: item.image.id!, name: item.image.name!, contentType: item.image.contentType!, url: await signKey(item.image.key) }
+				: null,
+		})),
+	);
 }
 
 export async function getJobById(jobId: string) {
@@ -92,15 +125,10 @@ export async function getJobById(jobId: string) {
 
 	if (!job) return null;
 
-	const files = await db
-		.select({ fileId: jobFilesSchema.fileId })
-		.from(jobFilesSchema)
-		.where(eq(jobFilesSchema.jobId, job.id));
-
-	const items = await db
-		.select()
-		.from(jobLineItemsSchema)
-		.where(eq(jobLineItemsSchema.jobId, job.id));
+	const [files, items] = await Promise.all([
+		db.select({ fileId: jobFilesSchema.fileId }).from(jobFilesSchema).where(eq(jobFilesSchema.jobId, job.id)),
+		getJobLineItemsByJobId(job.id),
+	]);
 
 	return { ...job, lineItems: items, fileIds: files.map((f) => f.fileId) };
 }

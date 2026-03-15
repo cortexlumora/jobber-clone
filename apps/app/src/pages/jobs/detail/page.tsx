@@ -76,7 +76,7 @@ const JobDetailPage = () => {
 				description: item.description ?? "",
 				qty: item.qty,
 				unitPrice: Number(item.unitPrice),
-				imageFileId: item.imageFileId ?? null,
+				imageFileId: item.image?.id ?? null,
 				imagePreview: null,
 				imageUploading: false,
 			})),

@@ -1,12 +1,13 @@
+import type { LineItemImageDTO } from "./quote";
+
 export interface JobLineItemDTO {
 	id: string;
-	jobId: string;
 	name: string;
 	description: string | null;
 	qty: number;
 	unitCost: string;
 	unitPrice: string;
-	imageFileId: string | null;
+	image: LineItemImageDTO | null;
 	sortOrder: number;
 	createdAt: Date;
 }

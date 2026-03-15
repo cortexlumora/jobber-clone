@@ -1,11 +1,12 @@
+import type { LineItemImageDTO } from "./quote";
+
 export interface RequestLineItemDTO {
 	id: string;
-	requestId: string;
 	name: string;
 	description: string | null;
 	qty: number;
 	unitPrice: string;
-	imageFileId: string | null;
+	image: LineItemImageDTO | null;
 	createdAt: Date;
 }
 

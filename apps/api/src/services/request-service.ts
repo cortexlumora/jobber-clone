@@ -92,7 +92,15 @@ export async function createRequest(userId: string, data: CreateRequestForm) {
 		...toRequestResponse(request),
 		attachments: [],
 		client: null,
-		lineItems: insertedLineItems,
+		lineItems: insertedLineItems.map((item) => ({
+			id: item.id,
+			name: item.name,
+			description: item.description,
+			qty: item.qty,
+			unitPrice: item.unitPrice,
+			image: null,
+			createdAt: item.createdAt,
+		})),
 	};
 }
 
@@ -109,7 +117,15 @@ export async function getRequestsByUser(userId: string) {
 				...toRequestResponse(request),
 				attachments: [],
 				client: null,
-				lineItems: items,
+				lineItems: items.map((item) => ({
+					id: item.id,
+					name: item.name,
+					description: item.description,
+					qty: item.qty,
+					unitPrice: item.unitPrice,
+					image: null,
+					createdAt: item.createdAt,
+				})),
 			};
 		}),
 	);
@@ -141,6 +157,38 @@ async function getRequestAttachmentsByReqId(requestId: string) {
 	);
 }
 
+async function getRequestLineItemsByReqId(requestId: string) {
+	const items = await db
+		.select({
+			id: requestLineItemsSchema.id,
+			name: requestLineItemsSchema.name,
+			description: requestLineItemsSchema.description,
+			qty: requestLineItemsSchema.qty,
+			unitPrice: requestLineItemsSchema.unitPrice,
+			createdAt: requestLineItemsSchema.createdAt,
+			image: {
+				id: filesSchema.id,
+				name: filesSchema.name,
+				contentType: filesSchema.contentType,
+				key: filesSchema.key,
+			},
+		})
+		.from(requestLineItemsSchema)
+		.leftJoin(filesSchema, eq(requestLineItemsSchema.imageFileId, filesSchema.id))
+		.where(eq(requestLineItemsSchema.requestId, requestId));
+	
+	return Promise.all(
+		items.map(async (item) => ({
+			...item,
+			image: item.image ? {
+				...item.image,
+				url: item.image.key ? await signKey(item.image.key) : null,
+				key: undefined,
+			} : null
+		})),
+	);
+}
+
 export async function getRequestById(requestId: string) {
 	const [request] = await db
 		.select()
@@ -151,7 +199,7 @@ export async function getRequestById(requestId: string) {
 
 	const [attachments, items, [client]] = await Promise.all([
 		getRequestAttachmentsByReqId(request.id),
-		db.select().from(requestLineItemsSchema).where(eq(requestLineItemsSchema.requestId, request.id)),
+		getRequestLineItemsByReqId(request.id),
 		db
 			.select({
 				id: clientsSchema.id,

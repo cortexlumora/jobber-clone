@@ -1,6 +1,7 @@
-import db, { quotesSchema, quoteFilesSchema, quoteLineItemsSchema } from "@repo/db";
+import db, { quotesSchema, quoteFilesSchema, quoteLineItemsSchema, filesSchema } from "@repo/db";
 import type { CreateQuoteForm, UpdateQuoteLineItemsForm } from "@repo/zod/quote";
 import { and, eq, isNull } from "drizzle-orm";
+import { signKey } from "./file-service";
 
 export async function createQuote(userId: string, data: CreateQuoteForm) {
 	const { lineItems, attachmentFileIds, imageFileIds, noteFileIds, ...quoteData } = data;
@@ -66,7 +67,7 @@ export async function createQuote(userId: string, data: CreateQuoteForm) {
 
 	return {
 		...quote,
-		lineItems: insertedLineItems,
+		lineItems: insertedLineItems.map((item) => ({ ...item, image: null })),
 		attachmentFileIds: attachmentFileIds ?? [],
 		imageFileIds: imageFileIds ?? [],
 		noteFileIds: noteFileIds ?? [],
@@ -99,11 +100,43 @@ export async function getQuotesByUser(userId: string) {
 				.select()
 				.from(quoteLineItemsSchema)
 				.where(eq(quoteLineItemsSchema.quoteId, quote.id));
-			return { ...quote, lineItems: items, ...fileIds };
+			return { ...quote, lineItems: items.map((item) => ({ ...item, image: null })), ...fileIds };
 		}),
 	);
 
 	return result;
+}
+
+async function getQuoteLineItemsByQuoteId(quoteId: string) {
+	const items = await db
+		.select({
+			id: quoteLineItemsSchema.id,
+			type: quoteLineItemsSchema.type,
+			name: quoteLineItemsSchema.name,
+			description: quoteLineItemsSchema.description,
+			qty: quoteLineItemsSchema.qty,
+			unitPrice: quoteLineItemsSchema.unitPrice,
+			sortOrder: quoteLineItemsSchema.sortOrder,
+			createdAt: quoteLineItemsSchema.createdAt,
+			image: {
+				id: filesSchema.id,
+				name: filesSchema.name,
+				contentType: filesSchema.contentType,
+				key: filesSchema.key,
+			},
+		})
+		.from(quoteLineItemsSchema)
+		.leftJoin(filesSchema, eq(quoteLineItemsSchema.imageFileId, filesSchema.id))
+		.where(eq(quoteLineItemsSchema.quoteId, quoteId));
+
+	return Promise.all(
+		items.map(async (item) => ({
+			...item,
+			image: item.image?.key
+				? { id: item.image.id!, name: item.image.name!, contentType: item.image.contentType!, url: await signKey(item.image.key) }
+				: null,
+		})),
+	);
 }
 
 export async function getQuoteById(quoteId: string) {
@@ -114,11 +147,10 @@ export async function getQuoteById(quoteId: string) {
 
 	if (!quote) return null;
 
-	const fileIds = await getQuoteFiles(quote.id);
-	const items = await db
-		.select()
-		.from(quoteLineItemsSchema)
-		.where(eq(quoteLineItemsSchema.quoteId, quote.id));
+	const [fileIds, items] = await Promise.all([
+		getQuoteFiles(quote.id),
+		getQuoteLineItemsByQuoteId(quote.id),
+	]);
 
 	return { ...quote, lineItems: items, ...fileIds };
 }

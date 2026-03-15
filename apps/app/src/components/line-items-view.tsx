@@ -16,7 +16,7 @@ interface LineItem {
 	qty: number;
 	unitPrice: string | number;
 	unitCost?: string | number;
-	imageFileId: string | null;
+	image?: { id: string; url: string | null } | null;
 }
 
 interface LineItemsViewProps {
@@ -50,10 +50,14 @@ const LineItemsView = ({ items, discount, tax, showCost }: LineItemsViewProps) =
 							<TableRow key={item.id}>
 								<TableCell>
 									<div className="flex items-center gap-3">
-										{item.imageFileId && (
-											<div className="h-9 w-9 rounded bg-muted flex items-center justify-center shrink-0">
-												<ImageIcon className="h-4 w-4 text-muted-foreground" />
-											</div>
+										{item.image && (
+											item.image.url ? (
+												<img src={item.image.url} alt="" className="h-9 w-9 rounded object-cover shrink-0" />
+											) : (
+												<div className="h-9 w-9 rounded bg-muted flex items-center justify-center shrink-0">
+													<ImageIcon className="h-4 w-4 text-muted-foreground" />
+												</div>
+											)
 										)}
 										<div>
 											<p className="text-sm font-medium">{item.name}</p>

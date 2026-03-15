@@ -1,12 +1,18 @@
+export interface LineItemImageDTO {
+	id: string;
+	name: string;
+	contentType: string;
+	url: string | null;
+}
+
 export interface QuoteLineItemDTO {
 	id: string;
-	quoteId: string;
 	type: string;
 	name: string;
 	description: string | null;
 	qty: number;
 	unitPrice: string;
-	imageFileId: string | null;
+	image: LineItemImageDTO | null;
 	sortOrder: number;
 	createdAt: Date;
 }

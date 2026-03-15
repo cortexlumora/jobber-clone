@@ -112,8 +112,8 @@ const RequestDetailPage = () => {
 				description: item.description ?? "",
 				qty: item.qty,
 				unitPrice: Number(item.unitPrice),
-				imageFileId: item.imageFileId ?? null,
-				imagePreview: null,
+				imageFileId: item.image?.id ?? null,
+				imagePreview: item.image?.url ?? null,
 				imageUploading: false,
 			})),
 		);
