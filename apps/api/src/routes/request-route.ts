@@ -17,8 +17,8 @@ const requestRoute = new Hono()
 		const data = c.req.valid("json");
 		const userId = getUserIdFromCTX(c);
 
-		const request = await createRequest(userId, data);
-		return c.json<APIResponse<RequestDTO>>({ data: request });
+		const result = await createRequest(userId, data);
+		return c.json<APIResponse<{ id: string }>>({ data: result });
 	})
 	.get("/", async (c) => {
 		const userId = getUserIdFromCTX(c);

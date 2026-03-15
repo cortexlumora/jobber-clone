@@ -71,37 +71,20 @@ export async function createRequest(userId: string, data: CreateRequestForm) {
 		);
 	}
 
-	let insertedLineItems: (typeof requestLineItemsSchema.$inferSelect)[] = [];
 	if (lineItems && lineItems.length > 0) {
-		insertedLineItems = await db
-			.insert(requestLineItemsSchema)
-			.values(
-				lineItems.map((item) => ({
-					requestId: request.id,
-					name: item.name,
-					description: item.description || null,
-					qty: item.qty,
-					unitPrice: String(item.unitPrice),
-					imageFileId: item.imageFileId || null,
-				})),
-			)
-			.returning();
+		await db.insert(requestLineItemsSchema).values(
+			lineItems.map((item) => ({
+				requestId: request.id,
+				name: item.name,
+				description: item.description || null,
+				qty: item.qty,
+				unitPrice: String(item.unitPrice),
+				imageFileId: item.imageFileId || null,
+			})),
+		);
 	}
 
-	return {
-		...toRequestResponse(request),
-		attachments: [],
-		client: null,
-		lineItems: insertedLineItems.map((item) => ({
-			id: item.id,
-			name: item.name,
-			description: item.description,
-			qty: item.qty,
-			unitPrice: item.unitPrice,
-			image: null,
-			createdAt: item.createdAt,
-		})),
-	};
+	return { id: request.id };
 }
 
 export async function getRequestsByUser(userId: string) {
