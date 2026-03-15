@@ -64,7 +64,7 @@ export async function createJob(userId: string, data: CreateJobForm) {
 		);
 	}
 
-	return { ...job, lineItems: insertedLineItems.map((item) => ({ ...item, image: null })), visits: [], timeEntries: [], expenses: [], fileIds: noteFileIds ?? [] };
+	return { ...job, lineItems: insertedLineItems.map((item) => ({ ...item, image: null })), visits: [], timeEntries: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, expenses: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, fileIds: noteFileIds ?? [] };
 }
 
 export async function getJobs() {
@@ -74,7 +74,7 @@ export async function getJobs() {
 		jobs.map(async (job) => {
 			const files = await db.select({ fileId: jobFilesSchema.fileId }).from(jobFilesSchema).where(eq(jobFilesSchema.jobId, job.id));
 			const items = await db.select().from(jobLineItemsSchema).where(eq(jobLineItemsSchema.jobId, job.id));
-			return { ...job, lineItems: items.map((item) => ({ ...item, image: null })), visits: [], timeEntries: [], expenses: [], fileIds: files.map((f) => f.fileId) };
+			return { ...job, lineItems: items.map((item) => ({ ...item, image: null })), visits: [], timeEntries: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, expenses: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, fileIds: files.map((f) => f.fileId) };
 		}),
 	);
 
@@ -146,7 +146,7 @@ export async function getJobById(jobId: string) {
 		getExpensesByJobId(job.id, { page: 1, limit: 10, search: "" }),
 	]);
 
-	return { ...job, visits, lineItems: items, timeEntries: timeEntriesResult.data, expenses: expensesResult.data, fileIds: files.map((f) => f.fileId) };
+	return { ...job, visits, lineItems: items, timeEntries: timeEntriesResult, expenses: expensesResult, fileIds: files.map((f) => f.fileId) };
 }
 
 export async function updateJobLineItems(jobId: string, data: UpdateJobLineItemsForm) {

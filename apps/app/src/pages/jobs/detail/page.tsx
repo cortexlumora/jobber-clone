@@ -8,14 +8,12 @@ import NotesPanel from "@/components/notes-panel";
 import Section from "@/components/section";
 import LineItemsView from "@/components/line-items-view";
 import LineItemsCard, { type LineItemUI } from "@/components/line-items-card";
-import { formatScheduleDate, formatCurrency, formatDate, getInitials } from "@/lib/format";
+import { formatScheduleDate, formatCurrency, getInitials } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import ScheduleVisitDialog from "@/components/schedule-visit-dialog";
-import TimeEntryDialog from "@/components/time-entry-dialog";
-import ExpenseDialog from "@/components/expense-dialog";
-import { deleteTimeEntry } from "../time-entries-api";
-import { deleteExpense } from "../expenses-api";
+import LaborSection from "./components/labor-section";
+import ExpensesSection from "./components/expenses-section";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -38,8 +36,6 @@ import {
 	Pencil,
 	Calendar,
 	Plus,
-	Trash2,
-	Clock,
 } from "lucide-react";
 
 
@@ -61,12 +57,17 @@ const JobDetailPage = () => {
 	const [editingLineItems, setEditingLineItems] = useState(false);
 	const [editLineItems, setEditLineItems] = useState<LineItemUI[]>([]);
 	const [visitDialogOpen, setVisitDialogOpen] = useQueryState("schedule-visit", parseAsBoolean.withDefault(false));
-	const [timeEntryDialogOpen, setTimeEntryDialogOpen] = useQueryState("new-time-entry", parseAsBoolean.withDefault(false));
-	const [expenseDialogOpen, setExpenseDialogOpen] = useQueryState("new-expense", parseAsBoolean.withDefault(false));
 
 	const { data: job, isLoading } = useQuery({
 		queryKey: ["job", id],
-		queryFn: () => getJobById(id!),
+		queryFn: async () => {
+			const data = await getJobById(id!);
+			if (data) {
+				queryClient.setQueryData(["job-time-entries", id, 1], data.timeEntries);
+				queryClient.setQueryData(["job-expenses", id, 1], data.expenses);
+			}
+			return data;
+		},
 		enabled: !!id,
 	});
 
@@ -76,20 +77,6 @@ const JobDetailPage = () => {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["job", id] });
 			setEditingLineItems(false);
-		},
-	});
-
-	const deleteTimeEntryMutation = useMutation({
-		mutationFn: (entryId: string) => deleteTimeEntry(id!, entryId),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["job", id] });
-		},
-	});
-
-	const deleteExpenseMutation = useMutation({
-		mutationFn: (expenseId: string) => deleteExpense(id!, expenseId),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["job", id] });
 		},
 	});
 
@@ -154,8 +141,8 @@ const JobDetailPage = () => {
 	const isUnscheduled = !job.startDate;
 	const totalPrice = job.lineItems.reduce((sum, item) => sum + item.qty * Number(item.unitPrice), 0);
 	const totalCost = job.lineItems.reduce((sum, item) => sum + item.qty * Number(item.unitCost), 0);
-	const totalLabor = job.timeEntries.reduce((sum, entry) => sum + Number(entry.totalCost), 0);
-	const totalExpenses = job.expenses.reduce((sum, expense) => sum + Number(expense.total), 0);
+	const totalLabor = job.timeEntries.data.reduce((sum, entry) => sum + Number(entry.totalCost), 0);
+	const totalExpenses = job.expenses.data.reduce((sum, expense) => sum + Number(expense.total), 0);
 	const profit = totalPrice - totalCost - totalLabor - totalExpenses;
 	const profitMargin = totalPrice > 0 ? Math.round((profit / totalPrice) * 100) : 0;
 
@@ -362,101 +349,8 @@ const JobDetailPage = () => {
 						</Section>
 					)}
 
-					{/* Labor */}
-					<Section
-						title="Labor"
-						action={
-							<Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setTimeEntryDialogOpen(true)}>
-								<Plus className="h-3 w-3 mr-1" />
-								New Time Entry
-							</Button>
-						}
-					>
-						{job.timeEntries.length > 0 ? (
-							<div className="space-y-2">
-								{job.timeEntries.map((entry) => {
-									const h = Math.floor(entry.durationMinutes / 60);
-									const m = entry.durationMinutes % 60;
-									return (
-										<div key={entry.id} className="rounded-md border px-4 py-3 flex items-center justify-between">
-											<div className="flex items-center gap-3">
-												<div className="h-8 w-8 rounded-full bg-orange-50 flex items-center justify-center">
-													<Clock className="h-4 w-4 text-orange-600" />
-												</div>
-												<div>
-													<p className="text-sm font-medium">{entry.employee}</p>
-													<p className="text-xs text-muted-foreground">
-														{formatDate(new Date(entry.date + "T00:00:00"))} · {h}h {m > 0 ? `${m}m` : ""}
-													</p>
-												</div>
-											</div>
-											<div className="flex items-center gap-3">
-												<span className="text-sm font-medium">{formatCurrency(Number(entry.totalCost))}</span>
-												<Button
-													variant="ghost"
-													size="sm"
-													className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-													onClick={() => deleteTimeEntryMutation.mutate(entry.id)}
-												>
-													<Trash2 className="h-3.5 w-3.5" />
-												</Button>
-											</div>
-										</div>
-									);
-								})}
-							</div>
-						) : (
-							<p className="text-sm text-muted-foreground">
-								Time tracked to this job by you or your team will show here
-							</p>
-						)}
-					</Section>
-
-					{/* Expenses */}
-					<Section
-						title="Expenses"
-						action={
-							<Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setExpenseDialogOpen(true)}>
-								<Plus className="h-3 w-3 mr-1" />
-								New Expense
-							</Button>
-						}
-					>
-						{job.expenses.length > 0 ? (
-							<div className="space-y-2">
-								{job.expenses.map((expense) => (
-									<div key={expense.id} className="rounded-md border px-4 py-3 flex items-center justify-between">
-										<div className="flex items-center gap-3">
-											<div className="h-8 w-8 rounded-full bg-purple-50 flex items-center justify-center text-xs font-medium text-purple-600">$</div>
-											<div>
-												<p className="text-sm font-medium">{expense.itemName}</p>
-												<p className="text-xs text-muted-foreground">
-													{formatDate(new Date(expense.date + "T00:00:00"))}
-													{expense.reimburseTo && ` · Reimburse to ${expense.reimburseTo}`}
-													{!expense.reimburseTo && " · Not reimbursable"}
-												</p>
-											</div>
-										</div>
-										<div className="flex items-center gap-3">
-											<span className="text-sm font-medium">{formatCurrency(Number(expense.total))}</span>
-											<Button
-												variant="ghost"
-												size="sm"
-												className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-												onClick={() => deleteExpenseMutation.mutate(expense.id)}
-											>
-												<Trash2 className="h-3.5 w-3.5" />
-											</Button>
-										</div>
-									</div>
-								))}
-							</div>
-						) : (
-							<p className="text-sm text-muted-foreground">
-								Get an accurate picture of various job costs by recording expenses
-							</p>
-						)}
-					</Section>
+					<LaborSection jobId={id!} />
+					<ExpensesSection jobId={id!} />
 
 					{/* Visits */}
 					<Section
@@ -562,17 +456,6 @@ const JobDetailPage = () => {
 				assignedTo={job.salesperson}
 			/>
 
-			<TimeEntryDialog
-				open={timeEntryDialogOpen}
-				onOpenChange={setTimeEntryDialogOpen}
-				jobId={id!}
-			/>
-
-			<ExpenseDialog
-				open={expenseDialogOpen}
-				onOpenChange={setExpenseDialogOpen}
-				jobId={id!}
-			/>
 		</div>
 	);
 };
