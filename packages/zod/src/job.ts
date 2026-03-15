@@ -34,8 +34,6 @@ export const createJobSchema = z.object({
 	autoPay: z.boolean().optional(),
 	// Line items
 	lineItems: z.array(jobLineItemSchema).optional(),
-	// Notes
-	notes: z.string().optional(),
 	noteFileIds: z.array(z.string()).optional(),
 	// Link to related
 	relatedQuoteId: z.string().optional(),

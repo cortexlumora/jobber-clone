@@ -57,8 +57,6 @@ export interface JobDTO {
 	billingType: "visit_based" | "fixed_price" | null;
 	invoiceFrequency: string | null;
 	autoPay: boolean;
-	// Notes
-	notes: string | null;
 	// Related
 	relatedQuoteId: string | null;
 	relatedRequestId: string | null;

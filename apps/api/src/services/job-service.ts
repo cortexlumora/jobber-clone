@@ -31,7 +31,6 @@ export async function createJob(userId: string, data: CreateJobForm) {
 			billingType: jobData.billingType ?? null,
 			invoiceFrequency: jobData.invoiceFrequency || null,
 			autoPay: jobData.autoPay ?? false,
-			notes: jobData.notes || null,
 			relatedQuoteId: jobData.relatedQuoteId || null,
 			relatedRequestId: jobData.relatedRequestId || null,
 		})

@@ -36,8 +36,6 @@ const jobsSchema = pgTable("jobs", {
 	billingType: billingTypeEnum("billing_type"),
 	invoiceFrequency: varchar("invoice_frequency", { length: 50 }),
 	autoPay: boolean("auto_pay").notNull().default(false),
-	// Notes
-	notes: text("notes"),
 	// Link to related
 	relatedQuoteId: uuid("related_quote_id"),
 	relatedRequestId: uuid("related_request_id"),
