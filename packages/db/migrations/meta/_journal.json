@@ -232,6 +232,20 @@
       "when": 1773584691109,
       "tag": "0032_low_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1773601762707,
+      "tag": "0033_great_mimic",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1773602727576,
+      "tag": "0034_military_jigsaw",
+      "breakpoints": true
     }
   ]
 }

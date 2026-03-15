@@ -16,3 +16,4 @@ export * from "./product-service";
 export * from "./dashboard";
 export * from "./tag";
 export * from "./visit";
+export * from "./time-entry";

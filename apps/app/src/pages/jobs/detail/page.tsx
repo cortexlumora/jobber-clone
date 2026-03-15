@@ -8,10 +8,12 @@ import NotesPanel from "@/components/notes-panel";
 import Section from "@/components/section";
 import LineItemsView from "@/components/line-items-view";
 import LineItemsCard, { type LineItemUI } from "@/components/line-items-card";
-import { formatScheduleDate, formatCurrency, getInitials } from "@/lib/format";
+import { formatScheduleDate, formatCurrency, formatDate, getInitials } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import ScheduleVisitDialog from "@/components/schedule-visit-dialog";
+import TimeEntryDialog from "@/components/time-entry-dialog";
+import { deleteTimeEntry } from "../time-entries-api";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -34,6 +36,8 @@ import {
 	Pencil,
 	Calendar,
 	Plus,
+	Trash2,
+	Clock,
 } from "lucide-react";
 
 
@@ -55,6 +59,7 @@ const JobDetailPage = () => {
 	const [editingLineItems, setEditingLineItems] = useState(false);
 	const [editLineItems, setEditLineItems] = useState<LineItemUI[]>([]);
 	const [visitDialogOpen, setVisitDialogOpen] = useQueryState("schedule-visit", parseAsBoolean.withDefault(false));
+	const [timeEntryDialogOpen, setTimeEntryDialogOpen] = useQueryState("new-time-entry", parseAsBoolean.withDefault(false));
 
 	const { data: job, isLoading } = useQuery({
 		queryKey: ["job", id],
@@ -68,6 +73,13 @@ const JobDetailPage = () => {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["job", id] });
 			setEditingLineItems(false);
+		},
+	});
+
+	const deleteTimeEntryMutation = useMutation({
+		mutationFn: (entryId: string) => deleteTimeEntry(id!, entryId),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["job", id] });
 		},
 	});
 
@@ -132,7 +144,8 @@ const JobDetailPage = () => {
 	const isUnscheduled = !job.startDate;
 	const totalPrice = job.lineItems.reduce((sum, item) => sum + item.qty * Number(item.unitPrice), 0);
 	const totalCost = job.lineItems.reduce((sum, item) => sum + item.qty * Number(item.unitCost), 0);
-	const profit = totalPrice - totalCost;
+	const totalLabor = job.timeEntries.reduce((sum, entry) => sum + Number(entry.totalCost), 0);
+	const profit = totalPrice - totalCost - totalLabor;
 	const profitMargin = totalPrice > 0 ? Math.round((profit / totalPrice) * 100) : 0;
 
 	const billingLabel = job.billingType === "visit_based"
@@ -290,7 +303,7 @@ const JobDetailPage = () => {
 									<span className="text-muted-foreground flex items-center gap-1">
 										<span className="text-muted-foreground">−</span> Labor
 									</span>
-									<span>{formatCurrency(0)}</span>
+									<span>{formatCurrency(totalLabor)}</span>
 								</div>
 								<div className="flex justify-between text-sm">
 									<span className="text-muted-foreground flex items-center gap-1">
@@ -342,15 +355,50 @@ const JobDetailPage = () => {
 					<Section
 						title="Labor"
 						action={
-							<Button variant="ghost" size="sm" className="h-7 text-xs">
+							<Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setTimeEntryDialogOpen(true)}>
 								<Plus className="h-3 w-3 mr-1" />
 								New Time Entry
 							</Button>
 						}
 					>
-						<p className="text-sm text-muted-foreground">
-							Time tracked to this job by you or your team will show here
-						</p>
+						{job.timeEntries.length > 0 ? (
+							<div className="space-y-2">
+								{job.timeEntries.map((entry) => {
+									const h = Math.floor(entry.durationMinutes / 60);
+									const m = entry.durationMinutes % 60;
+									return (
+										<div key={entry.id} className="rounded-md border px-4 py-3 flex items-center justify-between">
+											<div className="flex items-center gap-3">
+												<div className="h-8 w-8 rounded-full bg-orange-50 flex items-center justify-center">
+													<Clock className="h-4 w-4 text-orange-600" />
+												</div>
+												<div>
+													<p className="text-sm font-medium">{entry.employee}</p>
+													<p className="text-xs text-muted-foreground">
+														{formatDate(new Date(entry.date + "T00:00:00"))} · {h}h {m > 0 ? `${m}m` : ""}
+													</p>
+												</div>
+											</div>
+											<div className="flex items-center gap-3">
+												<span className="text-sm font-medium">{formatCurrency(Number(entry.totalCost))}</span>
+												<Button
+													variant="ghost"
+													size="sm"
+													className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+													onClick={() => deleteTimeEntryMutation.mutate(entry.id)}
+												>
+													<Trash2 className="h-3.5 w-3.5" />
+												</Button>
+											</div>
+										</div>
+									);
+								})}
+							</div>
+						) : (
+							<p className="text-sm text-muted-foreground">
+								Time tracked to this job by you or your team will show here
+							</p>
+						)}
 					</Section>
 
 					{/* Expenses */}
@@ -470,6 +518,12 @@ const JobDetailPage = () => {
 				onOpenChange={setVisitDialogOpen}
 				jobId={id!}
 				assignedTo={job.salesperson}
+			/>
+
+			<TimeEntryDialog
+				open={timeEntryDialogOpen}
+				onOpenChange={setTimeEntryDialogOpen}
+				jobId={id!}
 			/>
 		</div>
 	);

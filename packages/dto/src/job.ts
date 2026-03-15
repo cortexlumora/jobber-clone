@@ -1,4 +1,5 @@
 import type { LineItemImageDTO } from "./quote";
+import type { TimeEntryDTO } from "./time-entry";
 
 export interface JobLineItemDTO {
 	id: string;
@@ -61,6 +62,7 @@ export interface JobDTO {
 	// Nested
 	lineItems: JobLineItemDTO[];
 	visits: JobVisitDTO[];
+	timeEntries: TimeEntryDTO[];
 	fileIds: string[];
 	// Timestamps
 	createdAt: Date;
