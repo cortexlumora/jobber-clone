@@ -1,5 +1,5 @@
 import db, { quotesSchema, quoteFilesSchema, quoteLineItemsSchema } from "@repo/db";
-import type { CreateQuoteForm } from "@repo/zod/quote";
+import type { CreateQuoteForm, UpdateQuoteLineItemsForm } from "@repo/zod/quote";
 import { and, eq, isNull } from "drizzle-orm";
 
 export async function createQuote(userId: string, data: CreateQuoteForm) {
@@ -121,4 +121,25 @@ export async function getQuoteById(quoteId: string) {
 		.where(eq(quoteLineItemsSchema.quoteId, quote.id));
 
 	return { ...quote, lineItems: items, ...fileIds };
+}
+
+export async function updateQuoteLineItems(quoteId: string, data: UpdateQuoteLineItemsForm) {
+	await db.delete(quoteLineItemsSchema).where(eq(quoteLineItemsSchema.quoteId, quoteId));
+
+	if (data.lineItems.length > 0) {
+		await db.insert(quoteLineItemsSchema).values(
+			data.lineItems.map((item, index) => ({
+				quoteId,
+				type: item.type,
+				name: item.name,
+				description: item.description || null,
+				qty: item.qty,
+				unitPrice: String(item.unitPrice),
+				imageFileId: item.imageFileId || null,
+				sortOrder: index,
+			})),
+		);
+	}
+
+	return getQuoteById(quoteId);
 }

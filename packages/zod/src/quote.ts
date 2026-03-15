@@ -48,3 +48,9 @@ export const createQuoteSchema = z.object({
 });
 
 export type CreateQuoteForm = z.infer<typeof createQuoteSchema>;
+
+export const updateQuoteLineItemsSchema = z.object({
+	lineItems: z.array(quoteLineItemSchema),
+});
+
+export type UpdateQuoteLineItemsForm = z.infer<typeof updateQuoteLineItemsSchema>;
