@@ -31,6 +31,7 @@ function toRequestResponse(row: typeof requestsSchema.$inferSelect) {
 		teamReminder,
 		reminderScheduleName: _reminderScheduleName,
 		reminderScheduledAt: _reminderScheduledAt,
+		reminderProcessedAt: _reminderProcessedAt,
 		updatedAt: _updatedAt,
 		deletedAt: _deletedAt,
 		userId: _userId,
@@ -94,6 +95,7 @@ export async function createRequest(userId: string, data: CreateRequestForm) {
 			await db.update(requestsSchema).set({
 				reminderScheduleName: schedule.scheduleName,
 				reminderScheduledAt: schedule.scheduledAt,
+				reminderProcessedAt: null,
 			}).where(eq(requestsSchema.id, request.id));
 		}
 	}
@@ -306,11 +308,13 @@ export async function updateRequestAssessment(requestId: string, data: UpdateReq
 		await db.update(requestsSchema).set({
 			reminderScheduleName: schedule?.scheduleName ?? null,
 			reminderScheduledAt: schedule?.scheduledAt ?? null,
+			reminderProcessedAt: null,
 		}).where(eq(requestsSchema.id, requestId));
 	} else {
 		await db.update(requestsSchema).set({
 			reminderScheduleName: null,
 			reminderScheduledAt: null,
+			reminderProcessedAt: null,
 		}).where(eq(requestsSchema.id, requestId));
 	}
 

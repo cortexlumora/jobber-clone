@@ -24,6 +24,7 @@ const requestsSchema = pgTable("requests", {
 	teamReminder: reminderEnum("team_reminder").notNull().default("none"),
 	reminderScheduleName: varchar("reminder_schedule_name", { length: 255 }),
 	reminderScheduledAt: timestamp("reminder_scheduled_at", { withTimezone: true }),
+	reminderProcessedAt: timestamp("reminder_processed_at", { withTimezone: true }),
 	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 	deletedAt: timestamp("deleted_at", { withTimezone: true }),
