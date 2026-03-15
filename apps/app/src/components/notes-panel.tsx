@@ -45,7 +45,7 @@ const NotesPanel = ({ notes, total, hasMore, onLoadMore, isLoadingMore, classNam
 					))}
 
 					{hasMore && (
-						<div className="w-full justify-center items-center h-11 shrink-0 flex">
+						<div className="w-full justify-center items-center h-16 shrink-0 flex">
 
 						<Button variant="link" size="sm" className="mt-2 text-xs" onClick={onLoadMore} disabled={isLoadingMore}>
 							{isLoadingMore ? "Loading..." : "Load more"}

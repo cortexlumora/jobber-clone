@@ -54,7 +54,13 @@ const QuoteDetailPage = () => {
 
 	const { data: quote, isLoading } = useQuery({
 		queryKey: ["quote", id],
-		queryFn: () => getQuoteById(id!),
+		queryFn: async () => {
+			const data = await getQuoteById(id!);
+			if (data) {
+				queryClient.setQueryData(["quote-notes", id], { pages: [data.clientNotes], pageParams: [1] });
+			}
+			return data;
+		},
 		enabled: !!id,
 	});
 
@@ -63,7 +69,8 @@ const QuoteDetailPage = () => {
 		queryFn: ({ pageParam }) => getQuoteNotes(id!, pageParam),
 		initialPageParam: 1,
 		getNextPageParam: (last) => last.pagination.page < last.pagination.totalPages ? last.pagination.page + 1 : undefined,
-		enabled: !!id,
+		enabled: !!quote,
+		staleTime: 30_000,
 	});
 
 	const allNotes = notesData?.pages.flatMap((p) => p.data) ?? [];

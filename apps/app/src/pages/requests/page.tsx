@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { getRequests } from "./api";
 import { getClients } from "@/pages/clients/api";
@@ -53,12 +53,19 @@ function formatRelativeTime(date: Date) {
 
 const RequestsPage = () => {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [search, setSearch] = useState("");
 
 	const { data: requests, isLoading, isError, error } = useQuery({
 		queryKey: ["requests"],
-		queryFn: getRequests,
+		queryFn: async () => {
+			const data = await getRequests();
+			for (const request of data) {
+				queryClient.setQueryData(["request-notes", request.id], { pages: [request.clientNotes], pageParams: [1] });
+			}
+			return data;
+		},
 	});
 	const { data: clients } = useQuery({
 		queryKey: ["clients"],

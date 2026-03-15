@@ -2,6 +2,7 @@ import type { LineItemImageDTO } from "./quote";
 import type { TimeEntryDTO } from "./time-entry";
 import type { ExpenseDTO } from "./expense";
 import type { PaginatedResponse } from "./common";
+import type { ClientNoteDTO } from "./client-note";
 
 export interface JobLineItemDTO {
 	id: string;
@@ -66,6 +67,7 @@ export interface JobDTO {
 	visits: JobVisitDTO[];
 	timeEntries: PaginatedResponse<TimeEntryDTO>;
 	expenses: PaginatedResponse<ExpenseDTO>;
+	clientNotes: PaginatedResponse<ClientNoteDTO>;
 	fileIds: string[];
 	// Timestamps
 	createdAt: Date;

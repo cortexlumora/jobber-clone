@@ -2,6 +2,7 @@ import db, { quotesSchema, quoteFilesSchema, quoteLineItemsSchema, filesSchema }
 import type { CreateQuoteForm, UpdateQuoteLineItemsForm } from "@repo/zod/quote";
 import { and, eq, isNull } from "drizzle-orm";
 import { signKey } from "./file-service";
+import { getClientNotes } from "./client-note-service";
 
 export async function createQuote(userId: string, data: CreateQuoteForm) {
 	const { lineItems, attachmentFileIds, imageFileIds, noteFileIds, ...quoteData } = data;
@@ -71,6 +72,7 @@ export async function createQuote(userId: string, data: CreateQuoteForm) {
 		attachmentFileIds: attachmentFileIds ?? [],
 		imageFileIds: imageFileIds ?? [],
 		noteFileIds: noteFileIds ?? [],
+		clientNotes: { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } },
 	};
 }
 
@@ -95,12 +97,12 @@ export async function getQuotesByUser(userId: string) {
 
 	const result = await Promise.all(
 		quotes.map(async (quote) => {
-			const fileIds = await getQuoteFiles(quote.id);
-			const items = await db
-				.select()
-				.from(quoteLineItemsSchema)
-				.where(eq(quoteLineItemsSchema.quoteId, quote.id));
-			return { ...quote, lineItems: items.map((item) => ({ ...item, image: null })), ...fileIds };
+			const [fileIds, items, clientNotes] = await Promise.all([
+				getQuoteFiles(quote.id),
+				db.select().from(quoteLineItemsSchema).where(eq(quoteLineItemsSchema.quoteId, quote.id)),
+				getClientNotes(quote.clientId, "quotes", { page: 1, limit: 20, search: "" }),
+			]);
+			return { ...quote, lineItems: items.map((item) => ({ ...item, image: null })), clientNotes, ...fileIds };
 		}),
 	);
 
@@ -147,12 +149,13 @@ export async function getQuoteById(quoteId: string) {
 
 	if (!quote) return null;
 
-	const [fileIds, items] = await Promise.all([
+	const [fileIds, items, notesResult] = await Promise.all([
 		getQuoteFiles(quote.id),
 		getQuoteLineItemsByQuoteId(quote.id),
+		getClientNotes(quote.clientId, "quotes", { page: 1, limit: 20, search: "" }),
 	]);
 
-	return { ...quote, lineItems: items, ...fileIds };
+	return { ...quote, lineItems: items, clientNotes: notesResult, ...fileIds };
 }
 
 export async function updateQuoteLineItems(quoteId: string, data: UpdateQuoteLineItemsForm) {

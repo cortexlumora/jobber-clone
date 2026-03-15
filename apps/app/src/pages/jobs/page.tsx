@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { getJobs } from "./api";
 import { getClients, getClientProperties } from "@/pages/clients/api";
@@ -60,13 +60,20 @@ function getScheduleLabel(job: JobDTO) {
 
 const JobsPage = () => {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [jobTypeFilter, setJobTypeFilter] = useState("all");
 	const [search, setSearch] = useState("");
 
 	const { data: jobs, isLoading, isError, error } = useQuery({
 		queryKey: ["jobs"],
-		queryFn: getJobs,
+		queryFn: async () => {
+			const data = await getJobs();
+			for (const job of data) {
+				queryClient.setQueryData(["job-notes", job.id], { pages: [job.clientNotes], pageParams: [1] });
+			}
+			return data;
+		},
 	});
 	const { data: clients } = useQuery({
 		queryKey: ["clients"],

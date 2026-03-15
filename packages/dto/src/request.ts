@@ -1,4 +1,6 @@
 import type { LineItemImageDTO } from "./quote";
+import type { PaginatedResponse } from "./common";
+import type { ClientNoteDTO } from "./client-note";
 
 export interface RequestLineItemDTO {
 	id: string;
@@ -50,5 +52,6 @@ export interface RequestDTO {
 	lineItems: RequestLineItemDTO[];
 	attachments: RequestAttachmentDTO[];
 	client: RequestClientDTO | null;
+	clientNotes: PaginatedResponse<ClientNoteDTO>;
 	createdAt: Date;
 }

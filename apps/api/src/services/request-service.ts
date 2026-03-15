@@ -3,6 +3,7 @@ import type { CreateRequestForm, UpdateRequestOverviewForm, UpdateRequestLineIte
 import { and, eq, isNull } from "drizzle-orm";
 import { signKey } from "./file-service";
 import { createReminderSchedule, deleteReminderSchedule } from "../lib/scheduler";
+import { getClientNotes } from "./client-note-service";
 
 export async function createRequest(userId: string, data: CreateRequestForm) {
 	const { fileIds, lineItems, assessment, ...requestData } = data;
@@ -86,6 +87,8 @@ export async function getRequests() {
 				.from(requestLineItemsSchema)
 				.where(eq(requestLineItemsSchema.requestId, request.id));
 
+			const clientNotes = await getClientNotes(request.clientId, "requests", { page: 1, limit: 20, search: "" });
+
 			return {
 				id: request.id,
 				clientId: request.clientId,
@@ -105,6 +108,7 @@ export async function getRequests() {
 				} : null,
 				attachments: [],
 				client: null,
+				clientNotes,
 				lineItems: items.map((item) => ({
 					id: item.id,
 					name: item.name,
@@ -183,7 +187,7 @@ export async function getRequestById(requestId: string) {
 
 	if (!request) return null;
 
-	const [[assessment], attachments, items, [client]] = await Promise.all([
+	const [[assessment], attachments, items, [client], notesResult] = await Promise.all([
 		db.select().from(requestAssessmentsSchema).where(eq(requestAssessmentsSchema.requestId, request.id)),
 		getRequestAttachmentsByReqId(request.id),
 		getRequestLineItemsByReqId(request.id),
@@ -201,6 +205,7 @@ export async function getRequestById(requestId: string) {
 			})
 			.from(clientsSchema)
 			.where(eq(clientsSchema.id, request.clientId)),
+		getClientNotes(request.clientId, "requests", { page: 1, limit: 20, search: "" }),
 	]);
 
 	return {
@@ -223,6 +228,7 @@ export async function getRequestById(requestId: string) {
 		attachments,
 		lineItems: items,
 		client,
+		clientNotes: notesResult,
 	};
 }
 

@@ -65,6 +65,7 @@ const JobDetailPage = () => {
 			if (data) {
 				queryClient.setQueryData(["job-time-entries", id, 1], data.timeEntries);
 				queryClient.setQueryData(["job-expenses", id, 1], data.expenses);
+				queryClient.setQueryData(["job-notes", id], { pages: [data.clientNotes], pageParams: [1] });
 			}
 			return data;
 		},
@@ -85,7 +86,8 @@ const JobDetailPage = () => {
 		queryFn: ({ pageParam }) => getJobNotes(id!, pageParam),
 		initialPageParam: 1,
 		getNextPageParam: (last) => last.pagination.page < last.pagination.totalPages ? last.pagination.page + 1 : undefined,
-		enabled: !!id,
+		enabled: !!job,
+		staleTime: 30_000,
 	});
 
 	const allNotes = notesData?.pages.flatMap((p) => p.data) ?? [];

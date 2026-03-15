@@ -1,3 +1,6 @@
+import type { PaginatedResponse } from "./common";
+import type { ClientNoteDTO } from "./client-note";
+
 export interface LineItemImageDTO {
 	id: string;
 	name: string;
@@ -55,6 +58,7 @@ export interface QuoteDTO {
 	attachmentFileIds: string[];
 	imageFileIds: string[];
 	noteFileIds: string[];
+	clientNotes: PaginatedResponse<ClientNoteDTO>;
 	// Timestamps
 	createdAt: Date;
 	updatedAt: Date;

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { getQuotes } from "./api";
 import { getClients, getClientProperties } from "@/pages/clients/api";
@@ -44,13 +44,20 @@ function computeTotal(quote: QuoteDTO) {
 
 const QuotesPage = () => {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [salespersonFilter, setSalespersonFilter] = useState("all");
 	const [search, setSearch] = useState("");
 
 	const { data: quotes, isLoading, isError, error } = useQuery({
 		queryKey: ["quotes"],
-		queryFn: getQuotes,
+		queryFn: async () => {
+			const data = await getQuotes();
+			for (const quote of data) {
+				queryClient.setQueryData(["quote-notes", quote.id], { pages: [quote.clientNotes], pageParams: [1] });
+			}
+			return data;
+		},
 	});
 	const { data: clients } = useQuery({
 		queryKey: ["clients"],
