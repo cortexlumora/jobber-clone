@@ -97,4 +97,17 @@ export const timeEntriesSchema = pgTable("time_entries", {
 	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
+export const expensesSchema = pgTable("expenses", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	jobId: uuid("job_id").notNull().references(() => jobsSchema.id, { onDelete: "cascade" }),
+	itemName: varchar("item_name", { length: 255 }).notNull(),
+	accountingCode: varchar("accounting_code", { length: 100 }),
+	description: text("description"),
+	date: varchar("date", { length: 10 }).notNull(),
+	total: numeric("total", { precision: 10, scale: 2 }).notNull(),
+	reimburseTo: varchar("reimburse_to", { length: 255 }),
+	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
 export default jobsSchema;

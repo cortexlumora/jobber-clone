@@ -22,7 +22,8 @@
 		"./product-service": "./src/product-service.ts",
 		"./tag": "./src/tag.ts",
 		"./visit": "./src/visit.ts",
-		"./time-entry": "./src/time-entry.ts"
+		"./time-entry": "./src/time-entry.ts",
+		"./expense": "./src/expense.ts"
 	},
 	"dependencies": {
 		"zod": "^4.3.6"

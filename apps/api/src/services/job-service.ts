@@ -1,7 +1,9 @@
-import db, { jobsSchema, jobFilesSchema, jobLineItemsSchema, filesSchema, visitsSchema, timeEntriesSchema } from "@repo/db";
+import db, { jobsSchema, jobFilesSchema, jobLineItemsSchema, filesSchema, visitsSchema } from "@repo/db";
 import type { CreateJobForm, UpdateJobLineItemsForm } from "@repo/zod/job";
 import { and, eq, isNull } from "drizzle-orm";
 import { signKey } from "./file-service";
+import { getTimeEntriesByJobId } from "./time-entry-service";
+import { getExpensesByJobId } from "./expense-service";
 
 export async function createJob(userId: string, data: CreateJobForm) {
 	const { lineItems, noteFileIds, ...jobData } = data;
@@ -62,7 +64,7 @@ export async function createJob(userId: string, data: CreateJobForm) {
 		);
 	}
 
-	return { ...job, lineItems: insertedLineItems.map((item) => ({ ...item, image: null })), visits: [], timeEntries: [], fileIds: noteFileIds ?? [] };
+	return { ...job, lineItems: insertedLineItems.map((item) => ({ ...item, image: null })), visits: [], timeEntries: [], expenses: [], fileIds: noteFileIds ?? [] };
 }
 
 export async function getJobs() {
@@ -72,7 +74,7 @@ export async function getJobs() {
 		jobs.map(async (job) => {
 			const files = await db.select({ fileId: jobFilesSchema.fileId }).from(jobFilesSchema).where(eq(jobFilesSchema.jobId, job.id));
 			const items = await db.select().from(jobLineItemsSchema).where(eq(jobLineItemsSchema.jobId, job.id));
-			return { ...job, lineItems: items.map((item) => ({ ...item, image: null })), visits: [], timeEntries: [], fileIds: files.map((f) => f.fileId) };
+			return { ...job, lineItems: items.map((item) => ({ ...item, image: null })), visits: [], timeEntries: [], expenses: [], fileIds: files.map((f) => f.fileId) };
 		}),
 	);
 
@@ -137,13 +139,14 @@ export async function getJobById(jobId: string) {
 		.from(visitsSchema)
 		.where(eq(visitsSchema.jobId, job.id));
 
-	const [files, items, timeEntries] = await Promise.all([
+	const [files, items, timeEntriesResult, expensesResult] = await Promise.all([
 		db.select({ fileId: jobFilesSchema.fileId }).from(jobFilesSchema).where(eq(jobFilesSchema.jobId, job.id)),
 		getJobLineItemsByJobId(job.id),
-		db.select().from(timeEntriesSchema).where(eq(timeEntriesSchema.jobId, job.id)),
+		getTimeEntriesByJobId(job.id, { page: 1, limit: 10, search: "" }),
+		getExpensesByJobId(job.id, { page: 1, limit: 10, search: "" }),
 	]);
 
-	return { ...job, visits, lineItems: items, timeEntries, fileIds: files.map((f) => f.fileId) };
+	return { ...job, visits, lineItems: items, timeEntries: timeEntriesResult.data, expenses: expensesResult.data, fileIds: files.map((f) => f.fileId) };
 }
 
 export async function updateJobLineItems(jobId: string, data: UpdateJobLineItemsForm) {

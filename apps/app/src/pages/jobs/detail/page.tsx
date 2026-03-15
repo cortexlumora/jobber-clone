@@ -13,7 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import ScheduleVisitDialog from "@/components/schedule-visit-dialog";
 import TimeEntryDialog from "@/components/time-entry-dialog";
+import ExpenseDialog from "@/components/expense-dialog";
 import { deleteTimeEntry } from "../time-entries-api";
+import { deleteExpense } from "../expenses-api";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -60,6 +62,7 @@ const JobDetailPage = () => {
 	const [editLineItems, setEditLineItems] = useState<LineItemUI[]>([]);
 	const [visitDialogOpen, setVisitDialogOpen] = useQueryState("schedule-visit", parseAsBoolean.withDefault(false));
 	const [timeEntryDialogOpen, setTimeEntryDialogOpen] = useQueryState("new-time-entry", parseAsBoolean.withDefault(false));
+	const [expenseDialogOpen, setExpenseDialogOpen] = useQueryState("new-expense", parseAsBoolean.withDefault(false));
 
 	const { data: job, isLoading } = useQuery({
 		queryKey: ["job", id],
@@ -78,6 +81,13 @@ const JobDetailPage = () => {
 
 	const deleteTimeEntryMutation = useMutation({
 		mutationFn: (entryId: string) => deleteTimeEntry(id!, entryId),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["job", id] });
+		},
+	});
+
+	const deleteExpenseMutation = useMutation({
+		mutationFn: (expenseId: string) => deleteExpense(id!, expenseId),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["job", id] });
 		},
@@ -145,7 +155,8 @@ const JobDetailPage = () => {
 	const totalPrice = job.lineItems.reduce((sum, item) => sum + item.qty * Number(item.unitPrice), 0);
 	const totalCost = job.lineItems.reduce((sum, item) => sum + item.qty * Number(item.unitCost), 0);
 	const totalLabor = job.timeEntries.reduce((sum, entry) => sum + Number(entry.totalCost), 0);
-	const profit = totalPrice - totalCost - totalLabor;
+	const totalExpenses = job.expenses.reduce((sum, expense) => sum + Number(expense.total), 0);
+	const profit = totalPrice - totalCost - totalLabor - totalExpenses;
 	const profitMargin = totalPrice > 0 ? Math.round((profit / totalPrice) * 100) : 0;
 
 	const billingLabel = job.billingType === "visit_based"
@@ -309,7 +320,7 @@ const JobDetailPage = () => {
 									<span className="text-muted-foreground flex items-center gap-1">
 										<span className="text-muted-foreground">−</span> Expenses
 									</span>
-									<span>{formatCurrency(0)}</span>
+									<span>{formatCurrency(totalExpenses)}</span>
 								</div>
 								<div className="flex justify-between text-sm pt-2 border-t font-semibold">
 									<span className="flex items-center gap-1">
@@ -405,15 +416,46 @@ const JobDetailPage = () => {
 					<Section
 						title="Expenses"
 						action={
-							<Button variant="ghost" size="sm" className="h-7 text-xs">
+							<Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setExpenseDialogOpen(true)}>
 								<Plus className="h-3 w-3 mr-1" />
 								New Expense
 							</Button>
 						}
 					>
-						<p className="text-sm text-muted-foreground">
-							Get an accurate picture of various job costs by recording expenses
-						</p>
+						{job.expenses.length > 0 ? (
+							<div className="space-y-2">
+								{job.expenses.map((expense) => (
+									<div key={expense.id} className="rounded-md border px-4 py-3 flex items-center justify-between">
+										<div className="flex items-center gap-3">
+											<div className="h-8 w-8 rounded-full bg-purple-50 flex items-center justify-center text-xs font-medium text-purple-600">$</div>
+											<div>
+												<p className="text-sm font-medium">{expense.itemName}</p>
+												<p className="text-xs text-muted-foreground">
+													{formatDate(new Date(expense.date + "T00:00:00"))}
+													{expense.reimburseTo && ` · Reimburse to ${expense.reimburseTo}`}
+													{!expense.reimburseTo && " · Not reimbursable"}
+												</p>
+											</div>
+										</div>
+										<div className="flex items-center gap-3">
+											<span className="text-sm font-medium">{formatCurrency(Number(expense.total))}</span>
+											<Button
+												variant="ghost"
+												size="sm"
+												className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+												onClick={() => deleteExpenseMutation.mutate(expense.id)}
+											>
+												<Trash2 className="h-3.5 w-3.5" />
+											</Button>
+										</div>
+									</div>
+								))}
+							</div>
+						) : (
+							<p className="text-sm text-muted-foreground">
+								Get an accurate picture of various job costs by recording expenses
+							</p>
+						)}
 					</Section>
 
 					{/* Visits */}
@@ -523,6 +565,12 @@ const JobDetailPage = () => {
 			<TimeEntryDialog
 				open={timeEntryDialogOpen}
 				onOpenChange={setTimeEntryDialogOpen}
+				jobId={id!}
+			/>
+
+			<ExpenseDialog
+				open={expenseDialogOpen}
+				onOpenChange={setExpenseDialogOpen}
 				jobId={id!}
 			/>
 		</div>
