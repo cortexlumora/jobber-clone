@@ -2,14 +2,11 @@ import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useDropzone } from "react-dropzone";
 import { getClients } from "@/pages/clients/api";
-import { presignUpload, uploadFileToS3 } from "@/lib/api";
 import { createRequest } from "../api";
 import ImageDropzone, { type UploadedFile } from "@/components/image-dropzone";
 import LineItemsCard, { type LineItemUI, createEmptyLineItem } from "@/components/line-items-card";
 import AssessmentCard, { type AssessmentData } from "@/components/assessment-card";
-import { Upload, X, Loader2, Plus } from "lucide-react";
 import { StickyFooter } from "@/components/sticky-footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,15 +26,13 @@ const CreateRequestPage = () => {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [uploadedImages, setUploadedImages] = useState<UploadedFile[]>([]);
-	const [noteFiles, setNoteFiles] = useState<UploadedFile[]>([]);
-	const [uploadingNotes, setUploadingNotes] = useState(false);
 	const [lineItems, setLineItems] = useState<LineItemUI[]>([]);
 	const [assessment, setAssessment] = useState<AssessmentData>({
-		assessmentInstructions: "",
-		assessmentStartDate: "",
-		assessmentEndDate: "",
-		assessmentStartTime: "",
-		assessmentEndTime: "",
+		instructions: "",
+		startDate: "",
+		endDate: "",
+		startTime: "",
+		endTime: "",
 		scheduleLater: false,
 		anytime: false,
 		teamReminder: "none",
@@ -56,29 +51,6 @@ const CreateRequestPage = () => {
 		},
 	});
 
-	const noteDropzone = useDropzone({
-		onDrop: async (acceptedFiles) => {
-			setUploadingNotes(true);
-			try {
-				const results = await Promise.all(
-					acceptedFiles.map(async (file) => {
-						const { fileId, uploadUrl } = await presignUpload(file.name, file.type);
-						await uploadFileToS3(uploadUrl, file);
-						return { fileId, name: file.name, preview: "" };
-					}),
-				);
-				setNoteFiles((prev) => [...prev, ...results]);
-			} catch (err) {
-				console.error("File upload failed:", err);
-			} finally {
-				setUploadingNotes(false);
-			}
-		},
-	});
-
-	const removeNoteFile = (index: number) => {
-		setNoteFiles((prev) => prev.filter((_, i) => i !== index));
-	};
 
 	const {
 		register,
@@ -90,27 +62,16 @@ const CreateRequestPage = () => {
 			title: "",
 			clientId: "",
 			serviceDescription: "",
-			internalNotes: "",
 			fileIds: [],
 			lineItems: [],
 		},
 	});
 
 	const onSubmit = (data: CreateRequestForm) => {
-		const allFileIds = [
-			...uploadedImages.map((f) => f.fileId),
-			...noteFiles.map((f) => f.fileId),
-		];
 		mutation.mutate({
 			...data,
-			...assessment,
-			assessmentInstructions: assessment.assessmentInstructions || undefined,
-			assessmentStartDate: assessment.assessmentStartDate || undefined,
-			assessmentEndDate: assessment.assessmentEndDate || undefined,
-			assessmentStartTime: assessment.assessmentStartTime || undefined,
-			assessmentEndTime: assessment.assessmentEndTime || undefined,
-			teamReminder: assessment.teamReminder as CreateRequestForm["teamReminder"],
-			fileIds: allFileIds,
+			assessment,
+			fileIds: uploadedImages.map((f) => f.fileId),
 			lineItems: lineItems.map((item) => ({
 				name: item.name,
 				description: item.description || undefined,
@@ -121,7 +82,7 @@ const CreateRequestPage = () => {
 		});
 	};
 
-	const isUploading = uploadingNotes || lineItems.some((i) => i.imageUploading);
+	const isUploading = lineItems.some((i) => i.imageUploading);
 
 	return (
 		<StickyFooter.Root>
@@ -196,67 +157,6 @@ const CreateRequestPage = () => {
 
 				{/* Product / Service */}
 				<LineItemsCard items={lineItems} onChange={setLineItems} />
-
-				{/* Internal Notes */}
-				<div className="space-y-4">
-					<div>
-						<h3 className="text-lg font-medium">Internal Notes</h3>
-						<p className="text-sm text-muted-foreground">
-							Internal notes will only be seen by your team
-						</p>
-					</div>
-					<div className="space-y-2">
-						<Label htmlFor="internalNotes">Notes</Label>
-						<Textarea
-							id="internalNotes"
-							placeholder="Add notes for your team..."
-							rows={4}
-							{...register("internalNotes")}
-						/>
-					</div>
-					<div
-						{...noteDropzone.getRootProps()}
-						className={`rounded-lg border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${
-							noteDropzone.isDragActive ? "border-primary bg-primary/5" : "border-border"
-						}`}
-					>
-						<input {...noteDropzone.getInputProps()} />
-						{uploadingNotes ? (
-							<>
-								<Loader2 className="mx-auto h-8 w-8 text-muted-foreground mb-2 animate-spin" />
-								<p className="text-sm text-muted-foreground">Uploading...</p>
-							</>
-						) : (
-							<>
-								<Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-								<p className="text-sm text-muted-foreground">
-									{noteDropzone.isDragActive ? "Drop your files here" : "Drag your files here"}
-								</p>
-							</>
-						)}
-					</div>
-					{noteFiles.length > 0 && (
-						<div className="space-y-2">
-							{noteFiles.map((file, index) => (
-								<div
-									key={file.fileId}
-									className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
-								>
-									<span className="truncate">{file.name}</span>
-									<Button
-										type="button"
-										variant="ghost"
-										size="icon"
-										className="h-6 w-6"
-										onClick={() => removeNoteFile(index)}
-									>
-										<X className="h-4 w-4" />
-									</Button>
-								</div>
-							))}
-						</div>
-					)}
-				</div>
 
 				{mutation.isError && (
 					<p className="text-sm text-destructive">{mutation.error.message}</p>

@@ -25,7 +25,6 @@ import {
 	MapPin,
 	Calendar,
 	Bell,
-	ImageIcon,
 	Pencil,
 } from "lucide-react";
 
@@ -77,7 +76,7 @@ const RequestDetailPage = () => {
 		if (!request) return;
 		setEditDescription(request.serviceDescription);
 		setEditImages(
-			request.fileIds.map((fileId) => ({ fileId, name: "", preview: "" })),
+			request.attachments.map((f) => ({ fileId: f.id, name: f.name, preview: f.url })),
 		);
 		setEditingOverview(true);
 	};
@@ -137,11 +136,11 @@ const RequestDetailPage = () => {
 	// Assessment editing
 	const [editingAssessment, setEditingAssessment] = useState(false);
 	const [editAssessment, setEditAssessment] = useState<AssessmentData>({
-		assessmentInstructions: "",
-		assessmentStartDate: "",
-		assessmentEndDate: "",
-		assessmentStartTime: "",
-		assessmentEndTime: "",
+		instructions: "",
+		startDate: "",
+		endDate: "",
+		startTime: "",
+		endTime: "",
 		scheduleLater: false,
 		anytime: false,
 		teamReminder: "none",
@@ -158,14 +157,14 @@ const RequestDetailPage = () => {
 	const startEditingAssessment = () => {
 		if (!request) return;
 		setEditAssessment({
-			assessmentInstructions: request.assessmentInstructions ?? "",
-			assessmentStartDate: request.assessmentStartDate ?? "",
-			assessmentEndDate: request.assessmentEndDate ?? "",
-			assessmentStartTime: request.assessmentStartTime ?? "",
-			assessmentEndTime: request.assessmentEndTime ?? "",
-			scheduleLater: request.scheduleLater ?? false,
-			anytime: request.anytime ?? false,
-			teamReminder: request.teamReminder ?? "none",
+			instructions: request.assessment.instructions ?? "",
+			startDate: request.assessment.startDate ?? "",
+			endDate: request.assessment.endDate ?? "",
+			startTime: request.assessment.startTime ?? "",
+			endTime: request.assessment.endTime ?? "",
+			scheduleLater: request.assessment.scheduleLater ?? false,
+			anytime: request.assessment.anytime ?? false,
+			teamReminder: request.assessment.teamReminder ?? "none",
 		});
 		setEditingAssessment(true);
 	};
@@ -261,11 +260,11 @@ const RequestDetailPage = () => {
 								<p className="text-xs text-muted-foreground mb-0.5">Requested</p>
 								<p className="text-sm font-medium">{formatDate(request.createdAt)}</p>
 							</div>
-							{request.assessmentStartDate && (
+							{request.assessment.startDate && (
 								<div>
 									<p className="text-xs text-muted-foreground mb-0.5">Assessment</p>
 									<p className="text-sm font-medium">
-										{formatAssessmentDate(request.assessmentStartDate, request.assessmentStartTime)}
+										{formatAssessmentDate(request.assessment.startDate, request.assessment.startTime)}
 									</p>
 								</div>
 							)}
@@ -321,17 +320,17 @@ const RequestDetailPage = () => {
 									<p className="text-sm">{request.serviceDescription}</p>
 								</div>
 
-								{request.fileIds.length > 0 && (
+								{request.attachments.length > 0 && (
 									<div>
 										<p className="text-xs text-muted-foreground mb-2">Share images of the work to be done</p>
 										<div className="flex flex-wrap gap-2">
-											{request.fileIds.map((fileId) => (
-												<div
-													key={fileId}
-													className="h-16 w-16 rounded border bg-muted flex items-center justify-center"
-												>
-													<ImageIcon className="h-5 w-5 text-muted-foreground" />
-												</div>
+											{request.attachments.map((file) => (
+												<img
+													key={file.id}
+													src={file.url}
+													alt={file.name}
+													className="h-16 w-16 rounded border object-cover"
+												/>
 											))}
 										</div>
 									</div>
@@ -359,7 +358,7 @@ const RequestDetailPage = () => {
 								hideHeader
 							/>
 						</Section>
-					) : (request.assessmentInstructions || request.assessmentStartDate || request.teamReminder !== "none") ? (
+					) : (request.assessment.instructions || request.assessment.startDate || request.assessment.teamReminder !== "none") ? (
 						<Section
 							title="On-site assessment"
 							action={
@@ -370,38 +369,38 @@ const RequestDetailPage = () => {
 							}
 						>
 							<div className="space-y-4">
-								{request.assessmentInstructions && (
+								{request.assessment.instructions && (
 									<div>
 										<p className="text-xs text-muted-foreground mb-1">Instructions</p>
-										<p className="text-sm">{request.assessmentInstructions}</p>
+										<p className="text-sm">{request.assessment.instructions}</p>
 									</div>
 								)}
 
-								{request.assessmentStartDate && (
+								{request.assessment.startDate && (
 									<div>
 										<div className="flex items-center gap-2 mb-1">
 											<Calendar className="h-3.5 w-3.5 text-muted-foreground" />
 											<p className="text-xs text-muted-foreground">Schedule</p>
 										</div>
 										<p className="text-sm">
-											{formatAssessmentDate(request.assessmentStartDate, request.assessmentStartTime)}
-											{request.assessmentEndTime && (
+											{formatAssessmentDate(request.assessment.startDate, request.assessment.startTime)}
+											{request.assessment.endTime && (
 												<>
 													{" – "}
-													{formatTimeStr(request.assessmentEndTime)}
+													{formatTimeStr(request.assessment.endTime)}
 												</>
 											)}
 										</p>
 									</div>
 								)}
 
-								{request.teamReminder !== "none" && (
+								{request.assessment.teamReminder !== "none" && (
 									<div>
 										<div className="flex items-center gap-2 mb-1">
 											<Bell className="h-3.5 w-3.5 text-muted-foreground" />
 											<p className="text-xs text-muted-foreground">Assessment Reminder</p>
 										</div>
-										<p className="text-sm">{reminderLabels[request.teamReminder]}</p>
+										<p className="text-sm">{reminderLabels[request.assessment.teamReminder]}</p>
 									</div>
 								)}
 							</div>

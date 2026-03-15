@@ -8,23 +8,25 @@ export const lineItemSchema = z.object({
 	imageFileId: z.string().uuid().optional(),
 });
 
+export const assessmentSchema = z.object({
+	instructions: z.string().optional(),
+	startDate: z.string().optional(),
+	endDate: z.string().optional(),
+	startTime: z.string().optional(),
+	endTime: z.string().optional(),
+	scheduleLater: z.boolean().optional(),
+	anytime: z.boolean().optional(),
+	teamReminder: z.enum(["none", "at_start", "30min", "1hour", "2hour", "5hour", "24hour"]).optional(),
+});
+
+export type AssessmentForm = z.infer<typeof assessmentSchema>;
+
 export const createRequestSchema = z.object({
 	title: z.string().min(1, "Title is required"),
 	clientId: z.string().uuid("Client is required"),
 	serviceDescription: z.string().min(1, "Service description is required"),
-	// Assessment
-	assessmentInstructions: z.string().optional(),
-	assessmentStartDate: z.string().optional(),
-	assessmentEndDate: z.string().optional(),
-	assessmentStartTime: z.string().optional(),
-	assessmentEndTime: z.string().optional(),
-	scheduleLater: z.boolean().optional(),
-	anytime: z.boolean().optional(),
-	teamReminder: z.enum(["none", "at_start", "30min", "1hour", "2hour", "5hour", "24hour"]).optional(),
-	// Line items
+	assessment: assessmentSchema.optional(),
 	lineItems: z.array(lineItemSchema).optional(),
-	// Notes & files
-	internalNotes: z.string().optional(),
 	fileIds: z.array(z.string().uuid()).optional(),
 });
 
@@ -43,15 +45,6 @@ export const updateRequestLineItemsSchema = z.object({
 
 export type UpdateRequestLineItemsForm = z.infer<typeof updateRequestLineItemsSchema>;
 
-export const updateRequestAssessmentSchema = z.object({
-	assessmentInstructions: z.string().optional(),
-	assessmentStartDate: z.string().optional(),
-	assessmentEndDate: z.string().optional(),
-	assessmentStartTime: z.string().optional(),
-	assessmentEndTime: z.string().optional(),
-	scheduleLater: z.boolean().optional(),
-	anytime: z.boolean().optional(),
-	teamReminder: z.enum(["none", "at_start", "30min", "1hour", "2hour", "5hour", "24hour"]).optional(),
-});
+export const updateRequestAssessmentSchema = assessmentSchema;
 
 export type UpdateRequestAssessmentForm = z.infer<typeof updateRequestAssessmentSchema>;

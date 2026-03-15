@@ -12,11 +12,11 @@ import {
 } from "@/components/ui/select";
 
 export interface AssessmentData {
-	assessmentInstructions: string;
-	assessmentStartDate: string;
-	assessmentEndDate: string;
-	assessmentStartTime: string;
-	assessmentEndTime: string;
+	instructions: string;
+	startDate: string;
+	endDate: string;
+	startTime: string;
+	endTime: string;
 	scheduleLater: boolean;
 	anytime: boolean;
 	teamReminder: "none" | "at_start" | "30min" | "1hour" | "2hour" | "5hour" | "24hour";
@@ -53,8 +53,8 @@ const AssessmentCard = ({ value, onChange, onSave, onCancel, saving, hideHeader 
 					<Textarea
 						placeholder="Add instructions for the assessment..."
 						rows={3}
-						value={value.assessmentInstructions}
-						onChange={(e) => update({ assessmentInstructions: e.target.value })}
+						value={value.instructions}
+						onChange={(e) => update({ instructions: e.target.value })}
 					/>
 				</div>
 
@@ -67,16 +67,16 @@ const AssessmentCard = ({ value, onChange, onSave, onCancel, saving, hideHeader 
 								<Label>Start date</Label>
 								<Input
 									type="date"
-									value={value.assessmentStartDate}
-									onChange={(e) => update({ assessmentStartDate: e.target.value })}
+									value={value.startDate}
+									onChange={(e) => update({ startDate: e.target.value })}
 								/>
 							</div>
 							<div className="space-y-2">
 								<Label>End date</Label>
 								<Input
 									type="date"
-									value={value.assessmentEndDate}
-									onChange={(e) => update({ assessmentEndDate: e.target.value })}
+									value={value.endDate}
+									onChange={(e) => update({ endDate: e.target.value })}
 								/>
 							</div>
 						</div>
@@ -93,16 +93,16 @@ const AssessmentCard = ({ value, onChange, onSave, onCancel, saving, hideHeader 
 								<Label>Start time</Label>
 								<Input
 									type="time"
-									value={value.assessmentStartTime}
-									onChange={(e) => update({ assessmentStartTime: e.target.value })}
+									value={value.startTime}
+									onChange={(e) => update({ startTime: e.target.value })}
 								/>
 							</div>
 							<div className="space-y-2">
 								<Label>End time</Label>
 								<Input
 									type="time"
-									value={value.assessmentEndTime}
-									onChange={(e) => update({ assessmentEndTime: e.target.value })}
+									value={value.endTime}
+									onChange={(e) => update({ endTime: e.target.value })}
 								/>
 							</div>
 						</div>

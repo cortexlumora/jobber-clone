@@ -9,7 +9,7 @@ export interface RequestLineItemDTO {
 	createdAt: Date;
 }
 
-export interface RequestFileDTO {
+export interface RequestAttachmentDTO {
 	id: string;
 	name: string;
 	contentType: string;
@@ -38,27 +38,26 @@ export interface RequestClientDTO {
 	property: RequestPropertyDTO | null;
 }
 
+export interface RequestAssessmentDTO {
+	instructions: string | null;
+	startDate: string | null;
+	endDate: string | null;
+	startTime: string | null;
+	endTime: string | null;
+	scheduleLater: boolean;
+	anytime: boolean;
+	teamReminder: "none" | "at_start" | "30min" | "1hour" | "2hour" | "5hour" | "24hour";
+}
+
 export interface RequestDTO {
 	id: string;
-	userId: string;
 	clientId: string;
 	title: string;
 	serviceDescription: string;
 	status: "new" | "assessed" | "converted" | "archived";
-	assessmentInstructions: string | null;
-	assessmentStartDate: string | null;
-	assessmentEndDate: string | null;
-	assessmentStartTime: string | null;
-	assessmentEndTime: string | null;
-	scheduleLater: boolean;
-	anytime: boolean;
-	teamReminder: "none" | "at_start" | "30min" | "1hour" | "2hour" | "5hour" | "24hour";
+	assessment: RequestAssessmentDTO;
 	lineItems: RequestLineItemDTO[];
-	internalNotes: string | null;
-	fileIds: string[];
-	files: RequestFileDTO[];
+	attachments: RequestAttachmentDTO[];
 	client: RequestClientDTO | null;
 	createdAt: Date;
-	updatedAt: Date;
-	deletedAt: Date | null;
 }

@@ -3,8 +3,48 @@ import type { CreateRequestForm, UpdateRequestOverviewForm, UpdateRequestLineIte
 import { and, eq, isNull } from "drizzle-orm";
 import { getSignedFiles } from "./file-service";
 
+// Flatten assessment from grouped form to DB columns
+function flattenAssessment(assessment?: CreateRequestForm["assessment"]) {
+	return {
+		assessmentInstructions: assessment?.instructions || null,
+		assessmentStartDate: assessment?.startDate || null,
+		assessmentEndDate: assessment?.endDate || null,
+		assessmentStartTime: assessment?.startTime || null,
+		assessmentEndTime: assessment?.endTime || null,
+		scheduleLater: assessment?.scheduleLater ?? false,
+		anytime: assessment?.anytime ?? false,
+		teamReminder: assessment?.teamReminder ?? "none" as const,
+	};
+}
+
+// Nest assessment from DB columns to grouped response, and strip flat fields
+function toRequestResponse(row: typeof requestsSchema.$inferSelect) {
+	const {
+		assessmentInstructions, assessmentStartDate, assessmentEndDate,
+		assessmentStartTime, assessmentEndTime, scheduleLater, anytime, teamReminder,
+		internalNotes: _internalNotes,
+		updatedAt: _updatedAt,
+		deletedAt: _deletedAt,
+		userId: _userId,
+		...rest
+	} = row;
+	return {
+		...rest,
+		assessment: {
+			instructions: assessmentInstructions,
+			startDate: assessmentStartDate,
+			endDate: assessmentEndDate,
+			startTime: assessmentStartTime,
+			endTime: assessmentEndTime,
+			scheduleLater,
+			anytime,
+			teamReminder,
+		},
+	};
+}
+
 export async function createRequest(userId: string, data: CreateRequestForm) {
-	const { fileIds, lineItems, ...requestData } = data;
+	const { fileIds, lineItems, assessment, ...requestData } = data;
 
 	const [request] = await db
 		.insert(requestsSchema)
@@ -13,15 +53,7 @@ export async function createRequest(userId: string, data: CreateRequestForm) {
 			clientId: requestData.clientId,
 			title: requestData.title,
 			serviceDescription: requestData.serviceDescription,
-			assessmentInstructions: requestData.assessmentInstructions || null,
-			assessmentStartDate: requestData.assessmentStartDate || null,
-			assessmentEndDate: requestData.assessmentEndDate || null,
-			assessmentStartTime: requestData.assessmentStartTime || null,
-			assessmentEndTime: requestData.assessmentEndTime || null,
-			scheduleLater: requestData.scheduleLater ?? false,
-			anytime: requestData.anytime ?? false,
-			teamReminder: requestData.teamReminder ?? "none",
-			internalNotes: requestData.internalNotes || null,
+			...flattenAssessment(assessment),
 		})
 		.returning();
 
@@ -48,7 +80,12 @@ export async function createRequest(userId: string, data: CreateRequestForm) {
 		).returning();
 	}
 
-	return { ...request, fileIds: fileIds ?? [], files: [], client: null, lineItems: insertedLineItems };
+	return {
+		...toRequestResponse(request),
+		attachments: [],
+		client: null,
+		lineItems: insertedLineItems,
+	};
 }
 
 export async function getRequestsByUser(userId: string) {
@@ -59,15 +96,16 @@ export async function getRequestsByUser(userId: string) {
 
 	const result = await Promise.all(
 		requests.map(async (request) => {
-			const files = await db
-				.select({ fileId: requestFilesSchema.fileId })
-				.from(requestFilesSchema)
-				.where(eq(requestFilesSchema.requestId, request.id));
 			const items = await db
 				.select()
 				.from(requestLineItemsSchema)
 				.where(eq(requestLineItemsSchema.requestId, request.id));
-			return { ...request, fileIds: files.map((f) => f.fileId), files: [], client: null, lineItems: items };
+			return {
+				...toRequestResponse(request),
+				attachments: [],
+				client: null,
+				lineItems: items,
+			};
 		}),
 	);
 
@@ -102,9 +140,8 @@ export async function getRequestById(requestId: string) {
 	const signedFiles = await getSignedFiles(fileIds);
 
 	return {
-		...request,
-		fileIds,
-		files: signedFiles,
+		...toRequestResponse(request),
+		attachments: signedFiles,
 		lineItems: items,
 		client: client ? {
 			id: client.id,
@@ -165,11 +202,11 @@ export async function updateRequestAssessment(requestId: string, data: UpdateReq
 	await db
 		.update(requestsSchema)
 		.set({
-			assessmentInstructions: data.assessmentInstructions || null,
-			assessmentStartDate: data.assessmentStartDate || null,
-			assessmentEndDate: data.assessmentEndDate || null,
-			assessmentStartTime: data.assessmentStartTime || null,
-			assessmentEndTime: data.assessmentEndTime || null,
+			assessmentInstructions: data.instructions || null,
+			assessmentStartDate: data.startDate || null,
+			assessmentEndDate: data.endDate || null,
+			assessmentStartTime: data.startTime || null,
+			assessmentEndTime: data.endTime || null,
 			scheduleLater: data.scheduleLater ?? false,
 			anytime: data.anytime ?? false,
 			teamReminder: data.teamReminder ?? "none",
