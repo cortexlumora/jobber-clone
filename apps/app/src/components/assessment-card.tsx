@@ -19,7 +19,7 @@ export interface AssessmentData {
 	assessmentEndTime: string;
 	scheduleLater: boolean;
 	anytime: boolean;
-	teamReminder: string;
+	teamReminder: "none" | "at_start" | "30min" | "1hour" | "2hour" | "5hour" | "24hour";
 }
 
 interface AssessmentCardProps {
@@ -28,6 +28,7 @@ interface AssessmentCardProps {
 	onSave?: () => void;
 	onCancel?: () => void;
 	saving?: boolean;
+	hideHeader?: boolean;
 }
 
 const REMINDER_OPTIONS = [
@@ -40,17 +41,13 @@ const REMINDER_OPTIONS = [
 	{ value: "24hour", label: "24 hours before" },
 ];
 
-const AssessmentCard = ({ value, onChange, onSave, onCancel, saving }: AssessmentCardProps) => {
+const AssessmentCard = ({ value, onChange, onSave, onCancel, saving, hideHeader }: AssessmentCardProps) => {
 	const update = (updates: Partial<AssessmentData>) => {
 		onChange({ ...value, ...updates });
 	};
 
-	return (
-		<div className="rounded-xl px-2 border bg-background">
-			<div className="py-4 px-2">
-				<h3 className="text-lg font-medium">On-site assessment</h3>
-			</div>
-			<div className="px-2 pb-4 space-y-4">
+	const content = (
+			<div className={hideHeader ? "space-y-4" : "px-2 pb-4 space-y-4"}>
 				<div className="space-y-2">
 					<Label>Instructions</Label>
 					<Textarea
@@ -145,7 +142,7 @@ const AssessmentCard = ({ value, onChange, onSave, onCancel, saving }: Assessmen
 							<Label>Remind team</Label>
 							<Select
 								value={value.teamReminder}
-								onValueChange={(v) => update({ teamReminder: v })}
+								onValueChange={(v) => update({ teamReminder: v as AssessmentData["teamReminder"] })}
 							>
 								<SelectTrigger>
 									<SelectValue placeholder="No reminder set" />
@@ -175,6 +172,16 @@ const AssessmentCard = ({ value, onChange, onSave, onCancel, saving }: Assessmen
 					</div>
 				)}
 			</div>
+	);
+
+	if (hideHeader) return content;
+
+	return (
+		<div className="rounded-xl px-2 border bg-background">
+			<div className="py-4 px-2">
+				<h3 className="text-lg font-medium">On-site assessment</h3>
+			</div>
+			{content}
 		</div>
 	);
 };

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { presignUpload, uploadFileToS3 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,9 +25,10 @@ interface LineItemsCardProps {
 	onSave?: () => void;
 	onCancel?: () => void;
 	saving?: boolean;
+	hideHeader?: boolean;
 }
 
-const LineItemsCard = ({ items, onChange, onSave, onCancel, saving }: LineItemsCardProps) => {
+const LineItemsCard = ({ items, onChange, onSave, onCancel, saving, hideHeader }: LineItemsCardProps) => {
 	const updateItem = (index: number, updates: Partial<LineItemUI>) => {
 		onChange(items.map((item, i) => (i === index ? { ...item, ...updates } : item)));
 	};
@@ -50,15 +50,8 @@ const LineItemsCard = ({ items, onChange, onSave, onCancel, saving }: LineItemsC
 
 	const subtotal = items.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
 
-	return (
-		<div className="rounded-xl px-2 border bg-background">
-			<div className="py-4 px-2">
-				<h3 className="text-lg font-medium">Product / Service</h3>
-				<p className="text-sm text-muted-foreground">
-					Keep everything on track by adding products and services.
-				</p>
-			</div>
-			<div className="px-2 pb-4 space-y-4">
+	const content = (
+			<div className={hideHeader ? "space-y-4" : "px-2 pb-4 space-y-4"}>
 				{items.length > 0 && (
 					<div className="space-y-4">
 						{items.map((item, index) => (
@@ -185,6 +178,19 @@ const LineItemsCard = ({ items, onChange, onSave, onCancel, saving }: LineItemsC
 					</div>
 				)}
 			</div>
+	);
+
+	if (hideHeader) return content;
+
+	return (
+		<div className="rounded-xl px-2 border bg-background">
+			<div className="py-4 px-2">
+				<h3 className="text-lg font-medium">Product / Service</h3>
+				<p className="text-sm text-muted-foreground">
+					Keep everything on track by adding products and services.
+				</p>
+			</div>
+			{content}
 		</div>
 	);
 };

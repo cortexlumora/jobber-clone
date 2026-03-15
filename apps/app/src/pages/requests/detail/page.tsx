@@ -59,7 +59,7 @@ const reminderLabels: Record<string, string> = {
 function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
 	return (
 		<div className="rounded-lg border bg-background">
-			<div className="px-5 py-3 border-b flex items-center justify-between">
+			<div className="px-5 py-3 border-b flex items-center justify-between min-h-14">
 				<h3 className="text-sm font-semibold">{title}</h3>
 				{action}
 			</div>
@@ -379,13 +379,16 @@ const RequestDetailPage = () => {
 
 					{/* On-site Assessment */}
 					{editingAssessment ? (
-						<AssessmentCard
-							value={editAssessment}
-							onChange={setEditAssessment}
-							onSave={() => assessmentMutation.mutate(editAssessment)}
-							onCancel={() => setEditingAssessment(false)}
-							saving={assessmentMutation.isPending}
-						/>
+						<Section title="On-site assessment">
+							<AssessmentCard
+								value={editAssessment}
+								onChange={setEditAssessment}
+								onSave={() => assessmentMutation.mutate(editAssessment)}
+								onCancel={() => setEditingAssessment(false)}
+								saving={assessmentMutation.isPending}
+								hideHeader
+							/>
+						</Section>
 					) : (request.assessmentInstructions || request.assessmentStartDate || request.teamReminder !== "none") ? (
 						<Section
 							title="On-site assessment"
@@ -449,13 +452,16 @@ const RequestDetailPage = () => {
 
 					{/* Line Items */}
 					{editingLineItems ? (
-						<LineItemsCard
-							items={editLineItems}
-							onChange={setEditLineItems}
-							onSave={saveLineItems}
-							onCancel={() => setEditingLineItems(false)}
-							saving={lineItemsMutation.isPending}
-						/>
+						<Section title="Product / Service">
+							<LineItemsCard
+								items={editLineItems}
+								onChange={setEditLineItems}
+								onSave={saveLineItems}
+								onCancel={() => setEditingLineItems(false)}
+								saving={lineItemsMutation.isPending}
+								hideHeader
+							/>
+						</Section>
 					) : request.lineItems.length > 0 ? (
 						<Section
 							title="Product / Service"
