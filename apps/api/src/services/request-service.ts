@@ -68,11 +68,11 @@ export async function createRequest(userId: string, data: CreateRequestForm) {
 	return { id: request.id };
 }
 
-export async function getRequestsByUser(userId: string) {
+export async function getRequests() {
 	const requests = await db
 		.select()
 		.from(requestsSchema)
-		.where(and(eq(requestsSchema.userId, userId), isNull(requestsSchema.deletedAt)));
+		.where(isNull(requestsSchema.deletedAt));
 
 	const result = await Promise.all(
 		requests.map(async (request) => {

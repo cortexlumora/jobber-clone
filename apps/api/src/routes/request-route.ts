@@ -6,7 +6,7 @@ import { getUserIdFromCTX } from "../lib/helpers";
 import {
 	createRequest,
 	getRequestById,
-	getRequestsByUser,
+	getRequests,
 	updateRequestOverview,
 	updateRequestLineItems,
 	updateRequestAssessment,
@@ -21,9 +21,7 @@ const requestRoute = new Hono()
 		return c.json<APIResponse<{ id: string }>>({ data: result });
 	})
 	.get("/", async (c) => {
-		const userId = getUserIdFromCTX(c);
-
-		const requests = await getRequestsByUser(userId);
+		const requests = await getRequests();
 		return c.json<APIResponse<RequestDTO[]>>({ data: requests });
 	})
 	.get("/:id", async (c) => {
