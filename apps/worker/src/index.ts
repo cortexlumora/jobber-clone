@@ -1,9 +1,29 @@
 import "dotenv/config";
 import { ReceiveMessageCommand, DeleteMessageCommand } from "@aws-sdk/client-sqs";
+import type { Message } from "@aws-sdk/client-sqs";
 import { sqs, SQS_REMINDER_QUEUE_URL } from "./lib/sqs";
 import { handleReminder } from "./handlers/reminder";
+import { handleVisitReminder } from "./handlers/visit-reminder";
 
 let running = true;
+
+async function routeMessage(message: Message) {
+	if (!message.Body) {
+		console.warn("Empty message body, skipping");
+		return;
+	}
+
+	const payload = JSON.parse(message.Body);
+
+	switch (payload.type) {
+		case "assessment_reminder":
+			return handleReminder(message);
+		case "visit_reminder":
+			return handleVisitReminder(message);
+		default:
+			console.warn(`Unknown message type: ${payload.type}, skipping`);
+	}
+}
 
 async function poll() {
 	console.log("Worker started, polling SQS...");
@@ -22,7 +42,7 @@ async function poll() {
 
 			for (const message of response.Messages) {
 				try {
-					await handleReminder(message);
+					await routeMessage(message);
 
 					await sqs.send(
 						new DeleteMessageCommand({
@@ -36,7 +56,6 @@ async function poll() {
 			}
 		} catch (err) {
 			console.error("SQS poll error:", err);
-			// Wait before retrying on connection errors
 			await new Promise((r) => setTimeout(r, 5000));
 		}
 	}

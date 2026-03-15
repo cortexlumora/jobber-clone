@@ -31,18 +31,26 @@ function computeReminderTime(startDate: string, startTime: string, reminder: str
 	return dateTime;
 }
 
+interface ScheduleReminderOptions {
+	type: "assessment_reminder" | "visit_reminder";
+	entityId: string;
+	startDate: string | null;
+	startTime: string | null;
+	teamReminder: string;
+}
+
 export async function createReminderSchedule(
-	requestId: string,
-	startDate: string | null,
-	startTime: string | null,
-	teamReminder: string,
+	options: ScheduleReminderOptions,
 ): Promise<{ scheduleName: string; scheduledAt: Date } | null> {
+	const { type, entityId, startDate, startTime, teamReminder } = options;
+
 	if (teamReminder === "none" || !startDate || !startTime) return null;
 
 	const fireAt = computeReminderTime(startDate, startTime, teamReminder);
 	if (!fireAt || fireAt <= new Date()) return null;
 
-	const scheduleName = `reminder-request-${requestId}`;
+	const prefix = type === "assessment_reminder" ? "reminder-request" : "reminder-visit";
+	const scheduleName = `${prefix}-${entityId}`;
 	const utcStr = fireAt.toISOString().replace(/\.\d{3}Z$/, "");
 
 	await scheduler.send(
@@ -55,8 +63,8 @@ export async function createReminderSchedule(
 				Arn: SQS_REMINDER_QUEUE_ARN,
 				RoleArn: SCHEDULER_ROLE_ARN,
 				Input: JSON.stringify({
-					type: "assessment_reminder",
-					requestId,
+					type,
+					entityId,
 					reminderType: teamReminder,
 					scheduledFor: `${startDate}T${startTime}`,
 				}),

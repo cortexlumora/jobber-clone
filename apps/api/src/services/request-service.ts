@@ -36,7 +36,7 @@ export async function createRequest(userId: string, data: CreateRequestForm) {
 
 		// Schedule reminder
 		if (assessment.teamReminder && assessment.teamReminder !== "none") {
-			const schedule = await createReminderSchedule(request.id, assessment.startDate ?? null, assessment.startTime ?? null, assessment.teamReminder);
+			const schedule = await createReminderSchedule({ type: "assessment_reminder", entityId: request.id, startDate: assessment.startDate ?? null, startTime: assessment.startTime ?? null, teamReminder: assessment.teamReminder });
 			if (schedule) {
 				await db.update(requestAssessmentsSchema).set({
 					reminderScheduleName: schedule.scheduleName,
@@ -290,7 +290,7 @@ export async function updateRequestAssessment(requestId: string, data: UpdateReq
 
 	// Create new schedule if needed
 	if (data.teamReminder && data.teamReminder !== "none") {
-		const schedule = await createReminderSchedule(requestId, data.startDate ?? null, data.startTime ?? null, data.teamReminder);
+		const schedule = await createReminderSchedule({ type: "assessment_reminder", entityId: requestId, startDate: data.startDate ?? null, startTime: data.startTime ?? null, teamReminder: data.teamReminder });
 		if (schedule) {
 			assessmentValues.reminderScheduleName = schedule.scheduleName;
 			assessmentValues.reminderScheduledAt = schedule.scheduledAt;
