@@ -1,7 +1,8 @@
-import db, { requestsSchema, requestFilesSchema, requestLineItemsSchema, clientsSchema, propertiesSchema, filesSchema } from "@repo/db";
+import db, { requestsSchema, requestFilesSchema, requestLineItemsSchema, clientsSchema, filesSchema } from "@repo/db";
 import type { CreateRequestForm, UpdateRequestOverviewForm, UpdateRequestLineItemsForm, UpdateRequestAssessmentForm } from "@repo/zod/request";
 import { and, eq, isNull } from "drizzle-orm";
 import { signKey } from "./file-service";
+import { createReminderSchedule, deleteReminderSchedule } from "../lib/scheduler";
 
 // Flatten assessment from grouped form to DB columns
 function flattenAssessment(assessment?: CreateRequestForm["assessment"]) {
@@ -28,6 +29,8 @@ function toRequestResponse(row: typeof requestsSchema.$inferSelect) {
 		scheduleLater,
 		anytime,
 		teamReminder,
+		reminderScheduleName: _reminderScheduleName,
+		reminderScheduledAt: _reminderScheduledAt,
 		updatedAt: _updatedAt,
 		deletedAt: _deletedAt,
 		userId: _userId,
@@ -82,6 +85,17 @@ export async function createRequest(userId: string, data: CreateRequestForm) {
 				imageFileId: item.imageFileId || null,
 			})),
 		);
+	}
+
+	// Schedule reminder if assessment has one
+	if (assessment?.teamReminder && assessment.teamReminder !== "none") {
+		const schedule = await createReminderSchedule(request.id, assessment.startDate ?? null, assessment.startTime ?? null, assessment.teamReminder);
+		if (schedule) {
+			await db.update(requestsSchema).set({
+				reminderScheduleName: schedule.scheduleName,
+				reminderScheduledAt: schedule.scheduledAt,
+			}).where(eq(requestsSchema.id, request.id));
+		}
 	}
 
 	return { id: request.id };
@@ -261,6 +275,12 @@ export async function updateRequestLineItems(requestId: string, data: UpdateRequ
 }
 
 export async function updateRequestAssessment(requestId: string, data: UpdateRequestAssessmentForm) {
+	// Get existing schedule name to delete if needed
+	const [existing] = await db
+		.select({ reminderScheduleName: requestsSchema.reminderScheduleName })
+		.from(requestsSchema)
+		.where(eq(requestsSchema.id, requestId));
+
 	await db
 		.update(requestsSchema)
 		.set({
@@ -274,6 +294,25 @@ export async function updateRequestAssessment(requestId: string, data: UpdateReq
 			teamReminder: data.teamReminder ?? "none",
 		})
 		.where(eq(requestsSchema.id, requestId));
+
+	// Delete old schedule if exists
+	if (existing?.reminderScheduleName) {
+		await deleteReminderSchedule(existing.reminderScheduleName);
+	}
+
+	// Create new schedule or clear
+	if (data.teamReminder && data.teamReminder !== "none") {
+		const schedule = await createReminderSchedule(requestId, data.startDate ?? null, data.startTime ?? null, data.teamReminder);
+		await db.update(requestsSchema).set({
+			reminderScheduleName: schedule?.scheduleName ?? null,
+			reminderScheduledAt: schedule?.scheduledAt ?? null,
+		}).where(eq(requestsSchema.id, requestId));
+	} else {
+		await db.update(requestsSchema).set({
+			reminderScheduleName: null,
+			reminderScheduledAt: null,
+		}).where(eq(requestsSchema.id, requestId));
+	}
 
 	return getRequestById(requestId);
 }
