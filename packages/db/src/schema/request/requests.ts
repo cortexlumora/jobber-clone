@@ -22,8 +22,6 @@ const requestsSchema = pgTable("requests", {
 	scheduleLater: boolean("schedule_later").notNull().default(false),
 	anytime: boolean("anytime").notNull().default(false),
 	teamReminder: reminderEnum("team_reminder").notNull().default("none"),
-	// Notes
-	internalNotes: text("internal_notes"),
 	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 	deletedAt: timestamp("deleted_at", { withTimezone: true }),

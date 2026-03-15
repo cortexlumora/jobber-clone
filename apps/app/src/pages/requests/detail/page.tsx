@@ -22,7 +22,6 @@ import {
 	MoreHorizontal,
 	Mail,
 	Phone,
-	MapPin,
 	Calendar,
 	Bell,
 	Pencil,
@@ -179,12 +178,6 @@ const RequestDetailPage = () => {
 
 	const client = request.client;
 	const status = statusConfig[request.status] ?? statusConfig.new;
-	const property = client?.property;
-	const address = property
-		? [property.street1, property.street2, property.city, property.state, property.zip]
-				.filter(Boolean)
-				.join(", ")
-		: null;
 
 	const clientDisplayName = client
 		? client.useCompanyAsPrimary && client.companyName
@@ -233,12 +226,6 @@ const RequestDetailPage = () => {
 							</div>
 							<div className="flex-1 min-w-0 space-y-1.5">
 								<p className="font-medium">{clientDisplayName}</p>
-								{address && (
-									<div className="flex items-start gap-2 text-sm text-muted-foreground">
-										<MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-										<span>{address}</span>
-									</div>
-								)}
 								{client?.phones?.[0] && (
 									<div className="flex items-center gap-2 text-sm text-muted-foreground">
 										<Phone className="h-3.5 w-3.5 shrink-0" />

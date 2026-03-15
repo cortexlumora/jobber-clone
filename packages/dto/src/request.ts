@@ -16,15 +16,6 @@ export interface RequestAttachmentDTO {
 	url: string;
 }
 
-export interface RequestPropertyDTO {
-	id: string;
-	street1: string | null;
-	street2: string | null;
-	city: string | null;
-	state: string | null;
-	zip: string | null;
-}
-
 export interface RequestClientDTO {
 	id: string;
 	title: string;
@@ -35,7 +26,6 @@ export interface RequestClientDTO {
 	phones: { type: string; number: string }[];
 	emails: { type: string; value: string }[];
 	leadSource: string | null;
-	property: RequestPropertyDTO | null;
 }
 
 export interface RequestAssessmentDTO {

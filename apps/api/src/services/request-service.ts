@@ -1,7 +1,7 @@
-import db, { requestsSchema, requestFilesSchema, requestLineItemsSchema, clientsSchema, propertiesSchema } from "@repo/db";
+import db, { requestsSchema, requestFilesSchema, requestLineItemsSchema, clientsSchema, propertiesSchema, filesSchema } from "@repo/db";
 import type { CreateRequestForm, UpdateRequestOverviewForm, UpdateRequestLineItemsForm, UpdateRequestAssessmentForm } from "@repo/zod/request";
 import { and, eq, isNull } from "drizzle-orm";
-import { getSignedFiles } from "./file-service";
+import { signKey } from "./file-service";
 
 // Flatten assessment from grouped form to DB columns
 function flattenAssessment(assessment?: CreateRequestForm["assessment"]) {
@@ -13,16 +13,21 @@ function flattenAssessment(assessment?: CreateRequestForm["assessment"]) {
 		assessmentEndTime: assessment?.endTime || null,
 		scheduleLater: assessment?.scheduleLater ?? false,
 		anytime: assessment?.anytime ?? false,
-		teamReminder: assessment?.teamReminder ?? "none" as const,
+		teamReminder: assessment?.teamReminder ?? ("none" as const),
 	};
 }
 
 // Nest assessment from DB columns to grouped response, and strip flat fields
 function toRequestResponse(row: typeof requestsSchema.$inferSelect) {
 	const {
-		assessmentInstructions, assessmentStartDate, assessmentEndDate,
-		assessmentStartTime, assessmentEndTime, scheduleLater, anytime, teamReminder,
-		internalNotes: _internalNotes,
+		assessmentInstructions,
+		assessmentStartDate,
+		assessmentEndDate,
+		assessmentStartTime,
+		assessmentEndTime,
+		scheduleLater,
+		anytime,
+		teamReminder,
 		updatedAt: _updatedAt,
 		deletedAt: _deletedAt,
 		userId: _userId,
@@ -66,18 +71,21 @@ export async function createRequest(userId: string, data: CreateRequestForm) {
 		);
 	}
 
-	let insertedLineItems: typeof requestLineItemsSchema.$inferSelect[] = [];
+	let insertedLineItems: (typeof requestLineItemsSchema.$inferSelect)[] = [];
 	if (lineItems && lineItems.length > 0) {
-		insertedLineItems = await db.insert(requestLineItemsSchema).values(
-			lineItems.map((item) => ({
-				requestId: request.id,
-				name: item.name,
-				description: item.description || null,
-				qty: item.qty,
-				unitPrice: String(item.unitPrice),
-				imageFileId: item.imageFileId || null,
-			})),
-		).returning();
+		insertedLineItems = await db
+			.insert(requestLineItemsSchema)
+			.values(
+				lineItems.map((item) => ({
+					requestId: request.id,
+					name: item.name,
+					description: item.description || null,
+					qty: item.qty,
+					unitPrice: String(item.unitPrice),
+					imageFileId: item.imageFileId || null,
+				})),
+			)
+			.returning();
 	}
 
 	return {
@@ -96,10 +104,7 @@ export async function getRequestsByUser(userId: string) {
 
 	const result = await Promise.all(
 		requests.map(async (request) => {
-			const items = await db
-				.select()
-				.from(requestLineItemsSchema)
-				.where(eq(requestLineItemsSchema.requestId, request.id));
+			const items = await db.select().from(requestLineItemsSchema).where(eq(requestLineItemsSchema.requestId, request.id));
 			return {
 				...toRequestResponse(request),
 				attachments: [],
@@ -112,6 +117,30 @@ export async function getRequestsByUser(userId: string) {
 	return result;
 }
 
+async function getRequestAttachmentsByReqId(requestId: string) {
+	const files = await db
+		.select({
+			id: filesSchema.id,
+			name: filesSchema.name,
+			contentType: filesSchema.contentType,
+			key: filesSchema.key,
+		})
+		.from(requestFilesSchema)
+		.leftJoin(filesSchema, eq(requestFilesSchema.fileId, filesSchema.id))
+		.where(eq(requestFilesSchema.requestId, requestId));
+
+	return Promise.all(
+		files
+			.filter((f) => f.key)
+			.map(async (file) => ({
+				id: file.id!,
+				name: file.name!,
+				contentType: file.contentType!,
+				url: await signKey(file.key!),
+			})),
+	);
+}
+
 export async function getRequestById(requestId: string) {
 	const [request] = await db
 		.select()
@@ -120,41 +149,45 @@ export async function getRequestById(requestId: string) {
 
 	if (!request) return null;
 
-	const [fileRows, items, [client], properties] = await Promise.all([
-		db.select({ fileId: requestFilesSchema.fileId })
-			.from(requestFilesSchema)
-			.where(eq(requestFilesSchema.requestId, request.id)),
-		db.select()
-			.from(requestLineItemsSchema)
-			.where(eq(requestLineItemsSchema.requestId, request.id)),
-		db.select()
+	const [attachments, items, [client]] = await Promise.all([
+		getRequestAttachmentsByReqId(request.id),
+		db.select().from(requestLineItemsSchema).where(eq(requestLineItemsSchema.requestId, request.id)),
+		db
+			.select({
+				id: clientsSchema.id,
+				title: clientsSchema.title,
+				firstName: clientsSchema.firstName,
+				lastName: clientsSchema.lastName,
+				companyName: clientsSchema.companyName,
+				useCompanyAsPrimary: clientsSchema.useCompanyAsPrimary,
+				phones: clientsSchema.phones,
+				emails: clientsSchema.emails,
+				leadSource: clientsSchema.leadSource,
+			})
 			.from(clientsSchema)
 			.where(eq(clientsSchema.id, request.clientId)),
-		db.select()
-			.from(propertiesSchema)
-			.where(eq(propertiesSchema.clientId, request.clientId))
-			.limit(1),
 	]);
 
-	const fileIds = fileRows.map((f) => f.fileId);
-	const signedFiles = await getSignedFiles(fileIds);
-
 	return {
-		...toRequestResponse(request),
-		attachments: signedFiles,
+		id: request.id,
+		status: request.status,
+		createdAt: request.createdAt,
+		title: request.title,
+		clientId: request.clientId,
+		serviceDescription: request.serviceDescription,
+		assessment: {
+			instructions: request.assessmentInstructions,
+			startDate: request.assessmentStartDate,
+			endDate: request.assessmentEndDate,
+			startTime: request.assessmentStartTime,
+			endTime: request.assessmentEndTime,
+			scheduleLater: request.scheduleLater,
+			anytime: request.anytime,
+			teamReminder: request.teamReminder,
+		},
+		attachments,
 		lineItems: items,
-		client: client ? {
-			id: client.id,
-			title: client.title,
-			firstName: client.firstName,
-			lastName: client.lastName,
-			companyName: client.companyName,
-			useCompanyAsPrimary: client.useCompanyAsPrimary,
-			phones: client.phones,
-			emails: client.emails,
-			leadSource: client.leadSource,
-			property: properties[0] ?? null,
-		} : null,
+		client,
 	};
 }
 
@@ -170,9 +203,7 @@ export async function updateRequestOverview(requestId: string, data: UpdateReque
 	// Replace file associations
 	await db.delete(requestFilesSchema).where(eq(requestFilesSchema.requestId, requestId));
 	if (data.fileIds && data.fileIds.length > 0) {
-		await db.insert(requestFilesSchema).values(
-			data.fileIds.map((fileId) => ({ requestId, fileId })),
-		);
+		await db.insert(requestFilesSchema).values(data.fileIds.map((fileId) => ({ requestId, fileId })));
 	}
 
 	return getRequestById(requestId);
