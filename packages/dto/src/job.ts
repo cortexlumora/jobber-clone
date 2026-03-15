@@ -12,6 +12,21 @@ export interface JobLineItemDTO {
 	createdAt: Date;
 }
 
+export interface JobVisitDTO {
+	title: string;
+	instructions: string | null;
+	startDate: string | null;
+	endDate: string | null;
+	startTime: string | null;
+	endTime: string | null;
+	scheduleLater: boolean;
+	anytime: boolean;
+	assignedTo: string | null;
+	emailOnAssign: boolean;
+	teamReminder: "none" | "at_start" | "30min" | "1hour" | "2hour" | "5hour" | "24hour";
+	status: "scheduled" | "completed" | "cancelled";
+}
+
 export interface JobDTO {
 	id: string;
 	userId: string;
@@ -45,6 +60,7 @@ export interface JobDTO {
 	relatedRequestId: string | null;
 	// Nested
 	lineItems: JobLineItemDTO[];
+	visits: JobVisitDTO[];
 	fileIds: string[];
 	// Timestamps
 	createdAt: Date;

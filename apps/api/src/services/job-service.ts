@@ -1,4 +1,4 @@
-import db, { jobsSchema, jobFilesSchema, jobLineItemsSchema, filesSchema } from "@repo/db";
+import db, { jobsSchema, jobFilesSchema, jobLineItemsSchema, filesSchema, visitsSchema } from "@repo/db";
 import type { CreateJobForm, UpdateJobLineItemsForm } from "@repo/zod/job";
 import { and, eq, isNull } from "drizzle-orm";
 import { signKey } from "./file-service";
@@ -34,20 +34,23 @@ export async function createJob(userId: string, data: CreateJobForm) {
 		})
 		.returning();
 
-	let insertedLineItems: typeof jobLineItemsSchema.$inferSelect[] = [];
+	let insertedLineItems: (typeof jobLineItemsSchema.$inferSelect)[] = [];
 	if (lineItems && lineItems.length > 0) {
-		insertedLineItems = await db.insert(jobLineItemsSchema).values(
-			lineItems.map((item, index) => ({
-				jobId: job.id,
-				name: item.name,
-				description: item.description || null,
-				qty: item.qty,
-				unitCost: String(item.unitCost),
-				unitPrice: String(item.unitPrice),
-				imageFileId: item.imageFileId || null,
-				sortOrder: index,
-			})),
-		).returning();
+		insertedLineItems = await db
+			.insert(jobLineItemsSchema)
+			.values(
+				lineItems.map((item, index) => ({
+					jobId: job.id,
+					name: item.name,
+					description: item.description || null,
+					qty: item.qty,
+					unitCost: String(item.unitCost),
+					unitPrice: String(item.unitPrice),
+					imageFileId: item.imageFileId || null,
+					sortOrder: index,
+				})),
+			)
+			.returning();
 	}
 
 	if (noteFileIds && noteFileIds.length > 0) {
@@ -59,26 +62,17 @@ export async function createJob(userId: string, data: CreateJobForm) {
 		);
 	}
 
-	return { ...job, lineItems: insertedLineItems.map((item) => ({ ...item, image: null })), fileIds: noteFileIds ?? [] };
+	return { ...job, lineItems: insertedLineItems.map((item) => ({ ...item, image: null })), visits: [], fileIds: noteFileIds ?? [] };
 }
 
-export async function getJobsByUser(userId: string) {
-	const jobs = await db
-		.select()
-		.from(jobsSchema)
-		.where(and(eq(jobsSchema.userId, userId), isNull(jobsSchema.deletedAt)));
+export async function getJobs() {
+	const jobs = await db.select().from(jobsSchema).where(isNull(jobsSchema.deletedAt));
 
 	const result = await Promise.all(
 		jobs.map(async (job) => {
-			const files = await db
-				.select({ fileId: jobFilesSchema.fileId })
-				.from(jobFilesSchema)
-				.where(eq(jobFilesSchema.jobId, job.id));
-			const items = await db
-				.select()
-				.from(jobLineItemsSchema)
-				.where(eq(jobLineItemsSchema.jobId, job.id));
-			return { ...job, lineItems: items.map((item) => ({ ...item, image: null })), fileIds: files.map((f) => f.fileId) };
+			const files = await db.select({ fileId: jobFilesSchema.fileId }).from(jobFilesSchema).where(eq(jobFilesSchema.jobId, job.id));
+			const items = await db.select().from(jobLineItemsSchema).where(eq(jobLineItemsSchema.jobId, job.id));
+			return { ...job, lineItems: items.map((item) => ({ ...item, image: null })), visits: [], fileIds: files.map((f) => f.fileId) };
 		}),
 	);
 
@@ -125,12 +119,30 @@ export async function getJobById(jobId: string) {
 
 	if (!job) return null;
 
+	const visits = await db
+		.select({
+			title: visitsSchema.title,
+			instructions: visitsSchema.instructions,
+			startDate: visitsSchema.startDate,
+			endDate: visitsSchema.endDate,
+			startTime: visitsSchema.startTime,
+			endTime: visitsSchema.endTime,
+			scheduleLater: visitsSchema.scheduleLater,
+			anytime: visitsSchema.anytime,
+			assignedTo: visitsSchema.assignedTo,
+			emailOnAssign: visitsSchema.emailOnAssign,
+			teamReminder: visitsSchema.teamReminder,
+			status: visitsSchema.status,
+		})
+		.from(visitsSchema)
+		.where(eq(visitsSchema.jobId, job.id));
+
 	const [files, items] = await Promise.all([
 		db.select({ fileId: jobFilesSchema.fileId }).from(jobFilesSchema).where(eq(jobFilesSchema.jobId, job.id)),
 		getJobLineItemsByJobId(job.id),
 	]);
 
-	return { ...job, lineItems: items, fileIds: files.map((f) => f.fileId) };
+	return { ...job, visits, lineItems: items, fileIds: files.map((f) => f.fileId) };
 }
 
 export async function updateJobLineItems(jobId: string, data: UpdateJobLineItemsForm) {

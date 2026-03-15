@@ -6,7 +6,7 @@ import { getUserIdFromCTX } from "../lib/helpers";
 import {
 	createJob,
 	getJobById,
-	getJobsByUser,
+	getJobs,
 	updateJobLineItems,
 } from "../services/job-service";
 
@@ -19,9 +19,7 @@ const jobRoute = new Hono()
 		return c.json<APIResponse<JobDTO>>({ data: job });
 	})
 	.get("/", async (c) => {
-		const userId = getUserIdFromCTX(c);
-
-		const jobs = await getJobsByUser(userId);
+		const jobs = await getJobs();
 		return c.json<APIResponse<JobDTO[]>>({ data: jobs });
 	})
 	.get("/:id", async (c) => {

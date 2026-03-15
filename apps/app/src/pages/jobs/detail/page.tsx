@@ -379,42 +379,44 @@ const JobDetailPage = () => {
 						}
 					>
 						<div className="space-y-2">
-							{isUnscheduled ? (
-								<div className="rounded-md border px-4 py-3 flex items-center justify-between">
-									<div className="flex items-center gap-3">
-										<div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-											<Calendar className="h-4 w-4 text-muted-foreground" />
+							{job.visits.length > 0 ? (
+								job.visits.map((visit, i) => {
+									const isScheduled = !visit.scheduleLater && visit.startDate;
+									return (
+										<div key={i} className="rounded-md border px-4 py-3 flex items-center justify-between">
+											<div className="flex items-center gap-3">
+												<div className={`h-8 w-8 rounded-full flex items-center justify-center ${isScheduled ? "bg-blue-50" : "bg-gray-100"}`}>
+													<Calendar className={`h-4 w-4 ${isScheduled ? "text-blue-600" : "text-muted-foreground"}`} />
+												</div>
+												<div>
+													<p className="text-sm font-medium">
+														{isScheduled
+															? formatScheduleDate(visit.startDate!, visit.startTime, visit.endTime)
+															: visit.title}
+													</p>
+													{visit.assignedTo && (
+														<p className="text-xs text-muted-foreground">Assigned to {visit.assignedTo}</p>
+													)}
+												</div>
+											</div>
+											<Badge
+												variant="secondary"
+												className={
+													visit.status === "completed" ? "bg-green-100 text-green-700" :
+													visit.status === "cancelled" ? "bg-red-100 text-red-700" :
+													isScheduled ? "bg-blue-100 text-blue-700" :
+													"bg-gray-100 text-gray-700"
+												}
+											>
+												{visit.status === "completed" ? "Completed" :
+												 visit.status === "cancelled" ? "Cancelled" :
+												 isScheduled ? "Scheduled" : "Unscheduled"}
+											</Badge>
 										</div>
-										<div>
-											<p className="text-sm font-medium">Unscheduled</p>
-											{job.assignedUserIds && job.assignedUserIds.length > 0 ? (
-												<p className="text-xs text-muted-foreground">Assigned</p>
-											) : job.salesperson ? (
-												<p className="text-xs text-muted-foreground">Assigned to {job.salesperson}</p>
-											) : (
-												<p className="text-xs text-muted-foreground">Unassigned</p>
-											)}
-										</div>
-									</div>
-									<Badge variant="secondary" className="bg-gray-100 text-gray-700">Unscheduled</Badge>
-								</div>
+									);
+								})
 							) : (
-								<div className="rounded-md border px-4 py-3 flex items-center justify-between">
-									<div className="flex items-center gap-3">
-										<div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center">
-											<Calendar className="h-4 w-4 text-blue-600" />
-										</div>
-										<div>
-											<p className="text-sm font-medium">
-												{formatScheduleDate(job.startDate!, job.startTime, job.endTime)}
-											</p>
-											{job.salesperson && (
-												<p className="text-xs text-muted-foreground">Assigned to {job.salesperson}</p>
-											)}
-										</div>
-									</div>
-									<Badge variant="secondary" className="bg-blue-100 text-blue-700">Scheduled</Badge>
-								</div>
+								<p className="text-sm text-muted-foreground">No visits scheduled</p>
 							)}
 						</div>
 					</Section>
@@ -466,6 +468,7 @@ const JobDetailPage = () => {
 			<ScheduleVisitDialog
 				open={visitDialogOpen}
 				onOpenChange={setVisitDialogOpen}
+				jobId={id!}
 				assignedTo={job.salesperson}
 			/>
 		</div>
