@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { parseAsBoolean, useQueryState } from "nuqs";
 import { useParams } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getJobById, updateJobLineItems } from "../api";
@@ -10,6 +11,7 @@ import LineItemsCard, { type LineItemUI } from "@/components/line-items-card";
 import { formatScheduleDate, formatCurrency, getInitials } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import ScheduleVisitDialog from "@/components/schedule-visit-dialog";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -52,6 +54,7 @@ const JobDetailPage = () => {
 
 	const [editingLineItems, setEditingLineItems] = useState(false);
 	const [editLineItems, setEditLineItems] = useState<LineItemUI[]>([]);
+	const [visitDialogOpen, setVisitDialogOpen] = useQueryState("schedule-visit", parseAsBoolean.withDefault(false));
 
 	const { data: job, isLoading } = useQuery({
 		queryKey: ["job", id],
@@ -369,7 +372,7 @@ const JobDetailPage = () => {
 					<Section
 						title="Visits"
 						action={
-							<Button variant="ghost" size="sm" className="h-7 text-xs">
+							<Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setVisitDialogOpen(true)}>
 								<Plus className="h-3 w-3 mr-1" />
 								New Visit
 							</Button>
@@ -459,6 +462,12 @@ const JobDetailPage = () => {
 					<NotesPanel clientId={job.clientId} className="h-full" />
 				</div>
 			</div>
+
+			<ScheduleVisitDialog
+				open={visitDialogOpen}
+				onOpenChange={setVisitDialogOpen}
+				assignedTo={job.salesperson}
+			/>
 		</div>
 	);
 };
