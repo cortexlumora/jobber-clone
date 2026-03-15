@@ -46,7 +46,7 @@ export interface RequestDTO {
 	title: string;
 	serviceDescription: string;
 	status: "new" | "assessed" | "converted" | "archived";
-	assessment: RequestAssessmentDTO;
+	assessment: RequestAssessmentDTO | null;
 	lineItems: RequestLineItemDTO[];
 	attachments: RequestAttachmentDTO[];
 	client: RequestClientDTO | null;

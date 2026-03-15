@@ -156,14 +156,14 @@ const RequestDetailPage = () => {
 	const startEditingAssessment = () => {
 		if (!request) return;
 		setEditAssessment({
-			instructions: request.assessment.instructions ?? "",
-			startDate: request.assessment.startDate ?? "",
-			endDate: request.assessment.endDate ?? "",
-			startTime: request.assessment.startTime ?? "",
-			endTime: request.assessment.endTime ?? "",
-			scheduleLater: request.assessment.scheduleLater ?? false,
-			anytime: request.assessment.anytime ?? false,
-			teamReminder: request.assessment.teamReminder ?? "none",
+			instructions: request.assessment?.instructions ?? "",
+			startDate: request.assessment?.startDate ?? "",
+			endDate: request.assessment?.endDate ?? "",
+			startTime: request.assessment?.startTime ?? "",
+			endTime: request.assessment?.endTime ?? "",
+			scheduleLater: request.assessment?.scheduleLater ?? false,
+			anytime: request.assessment?.anytime ?? false,
+			teamReminder: request.assessment?.teamReminder ?? "none",
 		});
 		setEditingAssessment(true);
 	};
@@ -247,11 +247,11 @@ const RequestDetailPage = () => {
 								<p className="text-xs text-muted-foreground mb-0.5">Requested</p>
 								<p className="text-sm font-medium">{formatDate(request.createdAt)}</p>
 							</div>
-							{request.assessment.startDate && (
+							{request.assessment?.startDate && (
 								<div>
 									<p className="text-xs text-muted-foreground mb-0.5">Assessment</p>
 									<p className="text-sm font-medium">
-										{formatAssessmentDate(request.assessment.startDate, request.assessment.startTime)}
+										{formatAssessmentDate(request.assessment?.startDate, request.assessment?.startTime)}
 									</p>
 								</div>
 							)}
@@ -345,7 +345,7 @@ const RequestDetailPage = () => {
 								hideHeader
 							/>
 						</Section>
-					) : (request.assessment.instructions || request.assessment.startDate || request.assessment.teamReminder !== "none") ? (
+					) : (request.assessment?.instructions || request.assessment?.startDate || request.assessment?.teamReminder !== "none") ? (
 						<Section
 							title="On-site assessment"
 							action={
@@ -356,38 +356,38 @@ const RequestDetailPage = () => {
 							}
 						>
 							<div className="space-y-4">
-								{request.assessment.instructions && (
+								{request.assessment?.instructions && (
 									<div>
 										<p className="text-xs text-muted-foreground mb-1">Instructions</p>
-										<p className="text-sm">{request.assessment.instructions}</p>
+										<p className="text-sm">{request.assessment?.instructions}</p>
 									</div>
 								)}
 
-								{request.assessment.startDate && (
+								{request.assessment?.startDate && (
 									<div>
 										<div className="flex items-center gap-2 mb-1">
 											<Calendar className="h-3.5 w-3.5 text-muted-foreground" />
 											<p className="text-xs text-muted-foreground">Schedule</p>
 										</div>
 										<p className="text-sm">
-											{formatAssessmentDate(request.assessment.startDate, request.assessment.startTime)}
-											{request.assessment.endTime && (
+											{formatAssessmentDate(request.assessment?.startDate, request.assessment?.startTime)}
+											{request.assessment?.endTime && (
 												<>
 													{" – "}
-													{formatTimeStr(request.assessment.endTime)}
+													{formatTimeStr(request.assessment?.endTime)}
 												</>
 											)}
 										</p>
 									</div>
 								)}
 
-								{request.assessment.teamReminder !== "none" && (
+								{request.assessment?.teamReminder !== "none" && (
 									<div>
 										<div className="flex items-center gap-2 mb-1">
 											<Bell className="h-3.5 w-3.5 text-muted-foreground" />
 											<p className="text-xs text-muted-foreground">Assessment Reminder</p>
 										</div>
-										<p className="text-sm">{reminderLabels[request.assessment.teamReminder]}</p>
+										<p className="text-sm">{reminderLabels[request.assessment?.teamReminder]}</p>
 									</div>
 								)}
 							</div>

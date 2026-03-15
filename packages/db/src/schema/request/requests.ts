@@ -13,21 +13,28 @@ const requestsSchema = pgTable("requests", {
 	title: varchar("title", { length: 255 }).notNull(),
 	serviceDescription: text("service_description").notNull(),
 	status: requestStatusEnum("status").notNull().default("new"),
-	// Assessment
-	assessmentInstructions: text("assessment_instructions"),
-	assessmentStartDate: varchar("assessment_start_date", { length: 10 }),
-	assessmentEndDate: varchar("assessment_end_date", { length: 10 }),
-	assessmentStartTime: varchar("assessment_start_time", { length: 5 }),
-	assessmentEndTime: varchar("assessment_end_time", { length: 5 }),
+	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+	deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+export const requestAssessmentsSchema = pgTable("request_assessments", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	requestId: uuid("request_id").notNull().unique().references(() => requestsSchema.id, { onDelete: "cascade" }),
+	instructions: text("instructions"),
+	startDate: varchar("start_date", { length: 10 }),
+	endDate: varchar("end_date", { length: 10 }),
+	startTime: varchar("start_time", { length: 5 }),
+	endTime: varchar("end_time", { length: 5 }),
 	scheduleLater: boolean("schedule_later").notNull().default(false),
 	anytime: boolean("anytime").notNull().default(false),
 	teamReminder: reminderEnum("team_reminder").notNull().default("none"),
+	// Reminder scheduling
 	reminderScheduleName: varchar("reminder_schedule_name", { length: 255 }),
 	reminderScheduledAt: timestamp("reminder_scheduled_at", { withTimezone: true }),
 	reminderProcessedAt: timestamp("reminder_processed_at", { withTimezone: true }),
 	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-	deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
 export const requestLineItemsSchema = pgTable("request_line_items", {

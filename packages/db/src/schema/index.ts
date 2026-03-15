@@ -10,7 +10,7 @@ export {
 } from "./client/clients";
 export { default as filesSchema } from "./files";
 export { default as requestsSchema } from "./request/requests";
-export { requestStatusEnum, reminderEnum, requestLineItemsSchema } from "./request/requests";
+export { requestStatusEnum, reminderEnum, requestLineItemsSchema, requestAssessmentsSchema } from "./request/requests";
 export { default as requestFilesSchema } from "./request/request-files";
 export { default as propertiesSchema } from "./client/properties";
 export { default as clientContactsSchema } from "./client/client-contacts";

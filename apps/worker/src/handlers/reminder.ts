@@ -1,5 +1,5 @@
 import type { Message } from "@aws-sdk/client-sqs";
-import db, { requestsSchema } from "@repo/db";
+import db, { requestsSchema, requestAssessmentsSchema } from "@repo/db";
 import { eq, and, isNull } from "drizzle-orm";
 
 export interface ReminderPayload {
@@ -17,16 +17,9 @@ export async function handleReminder(message: Message) {
 
 	const payload = JSON.parse(message.Body) as ReminderPayload;
 
-	// Validate against DB
+	// Validate request exists
 	const [request] = await db
-		.select({
-			id: requestsSchema.id,
-			title: requestsSchema.title,
-			teamReminder: requestsSchema.teamReminder,
-			reminderScheduleName: requestsSchema.reminderScheduleName,
-			assessmentStartDate: requestsSchema.assessmentStartDate,
-			assessmentStartTime: requestsSchema.assessmentStartTime,
-		})
+		.select({ id: requestsSchema.id, title: requestsSchema.title })
 		.from(requestsSchema)
 		.where(and(eq(requestsSchema.id, payload.requestId), isNull(requestsSchema.deletedAt)));
 
@@ -35,20 +28,28 @@ export async function handleReminder(message: Message) {
 		return;
 	}
 
-	// Check if reminder is still active
-	if (!request.reminderScheduleName) {
+	// Validate assessment still matches
+	const [assessment] = await db
+		.select()
+		.from(requestAssessmentsSchema)
+		.where(eq(requestAssessmentsSchema.requestId, payload.requestId));
+
+	if (!assessment) {
+		console.warn(`[Reminder] Request ${payload.requestId} has no assessment, skipping`);
+		return;
+	}
+
+	if (!assessment.reminderScheduleName) {
 		console.warn(`[Reminder] Request ${payload.requestId} has no active reminder, skipping`);
 		return;
 	}
 
-	// Check if the reminder type still matches (user might have changed it)
-	if (request.teamReminder !== payload.reminderType) {
-		console.warn(`[Reminder] Request ${payload.requestId} reminder type changed from ${payload.reminderType} to ${request.teamReminder}, skipping`);
+	if (assessment.teamReminder !== payload.reminderType) {
+		console.warn(`[Reminder] Request ${payload.requestId} reminder type changed from ${payload.reminderType} to ${assessment.teamReminder}, skipping`);
 		return;
 	}
 
-	// Check if the assessment time still matches
-	const currentScheduledFor = `${request.assessmentStartDate}T${request.assessmentStartTime}`;
+	const currentScheduledFor = `${assessment.startDate}T${assessment.startTime}`;
 	if (currentScheduledFor !== payload.scheduledFor) {
 		console.warn(`[Reminder] Request ${payload.requestId} assessment time changed from ${payload.scheduledFor} to ${currentScheduledFor}, skipping`);
 		return;
@@ -60,9 +61,9 @@ export async function handleReminder(message: Message) {
 
 	// Mark as processed and clear schedule info
 	await db
-		.update(requestsSchema)
+		.update(requestAssessmentsSchema)
 		.set({ reminderScheduleName: null, reminderScheduledAt: null, reminderProcessedAt: new Date() })
-		.where(eq(requestsSchema.id, payload.requestId));
+		.where(eq(requestAssessmentsSchema.id, assessment.id));
 
 	// TODO: Send email/notification to assigned team members
 	// TODO: Create in-app notification record

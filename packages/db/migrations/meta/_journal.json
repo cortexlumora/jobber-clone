@@ -225,6 +225,13 @@
       "when": 1773584042462,
       "tag": "0031_empty_lake",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1773584691109,
+      "tag": "0032_low_paladin",
+      "breakpoints": true
     }
   ]
 }

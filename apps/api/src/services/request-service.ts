@@ -1,56 +1,8 @@
-import db, { requestsSchema, requestFilesSchema, requestLineItemsSchema, clientsSchema, filesSchema } from "@repo/db";
+import db, { requestsSchema, requestFilesSchema, requestLineItemsSchema, requestAssessmentsSchema, clientsSchema, filesSchema } from "@repo/db";
 import type { CreateRequestForm, UpdateRequestOverviewForm, UpdateRequestLineItemsForm, UpdateRequestAssessmentForm } from "@repo/zod/request";
 import { and, eq, isNull } from "drizzle-orm";
 import { signKey } from "./file-service";
 import { createReminderSchedule, deleteReminderSchedule } from "../lib/scheduler";
-
-// Flatten assessment from grouped form to DB columns
-function flattenAssessment(assessment?: CreateRequestForm["assessment"]) {
-	return {
-		assessmentInstructions: assessment?.instructions || null,
-		assessmentStartDate: assessment?.startDate || null,
-		assessmentEndDate: assessment?.endDate || null,
-		assessmentStartTime: assessment?.startTime || null,
-		assessmentEndTime: assessment?.endTime || null,
-		scheduleLater: assessment?.scheduleLater ?? false,
-		anytime: assessment?.anytime ?? false,
-		teamReminder: assessment?.teamReminder ?? ("none" as const),
-	};
-}
-
-// Nest assessment from DB columns to grouped response, and strip flat fields
-function toRequestResponse(row: typeof requestsSchema.$inferSelect) {
-	const {
-		assessmentInstructions,
-		assessmentStartDate,
-		assessmentEndDate,
-		assessmentStartTime,
-		assessmentEndTime,
-		scheduleLater,
-		anytime,
-		teamReminder,
-		reminderScheduleName: _reminderScheduleName,
-		reminderScheduledAt: _reminderScheduledAt,
-		reminderProcessedAt: _reminderProcessedAt,
-		updatedAt: _updatedAt,
-		deletedAt: _deletedAt,
-		userId: _userId,
-		...rest
-	} = row;
-	return {
-		...rest,
-		assessment: {
-			instructions: assessmentInstructions,
-			startDate: assessmentStartDate,
-			endDate: assessmentEndDate,
-			startTime: assessmentStartTime,
-			endTime: assessmentEndTime,
-			scheduleLater,
-			anytime,
-			teamReminder,
-		},
-	};
-}
 
 export async function createRequest(userId: string, data: CreateRequestForm) {
 	const { fileIds, lineItems, assessment, ...requestData } = data;
@@ -62,16 +14,41 @@ export async function createRequest(userId: string, data: CreateRequestForm) {
 			clientId: requestData.clientId,
 			title: requestData.title,
 			serviceDescription: requestData.serviceDescription,
-			...flattenAssessment(assessment),
 		})
 		.returning();
 
+	// Create assessment if provided
+	if (assessment) {
+		const [assessmentRow] = await db
+			.insert(requestAssessmentsSchema)
+			.values({
+				requestId: request.id,
+				instructions: assessment.instructions || null,
+				startDate: assessment.startDate || null,
+				endDate: assessment.endDate || null,
+				startTime: assessment.startTime || null,
+				endTime: assessment.endTime || null,
+				scheduleLater: assessment.scheduleLater ?? false,
+				anytime: assessment.anytime ?? false,
+				teamReminder: assessment.teamReminder ?? "none",
+			})
+			.returning();
+
+		// Schedule reminder
+		if (assessment.teamReminder && assessment.teamReminder !== "none") {
+			const schedule = await createReminderSchedule(request.id, assessment.startDate ?? null, assessment.startTime ?? null, assessment.teamReminder);
+			if (schedule) {
+				await db.update(requestAssessmentsSchema).set({
+					reminderScheduleName: schedule.scheduleName,
+					reminderScheduledAt: schedule.scheduledAt,
+				}).where(eq(requestAssessmentsSchema.id, assessmentRow.id));
+			}
+		}
+	}
+
 	if (fileIds && fileIds.length > 0) {
 		await db.insert(requestFilesSchema).values(
-			fileIds.map((fileId) => ({
-				requestId: request.id,
-				fileId,
-			})),
+			fileIds.map((fileId) => ({ requestId: request.id, fileId })),
 		);
 	}
 
@@ -88,18 +65,6 @@ export async function createRequest(userId: string, data: CreateRequestForm) {
 		);
 	}
 
-	// Schedule reminder if assessment has one
-	if (assessment?.teamReminder && assessment.teamReminder !== "none") {
-		const schedule = await createReminderSchedule(request.id, assessment.startDate ?? null, assessment.startTime ?? null, assessment.teamReminder);
-		if (schedule) {
-			await db.update(requestsSchema).set({
-				reminderScheduleName: schedule.scheduleName,
-				reminderScheduledAt: schedule.scheduledAt,
-				reminderProcessedAt: null,
-			}).where(eq(requestsSchema.id, request.id));
-		}
-	}
-
 	return { id: request.id };
 }
 
@@ -111,9 +76,33 @@ export async function getRequestsByUser(userId: string) {
 
 	const result = await Promise.all(
 		requests.map(async (request) => {
-			const items = await db.select().from(requestLineItemsSchema).where(eq(requestLineItemsSchema.requestId, request.id));
+			const [assessment] = await db
+				.select()
+				.from(requestAssessmentsSchema)
+				.where(eq(requestAssessmentsSchema.requestId, request.id));
+
+			const items = await db
+				.select()
+				.from(requestLineItemsSchema)
+				.where(eq(requestLineItemsSchema.requestId, request.id));
+
 			return {
-				...toRequestResponse(request),
+				id: request.id,
+				clientId: request.clientId,
+				title: request.title,
+				serviceDescription: request.serviceDescription,
+				status: request.status,
+				createdAt: request.createdAt,
+				assessment: assessment ? {
+					instructions: assessment.instructions,
+					startDate: assessment.startDate,
+					endDate: assessment.endDate,
+					startTime: assessment.startTime,
+					endTime: assessment.endTime,
+					scheduleLater: assessment.scheduleLater,
+					anytime: assessment.anytime,
+					teamReminder: assessment.teamReminder,
+				} : null,
 				attachments: [],
 				client: null,
 				lineItems: items.map((item) => ({
@@ -175,15 +164,13 @@ async function getRequestLineItemsByReqId(requestId: string) {
 		.from(requestLineItemsSchema)
 		.leftJoin(filesSchema, eq(requestLineItemsSchema.imageFileId, filesSchema.id))
 		.where(eq(requestLineItemsSchema.requestId, requestId));
-	
+
 	return Promise.all(
 		items.map(async (item) => ({
 			...item,
-			image: item.image ? {
-				...item.image,
-				url: item.image.key ? await signKey(item.image.key) : null,
-				key: undefined,
-			} : null
+			image: item.image?.key
+				? { id: item.image.id!, name: item.image.name!, contentType: item.image.contentType!, url: await signKey(item.image.key) }
+				: null,
 		})),
 	);
 }
@@ -196,7 +183,8 @@ export async function getRequestById(requestId: string) {
 
 	if (!request) return null;
 
-	const [attachments, items, [client]] = await Promise.all([
+	const [[assessment], attachments, items, [client]] = await Promise.all([
+		db.select().from(requestAssessmentsSchema).where(eq(requestAssessmentsSchema.requestId, request.id)),
 		getRequestAttachmentsByReqId(request.id),
 		getRequestLineItemsByReqId(request.id),
 		db
@@ -217,21 +205,21 @@ export async function getRequestById(requestId: string) {
 
 	return {
 		id: request.id,
+		clientId: request.clientId,
+		title: request.title,
+		serviceDescription: request.serviceDescription,
 		status: request.status,
 		createdAt: request.createdAt,
-		title: request.title,
-		clientId: request.clientId,
-		serviceDescription: request.serviceDescription,
-		assessment: {
-			instructions: request.assessmentInstructions,
-			startDate: request.assessmentStartDate,
-			endDate: request.assessmentEndDate,
-			startTime: request.assessmentStartTime,
-			endTime: request.assessmentEndTime,
-			scheduleLater: request.scheduleLater,
-			anytime: request.anytime,
-			teamReminder: request.teamReminder,
-		},
+		assessment: assessment ? {
+			instructions: assessment.instructions,
+			startDate: assessment.startDate,
+			endDate: assessment.endDate,
+			startTime: assessment.startTime,
+			endTime: assessment.endTime,
+			scheduleLater: assessment.scheduleLater,
+			anytime: assessment.anytime,
+			teamReminder: assessment.teamReminder,
+		} : null,
 		attachments,
 		lineItems: items,
 		client,
@@ -247,7 +235,6 @@ export async function updateRequestOverview(requestId: string, data: UpdateReque
 
 	if (!updated) return null;
 
-	// Replace file associations
 	await db.delete(requestFilesSchema).where(eq(requestFilesSchema.requestId, requestId));
 	if (data.fileIds && data.fileIds.length > 0) {
 		await db.insert(requestFilesSchema).values(data.fileIds.map((fileId) => ({ requestId, fileId })));
@@ -257,7 +244,6 @@ export async function updateRequestOverview(requestId: string, data: UpdateReque
 }
 
 export async function updateRequestLineItems(requestId: string, data: UpdateRequestLineItemsForm) {
-	// Delete existing line items and replace
 	await db.delete(requestLineItemsSchema).where(eq(requestLineItemsSchema.requestId, requestId));
 
 	if (data.lineItems.length > 0) {
@@ -277,45 +263,44 @@ export async function updateRequestLineItems(requestId: string, data: UpdateRequ
 }
 
 export async function updateRequestAssessment(requestId: string, data: UpdateRequestAssessmentForm) {
-	// Get existing schedule name to delete if needed
+	// Get existing assessment
 	const [existing] = await db
-		.select({ reminderScheduleName: requestsSchema.reminderScheduleName })
-		.from(requestsSchema)
-		.where(eq(requestsSchema.id, requestId));
-
-	await db
-		.update(requestsSchema)
-		.set({
-			assessmentInstructions: data.instructions || null,
-			assessmentStartDate: data.startDate || null,
-			assessmentEndDate: data.endDate || null,
-			assessmentStartTime: data.startTime || null,
-			assessmentEndTime: data.endTime || null,
-			scheduleLater: data.scheduleLater ?? false,
-			anytime: data.anytime ?? false,
-			teamReminder: data.teamReminder ?? "none",
-		})
-		.where(eq(requestsSchema.id, requestId));
+		.select()
+		.from(requestAssessmentsSchema)
+		.where(eq(requestAssessmentsSchema.requestId, requestId));
 
 	// Delete old schedule if exists
 	if (existing?.reminderScheduleName) {
 		await deleteReminderSchedule(existing.reminderScheduleName);
 	}
 
-	// Create new schedule or clear
+	const assessmentValues = {
+		instructions: data.instructions || null,
+		startDate: data.startDate || null,
+		endDate: data.endDate || null,
+		startTime: data.startTime || null,
+		endTime: data.endTime || null,
+		scheduleLater: data.scheduleLater ?? false,
+		anytime: data.anytime ?? false,
+		teamReminder: data.teamReminder ?? "none" as const,
+		reminderScheduleName: null as string | null,
+		reminderScheduledAt: null as Date | null,
+		reminderProcessedAt: null as Date | null,
+	};
+
+	// Create new schedule if needed
 	if (data.teamReminder && data.teamReminder !== "none") {
 		const schedule = await createReminderSchedule(requestId, data.startDate ?? null, data.startTime ?? null, data.teamReminder);
-		await db.update(requestsSchema).set({
-			reminderScheduleName: schedule?.scheduleName ?? null,
-			reminderScheduledAt: schedule?.scheduledAt ?? null,
-			reminderProcessedAt: null,
-		}).where(eq(requestsSchema.id, requestId));
+		if (schedule) {
+			assessmentValues.reminderScheduleName = schedule.scheduleName;
+			assessmentValues.reminderScheduledAt = schedule.scheduledAt;
+		}
+	}
+
+	if (existing) {
+		await db.update(requestAssessmentsSchema).set(assessmentValues).where(eq(requestAssessmentsSchema.id, existing.id));
 	} else {
-		await db.update(requestsSchema).set({
-			reminderScheduleName: null,
-			reminderScheduledAt: null,
-			reminderProcessedAt: null,
-		}).where(eq(requestsSchema.id, requestId));
+		await db.insert(requestAssessmentsSchema).values({ requestId, ...assessmentValues });
 	}
 
 	return getRequestById(requestId);
