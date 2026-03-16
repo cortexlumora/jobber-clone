@@ -25,6 +25,7 @@ const PropertiesCard = ({ clientId }: PropertiesCardProps) => {
 		queryKey: ["client-properties", clientId, page],
 		queryFn: () => getClientProperties(clientId, page, PAGE_SIZE),
 		staleTime: 30_000,
+		placeholderData: p => p
 	});
 
 	const properties = data?.data ?? [];
