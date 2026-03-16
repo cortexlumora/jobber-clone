@@ -24,6 +24,7 @@ const ContactsCard = ({ clientId }: ContactsCardProps) => {
 	const { data } = useQuery({
 		queryKey: ["client-contacts", clientId, page],
 		queryFn: () => getClientContacts(clientId, page, PAGE_SIZE),
+		staleTime: 30_000,
 	});
 
 	const contacts = data?.data ?? [];

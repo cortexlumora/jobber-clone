@@ -42,7 +42,15 @@ const ClientDetailPage = () => {
 	const queryClient = useQueryClient();
 	const { data: client, isLoading } = useQuery({
 		queryKey: ["client", id],
-		queryFn: () => getClientById(id!),
+		queryFn: async () => {
+			const data = await getClientById(id!);
+			if (data) {
+				queryClient.setQueryData(["client-properties", id, 1], data.propertyDetails);
+				queryClient.setQueryData(["client-contacts", id, 1], data.additionalContacts);
+				queryClient.setQueryData(["client-notes", id], data.notes);
+			}
+			return data;
+		},
 		enabled: !!id,
 	});
 
@@ -323,7 +331,7 @@ const ClientDetailPage = () => {
 					</Card>
 
 					{/* Internal Notes */}
-					<InternalNotesCard clientId={id!} initialNotes={client.notes} />
+					<InternalNotesCard clientId={id!} />
 				</div>
 			</div>
 		</div>
