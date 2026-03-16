@@ -183,8 +183,7 @@ const RequestsPage = () => {
 					</CardHeader>
 					<CardContent className="mt-auto">
 						<div className="flex items-baseline gap-2">
-							<span className="text-3xl font-semibold">0%</span>
-							<span className="text-sm text-muted-foreground">0%</span>
+							<span className="text-3xl font-semibold">{stats?.conversionRate ?? 0}%</span>
 						</div>
 					</CardContent>
 				</Card>
