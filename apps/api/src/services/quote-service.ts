@@ -1,4 +1,4 @@
-import db, { quotesSchema, quoteFilesSchema, quoteLineItemsSchema, filesSchema, clientsSchema, propertiesSchema } from "@repo/db";
+import db, { quotesSchema, quoteFilesSchema, quoteLineItemsSchema, filesSchema, clientsSchema, propertiesSchema, requestsSchema } from "@repo/db";
 import type { CreateQuoteForm, UpdateQuoteLineItemsForm } from "@repo/zod/quote";
 import type { PaginationQuery } from "@repo/zod/pagination";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
@@ -30,6 +30,7 @@ export async function createQuote(userId: string, data: CreateQuoteForm) {
 			contract: quoteData.contract || null,
 			applyContractToAll: quoteData.applyContractToAll ?? false,
 			notes: quoteData.notes || null,
+			relatedRequestId: quoteData.relatedRequestId || null,
 		})
 		.returning();
 
@@ -65,6 +66,11 @@ export async function createQuote(userId: string, data: CreateQuoteForm) {
 
 	if (fileInserts.length > 0) {
 		await db.insert(quoteFilesSchema).values(fileInserts);
+	}
+
+	// Mark related request as converted
+	if (quoteData.relatedRequestId) {
+		await db.update(requestsSchema).set({ status: "converted" }).where(eq(requestsSchema.id, quoteData.relatedRequestId));
 	}
 
 	return {

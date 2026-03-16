@@ -45,6 +45,8 @@ export const createQuoteSchema = z.object({
 	// Notes
 	notes: z.string().optional(),
 	noteFileIds: z.array(z.string().uuid()).optional(),
+	// Link to related
+	relatedRequestId: z.string().uuid().optional(),
 });
 
 export type CreateQuoteForm = z.infer<typeof createQuoteSchema>;

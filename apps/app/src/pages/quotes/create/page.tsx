@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useRequestQuery } from "@/pages/requests/hooks";
 import { getClients } from "@/pages/clients/api";
 import { presignUpload, uploadFileToS3 } from "@/lib/api";
 import { createQuote } from "../api";
@@ -52,6 +53,34 @@ interface UploadedFile {
 
 const CreateQuotePage = () => {
 	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
+	const requestId = searchParams.get("requestId");
+
+	// Pre-fill from request if converting
+	const { data: sourceRequest } = useRequestQuery(requestId);
+
+	const defaultFormValues: CreateQuoteForm = {
+		title: "",
+		clientId: "",
+		quoteNumber: "1",
+		salesperson: "",
+		introTitle: "",
+		introDescription: "",
+		discount: "",
+		tax: "",
+		depositType: "none",
+		depositMode: "%",
+		depositValue: "",
+		scheduleMode: "%",
+		payments: [
+			{ label: "Payment 1", amount: "", description: "" },
+			{ label: "Payment 2", amount: "", description: "" },
+		],
+		clientMessage: "",
+		contract: "",
+		applyContractToAll: false,
+		notes: "",
+	};
 
 	const {
 		register,
@@ -61,29 +90,15 @@ const CreateQuotePage = () => {
 		setValue,
 		formState: { errors },
 	} = useForm<CreateQuoteForm>({
-		resolver: zodResolver(createQuoteSchema),
-		defaultValues: {
-			title: "",
-			clientId: "",
-			quoteNumber: "1",
-			salesperson: "",
-			introTitle: "",
-			introDescription: "",
-			discount: "",
-			tax: "",
-			depositType: "none",
-			depositMode: "%",
-			depositValue: "",
-			scheduleMode: "%",
-			payments: [
-				{ label: "Payment 1", amount: "", description: "" },
-				{ label: "Payment 2", amount: "", description: "" },
-			],
-			clientMessage: "",
-			contract: "",
-			applyContractToAll: false,
-			notes: "",
-		},
+		resolver: zodResolver(createQuoteSchema) as never,
+		defaultValues: defaultFormValues,
+		values: sourceRequest ? {
+			...defaultFormValues,
+			clientId: sourceRequest.clientId,
+			title: sourceRequest.title,
+			relatedRequestId: sourceRequest.id,
+			notes: sourceRequest.serviceDescription ?? "",
+		} : undefined,
 	});
 
 	// Watched form values
@@ -101,6 +116,22 @@ const CreateQuotePage = () => {
 	const [showIntroduction, setShowIntroduction] = useState(false);
 	const [customFieldDialogOpen, setCustomFieldDialogOpen] = useState(false);
 	const [lineItems, setLineItems] = useState<LineItemUI[]>([]);
+
+	// Pre-fill line items from request
+	useEffect(() => {
+		if (sourceRequest?.lineItems.length) {
+			setLineItems(sourceRequest.lineItems.map((item) => ({
+				type: "line_item" as const,
+				name: item.name,
+				description: item.description ?? "",
+				qty: item.qty,
+				unitPrice: Number(item.unitPrice),
+				imageFileId: item.image?.id ?? null,
+				imagePreview: item.image?.url ?? null,
+				imageUploading: false,
+			})));
+		}
+	}, [sourceRequest]);
 	const [depositDialogOpen, setDepositDialogOpen] = useState(false);
 	// Dialog temp state
 	const [dialogDepositType, setDialogDepositType] = useState<"deposit" | "schedule">("deposit");

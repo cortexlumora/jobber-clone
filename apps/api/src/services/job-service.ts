@@ -1,4 +1,4 @@
-import db, { jobsSchema, jobLineItemsSchema, filesSchema, visitsSchema, clientsSchema, propertiesSchema } from "@repo/db";
+import db, { jobsSchema, jobLineItemsSchema, filesSchema, visitsSchema, clientsSchema, propertiesSchema, requestsSchema } from "@repo/db";
 import type { CreateJobForm, UpdateJobLineItemsForm } from "@repo/zod/job";
 import type { PaginationQuery } from "@repo/zod/pagination";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
@@ -54,6 +54,11 @@ export async function createJob(userId: string, data: CreateJobForm) {
 				})),
 			)
 			.returning();
+	}
+
+	// Mark related request as converted
+	if (jobData.relatedRequestId) {
+		await db.update(requestsSchema).set({ status: "converted" }).where(eq(requestsSchema.id, jobData.relatedRequestId));
 	}
 
 	return { ...job, lineItems: insertedLineItems.map((item) => ({ ...item, image: null })), visits: [], timeEntries: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, expenses: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, clientNotes: { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } }, client: null, property: null };

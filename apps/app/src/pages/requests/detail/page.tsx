@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getRequestById, getRequestNotes, updateRequestOverview, updateRequestLineItems, updateRequestAssessment } from "../api";
+import { getRequestNotes, updateRequestOverview, updateRequestLineItems, updateRequestAssessment } from "../api";
+import { useRequestQuery } from "../hooks";
 import NotesPanel from "@/components/notes-panel";
 import Section from "@/components/section";
 import ImageDropzone, { type UploadedFile } from "@/components/image-dropzone";
@@ -50,23 +51,19 @@ const reminderLabels: Record<string, string> = {
 
 const RequestDetailPage = () => {
 	const { id } = useParams<{ id: string }>();
+	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
 	const [editingOverview, setEditingOverview] = useState(false);
 	const [editDescription, setEditDescription] = useState("");
 	const [editImages, setEditImages] = useState<UploadedFile[]>([]);
 
-	const { data: request, isLoading } = useQuery({
-		queryKey: ["request", id],
-		queryFn: async () => {
-			const data = await getRequestById(id!);
-			if (data) {
-				queryClient.setQueryData(["request-notes", id], { pages: [data.clientNotes], pageParams: [1] });
-			}
-			return data;
-		},
-		enabled: !!id,
-	});
+	const { data: request, isLoading } = useRequestQuery(id);
+
+	// Seed notes cache from request data
+	if (request?.clientNotes) {
+		queryClient.setQueryData(["request-notes", id], (old: unknown) => old ?? { pages: [request.clientNotes], pageParams: [1] });
+	}
 
 	const { data: notesData, hasNextPage, fetchNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ["request-notes", id],
@@ -224,8 +221,8 @@ const RequestDetailPage = () => {
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
-							<DropdownMenuItem>Convert to Job</DropdownMenuItem>
-							<DropdownMenuItem>Convert to Quote</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => navigate(`/quotes/create?requestId=${id}`)}>Convert to Quote</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => navigate(`/jobs/create?requestId=${id}`)}>Convert to Job</DropdownMenuItem>
 							<DropdownMenuItem>Archive</DropdownMenuItem>
 							<DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
 						</DropdownMenuContent>
