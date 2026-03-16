@@ -144,14 +144,14 @@ const RequestsPage = () => {
 								<span className="h-2.5 w-2.5 rounded-full bg-red-500" />
 								Overdue
 							</span>
-							<span className="font-medium">0</span>
+							<span className="font-medium">{stats?.overdueCount ?? 0}</span>
 						</div>
 						<div className="flex items-center justify-between text-sm">
 							<span className="flex items-center gap-2">
 								<span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
 								Unscheduled
 							</span>
-							<span className="font-medium">0</span>
+							<span className="font-medium">{stats?.unscheduledCount ?? 0}</span>
 						</div>
 					</CardContent>
 				</Card>

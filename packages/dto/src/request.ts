@@ -5,6 +5,8 @@ import type { ClientNoteDTO } from "./client-note";
 export interface RequestStatsDTO {
 	newCount: number;
 	assessedCount: number;
+	overdueCount: number;
+	unscheduledCount: number;
 	newLast30: number;
 	newLast30Change: number;
 	conversionRate: number;

@@ -329,16 +329,21 @@ export async function getRequestStats() {
 	const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
 	const sixtyDaysAgo = new Date(now.getTime() - 60 * 86400000);
 
+	const today = now.toISOString().slice(0, 10);
+
 	const [result] = await db
 		.select({
 			newCount: sql<number>`count(*) filter (where ${requestsSchema.status} = 'new')`,
 			assessedCount: sql<number>`count(*) filter (where ${requestsSchema.status} = 'assessed')`,
+			overdueCount: sql<number>`count(*) filter (where ${requestsSchema.status} in ('new', 'assessed') and ${requestAssessmentsSchema.startDate} is not null and ${requestAssessmentsSchema.startDate} < ${today})`,
+			unscheduledCount: sql<number>`count(*) filter (where ${requestsSchema.status} in ('new', 'assessed') and (${requestAssessmentsSchema.id} is null or ${requestAssessmentsSchema.scheduleLater} = true))`,
 			newLast30: sql<number>`count(*) filter (where ${requestsSchema.createdAt} >= ${thirtyDaysAgo})`,
 			newPrev30: sql<number>`count(*) filter (where ${requestsSchema.createdAt} >= ${sixtyDaysAgo} and ${requestsSchema.createdAt} < ${thirtyDaysAgo})`,
 			convertedLast30: sql<number>`count(*) filter (where ${requestsSchema.status} = 'converted' and ${requestsSchema.createdAt} >= ${thirtyDaysAgo})`,
 			totalLast30: sql<number>`count(*) filter (where ${requestsSchema.createdAt} >= ${thirtyDaysAgo})`,
 		})
 		.from(requestsSchema)
+		.leftJoin(requestAssessmentsSchema, eq(requestsSchema.id, requestAssessmentsSchema.requestId))
 		.where(isNull(requestsSchema.deletedAt));
 
 	const calcChange = (current: number, previous: number) => {
@@ -352,6 +357,8 @@ export async function getRequestStats() {
 	return {
 		newCount: Number(result.newCount),
 		assessedCount: Number(result.assessedCount),
+		overdueCount: Number(result.overdueCount),
+		unscheduledCount: Number(result.unscheduledCount),
 		newLast30: Number(result.newLast30),
 		newLast30Change: calcChange(Number(result.newLast30), Number(result.newPrev30)),
 		conversionRate: totalLast30 > 0 ? Math.round((convertedLast30 / totalLast30) * 100) : 0,
