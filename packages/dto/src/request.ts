@@ -7,6 +7,7 @@ export interface RequestStatsDTO {
 	assessedCount: number;
 	newLast30: number;
 	newLast30Change: number;
+	conversionRate: number;
 }
 
 export interface RequestListItemDTO {

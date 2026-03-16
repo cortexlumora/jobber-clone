@@ -335,6 +335,8 @@ export async function getRequestStats() {
 			assessedCount: sql<number>`count(*) filter (where ${requestsSchema.status} = 'assessed')`,
 			newLast30: sql<number>`count(*) filter (where ${requestsSchema.createdAt} >= ${thirtyDaysAgo})`,
 			newPrev30: sql<number>`count(*) filter (where ${requestsSchema.createdAt} >= ${sixtyDaysAgo} and ${requestsSchema.createdAt} < ${thirtyDaysAgo})`,
+			convertedLast30: sql<number>`count(*) filter (where ${requestsSchema.status} = 'converted' and ${requestsSchema.createdAt} >= ${thirtyDaysAgo})`,
+			totalLast30: sql<number>`count(*) filter (where ${requestsSchema.createdAt} >= ${thirtyDaysAgo})`,
 		})
 		.from(requestsSchema)
 		.where(isNull(requestsSchema.deletedAt));
@@ -344,10 +346,14 @@ export async function getRequestStats() {
 		return Math.round(((current - previous) / previous) * 100);
 	};
 
+	const totalLast30 = Number(result.totalLast30);
+	const convertedLast30 = Number(result.convertedLast30);
+
 	return {
 		newCount: Number(result.newCount),
 		assessedCount: Number(result.assessedCount),
 		newLast30: Number(result.newLast30),
 		newLast30Change: calcChange(Number(result.newLast30), Number(result.newPrev30)),
+		conversionRate: totalLast30 > 0 ? Math.round((convertedLast30 / totalLast30) * 100) : 0,
 	};
 }
