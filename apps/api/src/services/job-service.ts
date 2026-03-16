@@ -1,4 +1,4 @@
-import db, { jobsSchema, jobFilesSchema, jobLineItemsSchema, filesSchema, visitsSchema } from "@repo/db";
+import db, { jobsSchema, jobFilesSchema, jobLineItemsSchema, filesSchema, visitsSchema, clientsSchema, propertiesSchema } from "@repo/db";
 import type { CreateJobForm, UpdateJobLineItemsForm } from "@repo/zod/job";
 import { and, eq, isNull } from "drizzle-orm";
 import { signKey } from "./file-service";
@@ -64,7 +64,7 @@ export async function createJob(userId: string, data: CreateJobForm) {
 		);
 	}
 
-	return { ...job, lineItems: insertedLineItems.map((item) => ({ ...item, image: null })), visits: [], timeEntries: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, expenses: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, clientNotes: { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } }, fileIds: noteFileIds ?? [] };
+	return { ...job, lineItems: insertedLineItems.map((item) => ({ ...item, image: null })), visits: [], timeEntries: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, expenses: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, clientNotes: { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } }, client: null, property: null, fileIds: noteFileIds ?? [] };
 }
 
 export async function getJobs() {
@@ -77,7 +77,7 @@ export async function getJobs() {
 				db.select().from(jobLineItemsSchema).where(eq(jobLineItemsSchema.jobId, job.id)),
 				getClientNotes(job.clientId, "jobs", { page: 1, limit: 20, search: "" }),
 			]);
-			return { ...job, lineItems: items.map((item) => ({ ...item, image: null })), visits: [], timeEntries: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, expenses: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, clientNotes, fileIds: files.map((f) => f.fileId) };
+			return { ...job, lineItems: items.map((item) => ({ ...item, image: null })), visits: [], timeEntries: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, expenses: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, clientNotes, client: null, property: null, fileIds: files.map((f) => f.fileId) };
 		}),
 	);
 
@@ -142,15 +142,34 @@ export async function getJobById(jobId: string) {
 		.from(visitsSchema)
 		.where(eq(visitsSchema.jobId, job.id));
 
-	const [files, items, timeEntriesResult, expensesResult, notesResult] = await Promise.all([
+	const [files, items, timeEntriesResult, expensesResult, notesResult, [clientRow], properties] = await Promise.all([
 		db.select({ fileId: jobFilesSchema.fileId }).from(jobFilesSchema).where(eq(jobFilesSchema.jobId, job.id)),
 		getJobLineItemsByJobId(job.id),
 		getTimeEntriesByJobId(job.id, { page: 1, limit: 10, search: "" }),
 		getExpensesByJobId(job.id, { page: 1, limit: 10, search: "" }),
 		getClientNotes(job.clientId, "jobs", { page: 1, limit: 20, search: "" }),
+		db.select({
+			title: clientsSchema.title,
+			firstName: clientsSchema.firstName,
+			lastName: clientsSchema.lastName,
+			companyName: clientsSchema.companyName,
+			useCompanyAsPrimary: clientsSchema.useCompanyAsPrimary,
+			phones: clientsSchema.phones,
+			emails: clientsSchema.emails,
+		}).from(clientsSchema).where(eq(clientsSchema.id, job.clientId)),
+		db.select({
+			street1: propertiesSchema.street1,
+			street2: propertiesSchema.street2,
+			city: propertiesSchema.city,
+			state: propertiesSchema.state,
+			zip: propertiesSchema.zip,
+		}).from(propertiesSchema).where(eq(propertiesSchema.clientId, job.clientId)).limit(1),
 	]);
 
-	return { ...job, visits, lineItems: items, timeEntries: timeEntriesResult, expenses: expensesResult, clientNotes: notesResult, fileIds: files.map((f) => f.fileId) };
+	const client = clientRow ?? null;
+	const property = properties[0] ?? null;
+
+	return { ...job, visits, lineItems: items, timeEntries: timeEntriesResult, expenses: expensesResult, clientNotes: notesResult, client, property, fileIds: files.map((f) => f.fileId) };
 }
 
 export async function updateJobLineItems(jobId: string, data: UpdateJobLineItemsForm) {

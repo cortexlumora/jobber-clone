@@ -3,7 +3,6 @@ import { parseAsBoolean, useQueryState } from "nuqs";
 import { useParams } from "react-router";
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getJobById, getJobNotes, updateJobLineItems } from "../api";
-import { getClientById } from "@/pages/clients/api";
 import NotesPanel from "@/components/notes-panel";
 import Section from "@/components/section";
 import LineItemsView from "@/components/line-items-view";
@@ -122,12 +121,6 @@ const JobDetailPage = () => {
 		});
 	};
 
-	const { data: client } = useQuery({
-		queryKey: ["client", job?.clientId],
-		queryFn: () => getClientById(job!.clientId),
-		enabled: !!job?.clientId,
-	});
-
 	if (isLoading) {
 		return <p className="text-muted-foreground p-4">Loading...</p>;
 	}
@@ -137,7 +130,7 @@ const JobDetailPage = () => {
 	}
 
 	const status = statusConfig[job.status] ?? statusConfig.draft;
-	const property = client?.propertyDetails?.data?.[0];
+	const { client, property } = job;
 	const address = property
 		? [property.street1, property.street2].filter(Boolean).join(", ")
 		: null;

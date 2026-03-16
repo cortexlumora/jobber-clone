@@ -3,6 +3,25 @@ import type { TimeEntryDTO } from "./time-entry";
 import type { ExpenseDTO } from "./expense";
 import type { PaginatedResponse } from "./common";
 import type { ClientNoteDTO } from "./client-note";
+import type { Phone, Email } from "./client";
+
+export interface JobClientDTO {
+	title: string;
+	firstName: string;
+	lastName: string;
+	companyName: string | null;
+	useCompanyAsPrimary: boolean;
+	phones: Phone[];
+	emails: Email[];
+}
+
+export interface JobPropertyDTO {
+	street1: string | null;
+	street2: string | null;
+	city: string | null;
+	state: string | null;
+	zip: string | null;
+}
 
 export interface JobLineItemDTO {
 	id: string;
@@ -66,6 +85,8 @@ export interface JobDTO {
 	timeEntries: PaginatedResponse<TimeEntryDTO>;
 	expenses: PaginatedResponse<ExpenseDTO>;
 	clientNotes: PaginatedResponse<ClientNoteDTO>;
+	client: JobClientDTO | null;
+	property: JobPropertyDTO | null;
 	fileIds: string[];
 	// Timestamps
 	createdAt: Date;
