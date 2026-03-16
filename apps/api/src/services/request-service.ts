@@ -103,16 +103,28 @@ export async function getRequests(pagination: PaginationQuery) {
 		db.select({ count: sql<number>`count(*)` }).from(requestsSchema).where(where),
 	]);
 
-	const data = await Promise.all(
-		rows.map(async (row) => {
-			const [property] = await db
-				.select({ street1: propertiesSchema.street1, street2: propertiesSchema.street2, city: propertiesSchema.city, state: propertiesSchema.state, zip: propertiesSchema.zip })
+	const clientIds = [...new Set(rows.map((r) => r.clientId))];
+	const properties = clientIds.length > 0
+		? await db
+				.selectDistinctOn([propertiesSchema.clientId], {
+					clientId: propertiesSchema.clientId,
+					street1: propertiesSchema.street1,
+					street2: propertiesSchema.street2,
+					city: propertiesSchema.city,
+					state: propertiesSchema.state,
+					zip: propertiesSchema.zip,
+				})
 				.from(propertiesSchema)
-				.where(eq(propertiesSchema.clientId, row.clientId))
-				.limit(1);
-			return { ...row, client: row.client?.firstName ? row.client : null, property: property ?? null };
-		}),
-	);
+				.where(sql`${propertiesSchema.clientId} in ${clientIds}`)
+		: [];
+
+	const propertyMap = new Map(properties.map((p) => [p.clientId, p]));
+
+	const data = rows.map((row) => ({
+		...row,
+		client: row.client?.firstName ? row.client : null,
+		property: propertyMap.get(row.clientId) ?? null,
+	}));
 
 	return {
 		data,

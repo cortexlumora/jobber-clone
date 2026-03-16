@@ -100,20 +100,37 @@ export async function getJobs(pagination: PaginationQuery) {
 		db.select({ count: sql<number>`count(*)` }).from(jobsSchema).where(where),
 	]);
 
-	const data = await Promise.all(
-		rows.map(async (row) => {
-			const [property] = await db
-				.select({ street1: propertiesSchema.street1, street2: propertiesSchema.street2, city: propertiesSchema.city, state: propertiesSchema.state, zip: propertiesSchema.zip })
-				.from(propertiesSchema)
-				.where(eq(propertiesSchema.clientId, row.clientId))
-				.limit(1);
+	const clientIds = [...new Set(rows.map((r) => r.clientId))];
+	const jobIds = rows.map((r) => r.id);
 
-			const lineItems = await db.select({ qty: jobLineItemsSchema.qty, unitPrice: jobLineItemsSchema.unitPrice }).from(jobLineItemsSchema).where(eq(jobLineItemsSchema.jobId, row.id));
-			const total = lineItems.reduce((sum, item) => sum + item.qty * Number(item.unitPrice), 0);
+	const [properties, lineItems] = await Promise.all([
+		clientIds.length > 0
+			? db.selectDistinctOn([propertiesSchema.clientId], {
+					clientId: propertiesSchema.clientId,
+					street1: propertiesSchema.street1,
+					street2: propertiesSchema.street2,
+					city: propertiesSchema.city,
+					state: propertiesSchema.state,
+					zip: propertiesSchema.zip,
+				}).from(propertiesSchema).where(sql`${propertiesSchema.clientId} in ${clientIds}`)
+			: Promise.resolve([]),
+		jobIds.length > 0
+			? db.select({ jobId: jobLineItemsSchema.jobId, qty: jobLineItemsSchema.qty, unitPrice: jobLineItemsSchema.unitPrice }).from(jobLineItemsSchema).where(sql`${jobLineItemsSchema.jobId} in ${jobIds}`)
+			: Promise.resolve([]),
+	]);
 
-			return { ...row, client: row.client?.firstName ? row.client : null, property: property ?? null, total };
-		}),
-	);
+	const propertyMap = new Map(properties.map((p) => [p.clientId, p]));
+	const totalMap = new Map<string, number>();
+	for (const item of lineItems) {
+		totalMap.set(item.jobId, (totalMap.get(item.jobId) ?? 0) + item.qty * Number(item.unitPrice));
+	}
+
+	const data = rows.map((row) => ({
+		...row,
+		client: row.client?.firstName ? row.client : null,
+		property: propertyMap.get(row.clientId) ?? null,
+		total: totalMap.get(row.id) ?? 0,
+	}));
 
 	return {
 		data,
