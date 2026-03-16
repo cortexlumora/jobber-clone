@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { getRequests } from "./api";
-import { getClients } from "@/pages/clients/api";
-import type { ClientDTO } from "@repo/dto";
+import { usePagination } from "@repo/common";
+import { getRequests, getRequestStats } from "./api";
+import type { RequestListItemDTO } from "@repo/dto";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Plus, ArrowUp, Search, MoreHorizontal } from "lucide-react";
+import { Plus, ArrowUp, Search, MoreHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
 import {
 	Table,
 	TableBody,
@@ -53,32 +53,20 @@ function formatRelativeTime(date: Date) {
 
 const RequestsPage = () => {
 	const navigate = useNavigate();
-	const queryClient = useQueryClient();
+	const { page, setPage, perPage, search, setSearch } = usePagination({ perPage: 10 });
 	const [statusFilter, setStatusFilter] = useState("all");
-	const [search, setSearch] = useState("");
 
-	const { data: requests, isLoading, isError, error } = useQuery({
-		queryKey: ["requests"],
-		queryFn: async () => {
-			const data = await getRequests();
-			for (const request of data) {
-				queryClient.setQueryData(["request-notes", request.id], { pages: [request.clientNotes], pageParams: [1] });
-			}
-			return data;
-		},
-	});
-	const { data: clients } = useQuery({
-		queryKey: ["clients"],
-		queryFn: getClients,
+	const { data: result, isLoading, isError, error } = useQuery({
+		queryKey: ["requests", page, perPage, statusFilter, search],
+		queryFn: () => getRequests(page, perPage),
 	});
 
-	const clientMap = useMemo(() => {
-		if (!clients) return new Map<string, ClientDTO>();
-		return new Map(clients.map((c) => [c.id, c]));
-	}, [clients]);
+	const requests = result?.data ?? [];
+	const total = result?.pagination?.total ?? 0;
+	const totalPages = result?.pagination?.totalPages ?? 0;
 
-	const getClientDisplayName = (clientId: string) => {
-		const client = clientMap.get(clientId);
+	const getClientDisplayName = (request: RequestListItemDTO) => {
+		const client = request.client;
 		if (!client) return { title: "", name: "" };
 		const title = client.title !== "none" ? client.title : "";
 		const name = client.useCompanyAsPrimary && client.companyName
@@ -87,20 +75,15 @@ const RequestsPage = () => {
 		return { title, name };
 	};
 
-	const getClientContact = (clientId: string) => {
-		const client = clientMap.get(clientId);
-		if (!client) return { phone: null, email: null };
-		return {
-			phone: client.phones?.[0]?.number ?? null,
-			email: client.emails?.[0]?.value ?? null,
-		};
-	};
+	const { data: stats } = useQuery({
+		queryKey: ["request-stats"],
+		queryFn: getRequestStats,
+	});
 
-	const newCount = requests?.filter((r) => r.status === "new").length ?? 0;
-	const assessedCount = requests?.filter((r) => r.status === "assessed").length ?? 0;
+	const newCount = stats?.newCount ?? 0;
+	const assessedCount = stats?.assessedCount ?? 0;
 
 	const filteredRequests = useMemo(() => {
-		if (!requests) return [];
 		let filtered = requests;
 		if (statusFilter !== "all") {
 			filtered = filtered.filter((r) => r.status === statusFilter);
@@ -108,7 +91,7 @@ const RequestsPage = () => {
 		if (search.trim()) {
 			const q = search.toLowerCase();
 			filtered = filtered.filter((r) => {
-				const { name } = getClientDisplayName(r.clientId);
+				const { name } = getClientDisplayName(r);
 				return (
 					r.title.toLowerCase().includes(q) ||
 					name.toLowerCase().includes(q)
@@ -116,7 +99,7 @@ const RequestsPage = () => {
 			});
 		}
 		return filtered;
-	}, [requests, statusFilter, search, clientMap]);
+	}, [requests, statusFilter, search]);
 
 	return (
 		<div>
@@ -181,11 +164,11 @@ const RequestsPage = () => {
 					</CardHeader>
 					<CardContent className="mt-auto">
 						<div className="flex items-baseline gap-2">
-							<span className="text-3xl font-semibold">{newCount}</span>
-							{newCount > 0 && (
-								<span className="flex items-center text-sm text-green-600 font-medium">
-									<ArrowUp className="h-3 w-3 mr-0.5" />
-									100%
+							<span className="text-3xl font-semibold">{stats?.newLast30 ?? 0}</span>
+							{(stats?.newLast30Change ?? 0) !== 0 && (
+								<span className={`flex items-center text-sm font-medium ${(stats?.newLast30Change ?? 0) > 0 ? "text-green-600" : "text-red-600"}`}>
+									<ArrowUp className={`h-3 w-3 mr-0.5 ${(stats?.newLast30Change ?? 0) < 0 ? "rotate-180" : ""}`} />
+									{Math.abs(stats?.newLast30Change ?? 0)}%
 								</span>
 							)}
 						</div>
@@ -265,8 +248,9 @@ const RequestsPage = () => {
 								</TableRow>
 							)}
 							{filteredRequests.map((request) => {
-								const { title: clientTitle, name: clientName } = getClientDisplayName(request.clientId);
-								const contact = getClientContact(request.clientId);
+								const { title: clientTitle, name: clientName } = getClientDisplayName(request);
+								const phone = request.client?.phones?.[0]?.number ?? null;
+								const email = request.client?.emails?.[0]?.value ?? null;
 								const time = formatRelativeTime(request.createdAt);
 
 								return (
@@ -278,11 +262,15 @@ const RequestsPage = () => {
 										<TableCell className="max-w-xs truncate">
 											{request.title}
 										</TableCell>
-										<TableCell className="text-sm text-muted-foreground">—</TableCell>
+										<TableCell className="text-sm text-muted-foreground">
+										{request.property
+											? [request.property.city, [request.property.state, request.property.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ")
+											: "—"}
+									</TableCell>
 										<TableCell className="text-sm">
-											{contact.phone && <div>{contact.phone}</div>}
-											{contact.email && <div className="text-muted-foreground">{contact.email}</div>}
-											{!contact.phone && !contact.email && "—"}
+											{phone && <div>{phone}</div>}
+											{email && <div className="text-muted-foreground">{email}</div>}
+											{!phone && !email && "—"}
 										</TableCell>
 										<TableCell className="text-sm">
 											<div>{time.relative}</div>
@@ -298,6 +286,21 @@ const RequestsPage = () => {
 							})}
 						</TableBody>
 					</Table>
+					{totalPages > 1 && (
+						<div className="flex items-center justify-between px-4 py-3 border-t">
+							<p className="text-xs text-muted-foreground">
+								{(page - 1) * perPage + 1}–{Math.min(page * perPage, total)} of {total}
+							</p>
+							<div className="flex items-center gap-1">
+								<Button variant="ghost" size="icon" className="h-7 w-7" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+									<ChevronLeft className="h-4 w-4" />
+								</Button>
+								<Button variant="ghost" size="icon" className="h-7 w-7" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+									<ChevronRight className="h-4 w-4" />
+								</Button>
+							</div>
+						</div>
+					)}
 				</div>
 			)}
 		</div>

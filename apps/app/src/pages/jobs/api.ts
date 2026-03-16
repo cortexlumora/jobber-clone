@@ -1,6 +1,11 @@
-import type { APIResponse, JobDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
+import type { APIResponse, JobDTO, JobStatsDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
 import type { CreateJobForm, UpdateJobLineItemsForm } from "@repo/zod/job";
 import { http } from "@/lib/http";
+
+export async function getJobStats() {
+	const res = await http.get<APIResponse<JobStatsDTO>>("/api/v1/jobs/stats");
+	return res.data.data;
+}
 
 export async function createJob(data: CreateJobForm) {
 	const res = await http.post<APIResponse<JobDTO>>("/api/v1/jobs", data);

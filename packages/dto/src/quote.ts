@@ -1,6 +1,16 @@
 import type { PaginatedResponse } from "./common";
 import type { ClientNoteDTO } from "./client-note";
 
+export interface QuoteStatsDTO {
+	draftCount: number;
+	awaitingCount: number;
+	approvedCount: number;
+	sentLast30: number;
+	sentLast30Change: number;
+	convertedLast30: number;
+	convertedLast30Change: number;
+}
+
 export interface LineItemImageDTO {
 	id: string;
 	name: string;

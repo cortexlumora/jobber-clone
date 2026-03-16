@@ -1,7 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { createRequestSchema, updateRequestOverviewSchema, updateRequestLineItemsSchema, updateRequestAssessmentSchema } from "@repo/zod/request";
 import { paginationSchema } from "@repo/zod/pagination";
-import type { APIResponse, RequestDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
+import type { APIResponse, RequestDTO, RequestStatsDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
@@ -11,10 +11,15 @@ import {
 	updateRequestOverview,
 	updateRequestLineItems,
 	updateRequestAssessment,
+	getRequestStats,
 } from "../services/request-service";
 import { getClientNotes } from "../services/client-note-service";
 
 const requestRoute = new Hono()
+	.get("/stats", async (c) => {
+		const stats = await getRequestStats();
+		return c.json<APIResponse<RequestStatsDTO>>({ data: stats });
+	})
 	.post("/", zValidator("json", createRequestSchema), async (c) => {
 		const data = c.req.valid("json");
 		const userId = getUserIdFromCTX(c);
@@ -22,9 +27,10 @@ const requestRoute = new Hono()
 		const result = await createRequest(userId, data);
 		return c.json<APIResponse<{ id: string }>>({ data: result });
 	})
-	.get("/", async (c) => {
-		const requests = await getRequests();
-		return c.json<APIResponse<RequestDTO[]>>({ data: requests });
+	.get("/", zValidator("query", paginationSchema), async (c) => {
+		const pagination = c.req.valid("query");
+		const result = await getRequests(pagination);
+		return c.json(result);
 	})
 	.get("/:id", async (c) => {
 		const requestId = c.req.param("id");

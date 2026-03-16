@@ -1,7 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { createQuoteSchema, updateQuoteLineItemsSchema } from "@repo/zod/quote";
 import { paginationSchema } from "@repo/zod/pagination";
-import type { APIResponse, QuoteDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
+import type { APIResponse, QuoteDTO, QuoteStatsDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
@@ -9,10 +9,15 @@ import {
 	getQuoteById,
 	getQuotesByUser,
 	updateQuoteLineItems,
+	getQuoteStats,
 } from "../services/quote-service";
 import { getClientNotes } from "../services/client-note-service";
 
 const quoteRoute = new Hono()
+	.get("/stats", async (c) => {
+		const stats = await getQuoteStats();
+		return c.json<APIResponse<QuoteStatsDTO>>({ data: stats });
+	})
 	.post("/", zValidator("json", createQuoteSchema), async (c) => {
 		const data = c.req.valid("json");
 		const userId = getUserIdFromCTX(c);

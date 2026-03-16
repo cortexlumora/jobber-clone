@@ -1,6 +1,6 @@
 import db, { jobsSchema, jobLineItemsSchema, filesSchema, visitsSchema, clientsSchema, propertiesSchema } from "@repo/db";
 import type { CreateJobForm, UpdateJobLineItemsForm } from "@repo/zod/job";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { signKey } from "./file-service";
 import { getTimeEntriesByJobId } from "./time-entry-service";
 import { getExpensesByJobId } from "./expense-service";
@@ -180,4 +180,36 @@ export async function updateJobLineItems(jobId: string, data: UpdateJobLineItems
 	}
 
 	return getJobById(jobId);
+}
+
+export async function getJobStats() {
+	const now = new Date();
+	const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+
+	const [result] = await db
+		.select({
+			endingWithin30: sql<number>`count(*) filter (where ${jobsSchema.jobType} = 'recurring' and ${jobsSchema.status} not in ('complete', 'archived') and ${jobsSchema.endsType} = 'on' and ${jobsSchema.endsOnDate} is not null and ${jobsSchema.endsOnDate}::date >= ${now.toISOString().slice(0, 10)} and ${jobsSchema.endsOnDate}::date <= ${new Date(now.getTime() + 30 * 86400000).toISOString().slice(0, 10)})`,
+			lateCount: sql<number>`count(*) filter (where ${jobsSchema.status} not in ('complete', 'archived', 'active') and ${jobsSchema.startDate} is not null and ${jobsSchema.startDate}::date < ${now.toISOString().slice(0, 10)})`,
+			requiresInvoicing: sql<number>`count(*) filter (where ${jobsSchema.status} = 'complete')`,
+			actionRequired: sql<number>`count(*) filter (where ${jobsSchema.status} = 'action_required')`,
+			unscheduled: sql<number>`count(*) filter (where ${jobsSchema.startDate} is null and ${jobsSchema.status} not in ('complete', 'archived'))`,
+			recentVisitsCount: sql<number>`0`,
+			recentVisitsRevenue: sql<number>`0`,
+			scheduledVisitsCount: sql<number>`0`,
+			scheduledVisitsRevenue: sql<number>`0`,
+		})
+		.from(jobsSchema)
+		.where(isNull(jobsSchema.deletedAt));
+
+	return {
+		endingWithin30: Number(result.endingWithin30),
+		lateCount: Number(result.lateCount),
+		requiresInvoicing: Number(result.requiresInvoicing),
+		actionRequired: Number(result.actionRequired),
+		unscheduled: Number(result.unscheduled),
+		recentVisitsCount: Number(result.recentVisitsCount),
+		recentVisitsRevenue: Number(result.recentVisitsRevenue),
+		scheduledVisitsCount: Number(result.scheduledVisitsCount),
+		scheduledVisitsRevenue: Number(result.scheduledVisitsRevenue),
+	};
 }

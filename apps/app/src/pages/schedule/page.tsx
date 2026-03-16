@@ -101,7 +101,8 @@ const SchedulePage = () => {
 	const [showUnscheduled, setShowUnscheduled] = useState(true);
 
 	const { data: jobs = [] } = useQuery({ queryKey: ["jobs"], queryFn: getJobs });
-	const { data: requests = [] } = useQuery({ queryKey: ["requests"], queryFn: getRequests });
+	const { data: requestsResult } = useQuery({ queryKey: ["requests"], queryFn: () => getRequests(1, 100) });
+	const requests = requestsResult?.data ?? [];
 	const { data: clients = [] } = useQuery({ queryKey: ["clients"], queryFn: getClients });
 
 	const clientMap = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);

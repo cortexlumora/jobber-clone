@@ -1,7 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { createJobSchema, updateJobLineItemsSchema } from "@repo/zod/job";
 import { paginationSchema } from "@repo/zod/pagination";
-import type { APIResponse, JobDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
+import type { APIResponse, JobDTO, JobStatsDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
@@ -9,10 +9,15 @@ import {
 	getJobById,
 	getJobs,
 	updateJobLineItems,
+	getJobStats,
 } from "../services/job-service";
 import { getClientNotes } from "../services/client-note-service";
 
 const jobRoute = new Hono()
+	.get("/stats", async (c) => {
+		const stats = await getJobStats();
+		return c.json<APIResponse<JobStatsDTO>>({ data: stats });
+	})
 	.post("/", zValidator("json", createJobSchema), async (c) => {
 		const data = c.req.valid("json");
 		const userId = getUserIdFromCTX(c);

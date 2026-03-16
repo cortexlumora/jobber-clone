@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { getQuotes } from "./api";
+import { getQuotes, getQuoteStats } from "./api";
 import { getClients, getClientProperties } from "@/pages/clients/api";
 import type { ClientDTO, QuoteDTO, PropertyDTO } from "@repo/dto";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -109,33 +109,17 @@ const QuotesPage = () => {
 	};
 
 	// Stats
-	const draftCount = quotes?.filter((q) => q.status === "draft").length ?? 0;
-	const awaitingCount = quotes?.filter((q) => q.status === "sent").length ?? 0;
+	const { data: stats } = useQuery({
+		queryKey: ["quote-stats"],
+		queryFn: getQuoteStats,
+	});
+
+	const draftCount = stats?.draftCount ?? 0;
+	const awaitingCount = stats?.awaitingCount ?? 0;
 	const changesRequestedCount = 0;
-	const approvedCount = quotes?.filter((q) => q.status === "approved").length ?? 0;
-
-	const sentLast30 = useMemo(() => {
-		if (!quotes) return { count: 0, total: 0 };
-		const cutoff = new Date();
-		cutoff.setDate(cutoff.getDate() - 30);
-		const sent = quotes.filter((q) => q.status !== "draft" && new Date(q.createdAt) >= cutoff);
-		return {
-			count: sent.length,
-			total: sent.reduce((sum, q) => sum + computeTotal(q), 0),
-		};
-	}, [quotes]);
-
-	const convertedLast30 = useMemo(() => {
-		if (!quotes) return { count: 0, total: 0 };
-		const cutoff = new Date();
-		cutoff.setDate(cutoff.getDate() - 30);
-		const converted = quotes.filter((q) => q.status === "approved" && new Date(q.createdAt) >= cutoff);
-		return {
-			count: converted.length,
-			total: converted.reduce((sum, q) => sum + computeTotal(q), 0),
-		};
-	}, [quotes]);
-
+	const approvedCount = stats?.approvedCount ?? 0;
+	const sentLast30 = { count: stats?.sentLast30 ?? 0, change: stats?.sentLast30Change ?? 0 };
+	const convertedLast30 = { count: stats?.convertedLast30 ?? 0, change: stats?.convertedLast30Change ?? 0 };
 	const conversionRate = sentLast30.count > 0
 		? Math.round((convertedLast30.count / sentLast30.count) * 100)
 		: 0;
@@ -248,7 +232,7 @@ const QuotesPage = () => {
 						<div className="flex items-baseline gap-3">
 							<span className="text-3xl font-semibold">{sentLast30.count}</span>
 							<span className="text-sm text-muted-foreground">0%</span>
-							<span className="text-sm font-medium">${sentLast30.total.toFixed(0)}</span>
+							<span className="text-sm font-medium">{sentLast30.change}%</span>
 						</div>
 					</CardContent>
 				</Card>
@@ -263,7 +247,7 @@ const QuotesPage = () => {
 						<div className="flex items-baseline gap-3">
 							<span className="text-3xl font-semibold">{convertedLast30.count}</span>
 							<span className="text-sm text-muted-foreground">0%</span>
-							<span className="text-sm font-medium">${convertedLast30.total.toFixed(0)}</span>
+							<span className="text-sm font-medium">{convertedLast30.change}%</span>
 						</div>
 					</CardContent>
 				</Card>

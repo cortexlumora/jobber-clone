@@ -1,6 +1,6 @@
 import db, { quotesSchema, quoteFilesSchema, quoteLineItemsSchema, filesSchema } from "@repo/db";
 import type { CreateQuoteForm, UpdateQuoteLineItemsForm } from "@repo/zod/quote";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { signKey } from "./file-service";
 import { getClientNotes } from "./client-note-service";
 
@@ -177,4 +177,38 @@ export async function updateQuoteLineItems(quoteId: string, data: UpdateQuoteLin
 	}
 
 	return getQuoteById(quoteId);
+}
+
+export async function getQuoteStats() {
+	const now = new Date();
+	const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+	const sixtyDaysAgo = new Date(now.getTime() - 60 * 86400000);
+
+	const [result] = await db
+		.select({
+			draftCount: sql<number>`count(*) filter (where ${quotesSchema.status} = 'draft')`,
+			awaitingCount: sql<number>`count(*) filter (where ${quotesSchema.status} = 'sent')`,
+			approvedCount: sql<number>`count(*) filter (where ${quotesSchema.status} = 'approved')`,
+			sentLast30: sql<number>`count(*) filter (where ${quotesSchema.status} != 'draft' and ${quotesSchema.createdAt} >= ${thirtyDaysAgo})`,
+			sentPrev30: sql<number>`count(*) filter (where ${quotesSchema.status} != 'draft' and ${quotesSchema.createdAt} >= ${sixtyDaysAgo} and ${quotesSchema.createdAt} < ${thirtyDaysAgo})`,
+			convertedLast30: sql<number>`count(*) filter (where ${quotesSchema.status} = 'approved' and ${quotesSchema.updatedAt} >= ${thirtyDaysAgo})`,
+			convertedPrev30: sql<number>`count(*) filter (where ${quotesSchema.status} = 'approved' and ${quotesSchema.updatedAt} >= ${sixtyDaysAgo} and ${quotesSchema.updatedAt} < ${thirtyDaysAgo})`,
+		})
+		.from(quotesSchema)
+		.where(isNull(quotesSchema.deletedAt));
+
+	const calcChange = (current: number, previous: number) => {
+		if (previous === 0) return current > 0 ? 100 : 0;
+		return Math.round(((current - previous) / previous) * 100);
+	};
+
+	return {
+		draftCount: Number(result.draftCount),
+		awaitingCount: Number(result.awaitingCount),
+		approvedCount: Number(result.approvedCount),
+		sentLast30: Number(result.sentLast30),
+		sentLast30Change: calcChange(Number(result.sentLast30), Number(result.sentPrev30)),
+		convertedLast30: Number(result.convertedLast30),
+		convertedLast30Change: calcChange(Number(result.convertedLast30), Number(result.convertedPrev30)),
+	};
 }

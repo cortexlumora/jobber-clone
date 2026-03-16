@@ -5,6 +5,18 @@ import type { PaginatedResponse } from "./common";
 import type { ClientNoteDTO } from "./client-note";
 import type { Phone, Email } from "./client";
 
+export interface JobStatsDTO {
+	endingWithin30: number;
+	lateCount: number;
+	requiresInvoicing: number;
+	actionRequired: number;
+	unscheduled: number;
+	recentVisitsCount: number;
+	recentVisitsRevenue: number;
+	scheduledVisitsCount: number;
+	scheduledVisitsRevenue: number;
+}
+
 export interface JobClientDTO {
 	title: string;
 	firstName: string;

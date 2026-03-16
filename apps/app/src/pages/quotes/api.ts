@@ -1,6 +1,11 @@
-import type { APIResponse, QuoteDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
+import type { APIResponse, QuoteDTO, QuoteStatsDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
 import type { CreateQuoteForm, UpdateQuoteLineItemsForm } from "@repo/zod/quote";
 import { http } from "@/lib/http";
+
+export async function getQuoteStats() {
+	const res = await http.get<APIResponse<QuoteStatsDTO>>("/api/v1/quotes/stats");
+	return res.data.data;
+}
 
 export async function createQuote(data: CreateQuoteForm) {
 	const res = await http.post<APIResponse<QuoteDTO>>("/api/v1/quotes", data);

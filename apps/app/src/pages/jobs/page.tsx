@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { getJobs } from "./api";
+import { getJobs, getJobStats } from "./api";
 import { getClients, getClientProperties } from "@/pages/clients/api";
 import type { ClientDTO, JobDTO, PropertyDTO } from "@repo/dto";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -124,52 +124,18 @@ const JobsPage = () => {
 	};
 
 	// Stats
-	const now = new Date();
-	const in30Days = new Date(now.getTime() + 30 * 86400000);
+	const { data: stats } = useQuery({
+		queryKey: ["job-stats"],
+		queryFn: getJobStats,
+	});
 
-	const endingWithin30 = useMemo(() => {
-		if (!jobs) return 0;
-		return jobs.filter((j) => {
-			if (j.jobType !== "recurring" || j.status === "complete" || j.status === "archived") return false;
-			if (j.endsType === "on" && j.endsOnDate) {
-				const end = new Date(j.endsOnDate + "T00:00:00");
-				return end >= now && end <= in30Days;
-			}
-			return false;
-		}).length;
-	}, [jobs]);
-
-	const lateCount = useMemo(() => {
-		if (!jobs) return 0;
-		return jobs.filter((j) => {
-			if (j.status === "complete" || j.status === "archived") return false;
-			if (j.startDate) {
-				const start = new Date(j.startDate + "T00:00:00");
-				return start < now && j.status !== "active";
-			}
-			return false;
-		}).length;
-	}, [jobs]);
-
-	// TODO: requires invoicing needs invoice tracking
-	const requiresInvoicing = useMemo(() => {
-		if (!jobs) return 0;
-		return jobs.filter((j) => j.status === "complete").length;
-	}, [jobs]);
-
-	const actionRequired = useMemo(() => {
-		if (!jobs) return 0;
-		return jobs.filter((j) => j.status === "action_required").length;
-	}, [jobs]);
-
-	const unscheduled = useMemo(() => {
-		if (!jobs) return 0;
-		return jobs.filter((j) => !j.startDate && j.status !== "complete" && j.status !== "archived").length;
-	}, [jobs]);
-
-	// TODO: Recent visits and visits scheduled need a visits tracking system
-	const recentVisits = { count: 0, revenue: 0 };
-	const scheduledVisits = { count: 0, revenue: 0 };
+	const endingWithin30 = stats?.endingWithin30 ?? 0;
+	const lateCount = stats?.lateCount ?? 0;
+	const requiresInvoicing = stats?.requiresInvoicing ?? 0;
+	const actionRequired = stats?.actionRequired ?? 0;
+	const unscheduled = stats?.unscheduled ?? 0;
+	const recentVisits = { count: stats?.recentVisitsCount ?? 0, revenue: stats?.recentVisitsRevenue ?? 0 };
+	const scheduledVisits = { count: stats?.scheduledVisitsCount ?? 0, revenue: stats?.scheduledVisitsRevenue ?? 0 };
 
 	const filteredJobs = useMemo(() => {
 		if (!jobs) return [];

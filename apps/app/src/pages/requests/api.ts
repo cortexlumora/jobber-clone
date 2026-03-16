@@ -1,15 +1,22 @@
-import type { APIResponse, RequestDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
+import type { APIResponse, RequestDTO, RequestListItemDTO, RequestStatsDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
 import type { CreateRequestForm, UpdateRequestOverviewForm, UpdateRequestLineItemsForm, UpdateRequestAssessmentForm } from "@repo/zod/request";
 import { http } from "@/lib/http";
+
+export async function getRequestStats() {
+	const res = await http.get<APIResponse<RequestStatsDTO>>("/api/v1/requests/stats");
+	return res.data.data;
+}
 
 export async function createRequest(data: CreateRequestForm) {
 	const res = await http.post<APIResponse<{ id: string }>>("/api/v1/requests", data);
 	return res.data.data;
 }
 
-export async function getRequests() {
-	const res = await http.get<APIResponse<RequestDTO[]>>("/api/v1/requests");
-	return res.data.data;
+export async function getRequests(page = 1, limit = 20) {
+	const res = await http.get<PaginatedResponse<RequestListItemDTO>>("/api/v1/requests", {
+		params: { page, limit },
+	});
+	return res.data;
 }
 
 export async function getRequestById(id: string) {

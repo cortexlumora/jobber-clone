@@ -1,6 +1,7 @@
-import db, { requestsSchema, requestFilesSchema, requestLineItemsSchema, requestAssessmentsSchema, clientsSchema, filesSchema } from "@repo/db";
+import db, { requestsSchema, requestFilesSchema, requestLineItemsSchema, requestAssessmentsSchema, clientsSchema, propertiesSchema, filesSchema } from "@repo/db";
 import type { CreateRequestForm, UpdateRequestOverviewForm, UpdateRequestLineItemsForm, UpdateRequestAssessmentForm } from "@repo/zod/request";
-import { and, eq, isNull } from "drizzle-orm";
+import type { PaginationQuery } from "@repo/zod/pagination";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { signKey } from "./file-service";
 import { createReminderSchedule, deleteReminderSchedule } from "../lib/scheduler";
 import { getClientNotes } from "./client-note-service";
@@ -69,60 +70,59 @@ export async function createRequest(userId: string, data: CreateRequestForm) {
 	return { id: request.id };
 }
 
-export async function getRequests() {
-	const requests = await db
-		.select()
-		.from(requestsSchema)
-		.where(isNull(requestsSchema.deletedAt));
+export async function getRequests(pagination: PaginationQuery) {
+	const { page, limit } = pagination;
+	const offset = (page - 1) * limit;
 
-	const result = await Promise.all(
-		requests.map(async (request) => {
-			const [assessment] = await db
-				.select()
-				.from(requestAssessmentsSchema)
-				.where(eq(requestAssessmentsSchema.requestId, request.id));
+	const where = isNull(requestsSchema.deletedAt);
 
-			const items = await db
-				.select()
-				.from(requestLineItemsSchema)
-				.where(eq(requestLineItemsSchema.requestId, request.id));
+	const [rows, [{ count }]] = await Promise.all([
+		db
+			.select({
+				id: requestsSchema.id,
+				clientId: requestsSchema.clientId,
+				title: requestsSchema.title,
+				status: requestsSchema.status,
+				createdAt: requestsSchema.createdAt,
+				client: {
+					title: clientsSchema.title,
+					firstName: clientsSchema.firstName,
+					lastName: clientsSchema.lastName,
+					companyName: clientsSchema.companyName,
+					useCompanyAsPrimary: clientsSchema.useCompanyAsPrimary,
+					phones: clientsSchema.phones,
+					emails: clientsSchema.emails,
+				},
+			})
+			.from(requestsSchema)
+			.innerJoin(clientsSchema, eq(requestsSchema.clientId, clientsSchema.id))
+			.where(where)
+			.orderBy(desc(requestsSchema.createdAt))
+			.limit(limit)
+			.offset(offset),
+		db.select({ count: sql<number>`count(*)` }).from(requestsSchema).where(where),
+	]);
 
-			const clientNotes = await getClientNotes(request.clientId, "requests", { page: 1, limit: 20, search: "" });
-
-			return {
-				id: request.id,
-				clientId: request.clientId,
-				title: request.title,
-				serviceDescription: request.serviceDescription,
-				status: request.status,
-				createdAt: request.createdAt,
-				assessment: assessment ? {
-					instructions: assessment.instructions,
-					startDate: assessment.startDate,
-					endDate: assessment.endDate,
-					startTime: assessment.startTime,
-					endTime: assessment.endTime,
-					scheduleLater: assessment.scheduleLater,
-					anytime: assessment.anytime,
-					teamReminder: assessment.teamReminder,
-				} : null,
-				attachments: [],
-				client: null,
-				clientNotes,
-				lineItems: items.map((item) => ({
-					id: item.id,
-					name: item.name,
-					description: item.description,
-					qty: item.qty,
-					unitPrice: item.unitPrice,
-					image: null,
-					createdAt: item.createdAt,
-				})),
-			};
+	const data = await Promise.all(
+		rows.map(async (row) => {
+			const [property] = await db
+				.select({ street1: propertiesSchema.street1, street2: propertiesSchema.street2, city: propertiesSchema.city, state: propertiesSchema.state, zip: propertiesSchema.zip })
+				.from(propertiesSchema)
+				.where(eq(propertiesSchema.clientId, row.clientId))
+				.limit(1);
+			return { ...row, client: row.client?.firstName ? row.client : null, property: property ?? null };
 		}),
 	);
 
-	return result;
+	return {
+		data,
+		pagination: {
+			page,
+			limit,
+			total: Number(count),
+			totalPages: Math.ceil(Number(count) / limit),
+		},
+	};
 }
 
 async function getRequestAttachmentsByReqId(requestId: string) {
@@ -310,4 +310,32 @@ export async function updateRequestAssessment(requestId: string, data: UpdateReq
 	}
 
 	return getRequestById(requestId);
+}
+
+export async function getRequestStats() {
+	const now = new Date();
+	const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+	const sixtyDaysAgo = new Date(now.getTime() - 60 * 86400000);
+
+	const [result] = await db
+		.select({
+			newCount: sql<number>`count(*) filter (where ${requestsSchema.status} = 'new')`,
+			assessedCount: sql<number>`count(*) filter (where ${requestsSchema.status} = 'assessed')`,
+			newLast30: sql<number>`count(*) filter (where ${requestsSchema.createdAt} >= ${thirtyDaysAgo})`,
+			newPrev30: sql<number>`count(*) filter (where ${requestsSchema.createdAt} >= ${sixtyDaysAgo} and ${requestsSchema.createdAt} < ${thirtyDaysAgo})`,
+		})
+		.from(requestsSchema)
+		.where(isNull(requestsSchema.deletedAt));
+
+	const calcChange = (current: number, previous: number) => {
+		if (previous === 0) return current > 0 ? 100 : 0;
+		return Math.round(((current - previous) / previous) * 100);
+	};
+
+	return {
+		newCount: Number(result.newCount),
+		assessedCount: Number(result.assessedCount),
+		newLast30: Number(result.newLast30),
+		newLast30Change: calcChange(Number(result.newLast30), Number(result.newPrev30)),
+	};
 }

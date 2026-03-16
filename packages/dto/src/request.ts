@@ -2,6 +2,36 @@ import type { LineItemImageDTO } from "./quote";
 import type { PaginatedResponse } from "./common";
 import type { ClientNoteDTO } from "./client-note";
 
+export interface RequestStatsDTO {
+	newCount: number;
+	assessedCount: number;
+	newLast30: number;
+	newLast30Change: number;
+}
+
+export interface RequestListItemDTO {
+	id: string;
+	title: string;
+	status: "new" | "assessed" | "converted" | "archived";
+	createdAt: Date;
+	client: {
+		title: string;
+		firstName: string;
+		lastName: string;
+		companyName: string | null;
+		useCompanyAsPrimary: boolean;
+		phones: import("./client").Phone[];
+		emails: import("./client").Email[];
+	} | null;
+	property: {
+		street1: string | null;
+		street2: string | null;
+		city: string | null;
+		state: string | null;
+		zip: string | null;
+	} | null;
+}
+
 export interface RequestLineItemDTO {
 	id: string;
 	name: string;
