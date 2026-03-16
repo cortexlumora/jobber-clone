@@ -288,6 +288,13 @@
       "when": 1773658411192,
       "tag": "0040_aspiring_norrin_radd",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1773664746575,
+      "tag": "0041_strange_echo",
+      "breakpoints": true
     }
   ]
 }

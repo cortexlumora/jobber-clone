@@ -34,6 +34,8 @@ const quotesSchema = pgTable("quotes", {
 	applyContractToAll: boolean("apply_contract_to_all").notNull().default(false),
 	// Notes
 	notes: text("notes"),
+	// Link to related
+	relatedRequestId: uuid("related_request_id"),
 	// Timestamps
 	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
