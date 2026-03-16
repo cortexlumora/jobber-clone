@@ -7,6 +7,7 @@ export const createExpenseSchema = z.object({
 	date: z.string().min(1, "Date is required"),
 	total: z.coerce.number().min(0, "Total must be positive"),
 	reimburseTo: z.string().optional(),
+	receiptFileId: z.string().optional(),
 });
 
 export type CreateExpenseForm = z.infer<typeof createExpenseSchema>;

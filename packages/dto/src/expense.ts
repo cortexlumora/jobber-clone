@@ -1,3 +1,10 @@
+export interface ExpenseReceiptDTO {
+	id: string;
+	name: string;
+	contentType: string;
+	url: string;
+}
+
 export interface ExpenseDTO {
 	id: string;
 	jobId: string;
@@ -7,6 +14,8 @@ export interface ExpenseDTO {
 	date: string;
 	total: string;
 	reimburseTo: string | null;
+	receiptFileId: string | null;
+	receipt: ExpenseReceiptDTO | null;
 	createdAt: Date;
 	updatedAt: Date;
 }

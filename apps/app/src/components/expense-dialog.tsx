@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createExpenseSchema, type CreateExpenseForm } from "@repo/zod/expense";
 import type { ExpenseDTO } from "@repo/dto";
 import { createExpense, updateExpense } from "@/pages/jobs/expenses-api";
+import { presignUpload, uploadFileToS3 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +17,7 @@ import {
 	DialogTitle,
 	DialogFooter,
 } from "@/components/ui/dialog";
+import { Loader2, Paperclip, X } from "lucide-react";
 
 interface ExpenseDialogProps {
 	open: boolean;
@@ -31,11 +33,15 @@ const defaultValues: CreateExpenseForm = {
 	date: new Date().toISOString().slice(0, 10),
 	total: 0,
 	reimburseTo: "",
+	receiptFileId: "",
 };
 
 const ExpenseDialog = ({ open, onOpenChange, jobId, expense }: ExpenseDialogProps) => {
 	const queryClient = useQueryClient();
 	const isEditing = !!expense;
+
+	const [receiptFileName, setReceiptFileName] = useState<string | null>(null);
+	const [uploading, setUploading] = useState(false);
 
 	const mutation = useMutation({
 		mutationFn: (data: CreateExpenseForm) =>
@@ -44,6 +50,7 @@ const ExpenseDialog = ({ open, onOpenChange, jobId, expense }: ExpenseDialogProp
 			queryClient.invalidateQueries({ queryKey: ["job", jobId] });
 			queryClient.invalidateQueries({ queryKey: ["job-expenses", jobId] });
 			reset(defaultValues);
+			setReceiptFileName(null);
 			onOpenChange(false);
 		},
 	});
@@ -52,11 +59,15 @@ const ExpenseDialog = ({ open, onOpenChange, jobId, expense }: ExpenseDialogProp
 		register,
 		handleSubmit,
 		reset,
+		setValue,
+		watch,
 		formState: { errors },
 	} = useForm<CreateExpenseForm>({
 		resolver: zodResolver(createExpenseSchema) as never,
 		defaultValues,
 	});
+
+	const receiptFileId = watch("receiptFileId");
 
 	useEffect(() => {
 		if (open && expense) {
@@ -67,18 +78,42 @@ const ExpenseDialog = ({ open, onOpenChange, jobId, expense }: ExpenseDialogProp
 				date: expense.date,
 				total: Number(expense.total),
 				reimburseTo: expense.reimburseTo ?? "",
+				receiptFileId: expense.receiptFileId ?? "",
 			});
+			setReceiptFileName(expense.receipt?.name ?? null);
 		} else if (open) {
 			reset(defaultValues);
+			setReceiptFileName(null);
 		}
 	}, [open, expense, reset]);
+
+	const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+
+		setUploading(true);
+		try {
+			const { fileId, uploadUrl } = await presignUpload(file.name, file.type);
+			await uploadFileToS3(uploadUrl, file);
+			setValue("receiptFileId", fileId);
+			setReceiptFileName(file.name);
+		} finally {
+			setUploading(false);
+		}
+		e.target.value = "";
+	};
+
+	const removeReceipt = () => {
+		setValue("receiptFileId", "");
+		setReceiptFileName(null);
+	};
 
 	const onSubmit = (data: CreateExpenseForm) => {
 		mutation.mutate(data);
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={(v) => { if (!v) reset(defaultValues); onOpenChange(v); }}>
+		<Dialog open={open} onOpenChange={(v) => { if (!v) { reset(defaultValues); setReceiptFileName(null); } onOpenChange(v); }}>
 			<DialogContent className="max-w-lg">
 				<DialogHeader>
 					<DialogTitle>{isEditing ? "Edit Expense" : "New Expense"}</DialogTitle>
@@ -119,12 +154,48 @@ const ExpenseDialog = ({ open, onOpenChange, jobId, expense }: ExpenseDialogProp
 							<Input placeholder="Not reimbursable" {...register("reimburseTo")} />
 							<p className="text-xs text-muted-foreground">Leave empty if not reimbursable</p>
 						</div>
+
+						<div className="space-y-2">
+							<Label>Receipt</Label>
+							{receiptFileId ? (
+								<div className="flex items-center gap-2 rounded-md border px-3 py-2">
+									<Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+									<span className="text-sm flex-1 truncate">{receiptFileName}</span>
+									<Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={removeReceipt}>
+										<X className="h-3.5 w-3.5" />
+									</Button>
+								</div>
+							) : (
+								<label className="relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-6 cursor-pointer hover:border-primary/50 transition-colors">
+									<input
+										type="file"
+										accept="image/*,.pdf"
+										onChange={handleFileChange}
+										disabled={uploading}
+										className="sr-only"
+									/>
+									{uploading ? (
+										<>
+											<Loader2 className="h-5 w-5 animate-spin text-muted-foreground mb-2" />
+											<span className="text-sm text-muted-foreground">Uploading...</span>
+										</>
+									) : (
+										<>
+											<Button type="button" variant="outline" size="sm" className="pointer-events-none mb-2">
+												Add receipt
+											</Button>
+											<span className="text-sm text-muted-foreground">Select or drag a file here to upload</span>
+										</>
+									)}
+								</label>
+							)}
+						</div>
 					</div>
 					<DialogFooter>
-						<Button type="button" variant="outline" onClick={() => { reset(defaultValues); onOpenChange(false); }}>
+						<Button type="button" variant="outline" onClick={() => { reset(defaultValues); setReceiptFileName(null); onOpenChange(false); }}>
 							Cancel
 						</Button>
-						<Button type="submit" disabled={mutation.isPending}>
+						<Button type="submit" disabled={mutation.isPending || uploading}>
 							{mutation.isPending ? "Saving..." : isEditing ? "Update Expense" : "Save Expense"}
 						</Button>
 					</DialogFooter>

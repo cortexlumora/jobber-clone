@@ -104,6 +104,7 @@ export const expensesSchema = pgTable("expenses", {
 	date: varchar("date", { length: 10 }).notNull(),
 	total: numeric("total", { precision: 10, scale: 2 }).notNull(),
 	reimburseTo: varchar("reimburse_to", { length: 255 }),
+	receiptFileId: uuid("receipt_file_id").references(() => filesSchema.id, { onDelete: "set null" }),
 	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
