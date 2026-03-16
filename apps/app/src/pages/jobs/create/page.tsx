@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router";
+import { useEffect, useState, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useRequestQuery } from "@/pages/requests/hooks";
 import { getClients } from "@/pages/clients/api";
 import { createJob } from "../api";
 import { presignUpload, uploadFileToS3 } from "@/lib/api";
@@ -38,6 +39,9 @@ const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const CreateJobPage = () => {
 	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
+	const requestId = searchParams.get("requestId");
+	const { data: sourceRequest } = useRequestQuery(requestId);
 
 	// Form state
 	const [title, setTitle] = useState("");
@@ -74,6 +78,23 @@ const CreateJobPage = () => {
 
 	// Link to related
 	const [relatedObject, setRelatedObject] = useState("");
+
+	// Pre-fill from request if converting
+	useEffect(() => {
+		if (sourceRequest) {
+			setTitle(sourceRequest.title);
+			setClientId(sourceRequest.clientId);
+			if (sourceRequest.lineItems.length > 0) {
+				setLineItems(sourceRequest.lineItems.map((item) => ({
+					name: item.name,
+					description: item.description ?? "",
+					qty: item.qty,
+					unitCost: 0,
+					unitPrice: Number(item.unitPrice),
+				})));
+			}
+		}
+	}, [sourceRequest]);
 
 	const { data: clients } = useQuery({
 		queryKey: ["clients"],
@@ -199,8 +220,7 @@ const CreateJobPage = () => {
 				unitCost: item.unitCost,
 				unitPrice: item.unitPrice,
 			})),
-			notes: notes || undefined,
-			noteFileIds: noteFiles.map((f) => f.fileId),
+			relatedRequestId: requestId || undefined,
 		});
 	};
 
