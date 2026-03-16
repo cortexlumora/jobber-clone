@@ -87,7 +87,6 @@ export interface JobDTO {
 	clientNotes: PaginatedResponse<ClientNoteDTO>;
 	client: JobClientDTO | null;
 	property: JobPropertyDTO | null;
-	fileIds: string[];
 	// Timestamps
 	createdAt: Date;
 	updatedAt: Date;

@@ -281,6 +281,13 @@
       "when": 1773652291110,
       "tag": "0039_lean_magik",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1773658411192,
+      "tag": "0040_aspiring_norrin_radd",
+      "breakpoints": true
     }
   ]
 }

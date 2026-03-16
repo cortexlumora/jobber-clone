@@ -1,4 +1,4 @@
-import db, { jobsSchema, jobFilesSchema, jobLineItemsSchema, filesSchema, visitsSchema, clientsSchema, propertiesSchema } from "@repo/db";
+import db, { jobsSchema, jobLineItemsSchema, filesSchema, visitsSchema, clientsSchema, propertiesSchema } from "@repo/db";
 import type { CreateJobForm, UpdateJobLineItemsForm } from "@repo/zod/job";
 import { and, eq, isNull } from "drizzle-orm";
 import { signKey } from "./file-service";
@@ -7,7 +7,7 @@ import { getExpensesByJobId } from "./expense-service";
 import { getClientNotes } from "./client-note-service";
 
 export async function createJob(userId: string, data: CreateJobForm) {
-	const { lineItems, noteFileIds, ...jobData } = data;
+	const { lineItems, ...jobData } = data;
 
 	const [job] = await db
 		.insert(jobsSchema)
@@ -55,16 +55,7 @@ export async function createJob(userId: string, data: CreateJobForm) {
 			.returning();
 	}
 
-	if (noteFileIds && noteFileIds.length > 0) {
-		await db.insert(jobFilesSchema).values(
-			noteFileIds.map((fileId) => ({
-				jobId: job.id,
-				fileId,
-			})),
-		);
-	}
-
-	return { ...job, lineItems: insertedLineItems.map((item) => ({ ...item, image: null })), visits: [], timeEntries: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, expenses: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, clientNotes: { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } }, client: null, property: null, fileIds: noteFileIds ?? [] };
+	return { ...job, lineItems: insertedLineItems.map((item) => ({ ...item, image: null })), visits: [], timeEntries: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, expenses: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, clientNotes: { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } }, client: null, property: null };
 }
 
 export async function getJobs() {
@@ -72,12 +63,11 @@ export async function getJobs() {
 
 	const result = await Promise.all(
 		jobs.map(async (job) => {
-			const [files, items, clientNotes] = await Promise.all([
-				db.select({ fileId: jobFilesSchema.fileId }).from(jobFilesSchema).where(eq(jobFilesSchema.jobId, job.id)),
+			const [items, clientNotes] = await Promise.all([
 				db.select().from(jobLineItemsSchema).where(eq(jobLineItemsSchema.jobId, job.id)),
 				getClientNotes(job.clientId, "jobs", { page: 1, limit: 20, search: "" }),
 			]);
-			return { ...job, lineItems: items.map((item) => ({ ...item, image: null })), visits: [], timeEntries: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, expenses: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, clientNotes, client: null, property: null, fileIds: files.map((f) => f.fileId) };
+			return { ...job, lineItems: items.map((item) => ({ ...item, image: null })), visits: [], timeEntries: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, expenses: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, clientNotes, client: null, property: null };
 		}),
 	);
 
@@ -142,8 +132,7 @@ export async function getJobById(jobId: string) {
 		.from(visitsSchema)
 		.where(eq(visitsSchema.jobId, job.id));
 
-	const [files, items, timeEntriesResult, expensesResult, notesResult, [clientRow], properties] = await Promise.all([
-		db.select({ fileId: jobFilesSchema.fileId }).from(jobFilesSchema).where(eq(jobFilesSchema.jobId, job.id)),
+	const [items, timeEntriesResult, expensesResult, notesResult, [clientRow], properties] = await Promise.all([
 		getJobLineItemsByJobId(job.id),
 		getTimeEntriesByJobId(job.id, { page: 1, limit: 10, search: "" }),
 		getExpensesByJobId(job.id, { page: 1, limit: 10, search: "" }),
@@ -169,7 +158,7 @@ export async function getJobById(jobId: string) {
 	const client = clientRow ?? null;
 	const property = properties[0] ?? null;
 
-	return { ...job, visits, lineItems: items, timeEntries: timeEntriesResult, expenses: expensesResult, clientNotes: notesResult, client, property, fileIds: files.map((f) => f.fileId) };
+	return { ...job, visits, lineItems: items, timeEntries: timeEntriesResult, expenses: expensesResult, clientNotes: notesResult, client, property };
 }
 
 export async function updateJobLineItems(jobId: string, data: UpdateJobLineItemsForm) {
