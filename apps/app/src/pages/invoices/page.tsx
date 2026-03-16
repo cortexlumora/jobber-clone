@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { getInvoices } from "./api";
-import { getClients } from "@/pages/clients/api";
-import type { ClientDTO } from "@repo/dto";
+import { usePagination } from "@repo/common";
+import { getInvoices, getInvoiceStats } from "./api";
+import type { InvoiceListItemDTO } from "@repo/dto";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, MoreHorizontal } from "lucide-react";
+import { Plus, Search, MoreHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
 import {
 	Table,
 	TableBody,
@@ -46,68 +46,39 @@ const statusLabels: Record<string, string> = {
 
 const InvoicesPage = () => {
 	const navigate = useNavigate();
+	const { page, setPage, perPage, search, setSearch } = usePagination({ perPage: 10 });
 	const [statusFilter, setStatusFilter] = useState("all");
-	const [search, setSearch] = useState("");
 
-	const { data: invoices, isLoading, isError, error } = useQuery({
-		queryKey: ["invoices"],
-		queryFn: getInvoices,
+	const { data: result, isLoading, isError, error } = useQuery({
+		queryKey: ["invoices", page, perPage, statusFilter, search],
+		queryFn: () => getInvoices(page, perPage),
 	});
 
-	const { data: clients } = useQuery({
-		queryKey: ["clients"],
-		queryFn: getClients,
-	});
+	const invoices = result?.data ?? [];
+	const total = result?.pagination?.total ?? 0;
+	const totalPages = result?.pagination?.totalPages ?? 0;
 
-	const clientMap = useMemo(() => {
-		if (!clients) return new Map<string, ClientDTO>();
-		return new Map(clients.map((c) => [c.id, c]));
-	}, [clients]);
-
-	const getClientDisplayName = useMemo(() => (clientId: string) => {
-		const client = clientMap.get(clientId);
+	const getClientDisplayName = (invoice: InvoiceListItemDTO) => {
+		const client = invoice.client;
 		if (!client) return "";
 		const title = client.title !== "none" ? `${client.title} ` : "";
 		const name = client.useCompanyAsPrimary && client.companyName
 			? client.companyName
 			: `${client.firstName} ${client.lastName}`;
 		return `${title}${name}`;
-	}, [clientMap]);
+	};
 
-	// Stats
-	const pastDue = useMemo(() => {
-		if (!invoices) return { count: 0, amount: 0 };
-		const items = invoices.filter((i) => i.status === "overdue");
-		return { count: items.length, amount: items.reduce((sum, i) => sum + Number(i.balance), 0) };
-	}, [invoices]);
+	const { data: stats } = useQuery({
+		queryKey: ["invoice-stats"],
+		queryFn: getInvoiceStats,
+	});
 
-	const sentNotDue = useMemo(() => {
-		if (!invoices) return { count: 0, amount: 0 };
-		const items = invoices.filter((i) => i.status === "sent");
-		return { count: items.length, amount: items.reduce((sum, i) => sum + Number(i.balance), 0) };
-	}, [invoices]);
-
-	const drafts = useMemo(() => {
-		if (!invoices) return { count: 0, amount: 0 };
-		const items = invoices.filter((i) => i.status === "draft");
-		return { count: items.length, amount: items.reduce((sum, i) => sum + Number(i.total), 0) };
-	}, [invoices]);
-
-	// Past 30 days stats
-	const past30Stats = useMemo(() => {
-		if (!invoices) return { issued: 0, avgInvoice: 0 };
-		const cutoff = new Date();
-		cutoff.setDate(cutoff.getDate() - 30);
-		const recent = invoices.filter((i) => i.issuedDate && new Date(i.issuedDate + "T00:00:00") >= cutoff);
-		const totalAmount = recent.reduce((sum, i) => sum + Number(i.total), 0);
-		return {
-			issued: recent.length,
-			avgInvoice: recent.length > 0 ? totalAmount / recent.length : 0,
-		};
-	}, [invoices]);
+	const pastDue = { count: stats?.pastDueCount ?? 0, amount: stats?.pastDueAmount ?? 0 };
+	const sentNotDue = { count: stats?.sentCount ?? 0, amount: stats?.sentAmount ?? 0 };
+	const drafts = { count: stats?.draftCount ?? 0, amount: stats?.draftAmount ?? 0 };
+	const past30Stats = { issued: stats?.issuedLast30 ?? 0, issuedChange: stats?.issuedLast30Change ?? 0, avgInvoice: stats?.avgInvoiceLast30 ?? 0 };
 
 	const filteredInvoices = useMemo(() => {
-		if (!invoices) return [];
 		let filtered = invoices;
 		if (statusFilter !== "all") {
 			filtered = filtered.filter((i) => i.status === statusFilter);
@@ -115,7 +86,7 @@ const InvoicesPage = () => {
 		if (search.trim()) {
 			const q = search.toLowerCase();
 			filtered = filtered.filter((invoice) => {
-				const clientName = getClientDisplayName(invoice.clientId);
+				const clientName = getClientDisplayName(invoice);
 				return (
 					clientName.toLowerCase().includes(q) ||
 					(invoice.invoiceNumber && invoice.invoiceNumber.toLowerCase().includes(q)) ||
@@ -124,7 +95,7 @@ const InvoicesPage = () => {
 			});
 		}
 		return filtered;
-	}, [invoices, statusFilter, search, clientMap]);
+	}, [invoices, statusFilter, search]);
 
 	return (
 		<div>
@@ -265,7 +236,7 @@ const InvoicesPage = () => {
 								</TableRow>
 							)}
 							{filteredInvoices.map((invoice) => {
-								const clientName = getClientDisplayName(invoice.clientId);
+								const clientName = getClientDisplayName(invoice);
 
 								return (
 									<TableRow key={invoice.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/invoices/${invoice.id}`)}>
@@ -295,6 +266,21 @@ const InvoicesPage = () => {
 							})}
 						</TableBody>
 					</Table>
+					{totalPages > 1 && (
+						<div className="flex items-center justify-between px-4 py-3 border-t">
+							<p className="text-xs text-muted-foreground">
+								{(page - 1) * perPage + 1}–{Math.min(page * perPage, total)} of {total}
+							</p>
+							<div className="flex items-center gap-1">
+								<Button variant="ghost" size="icon" className="h-7 w-7" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+									<ChevronLeft className="h-4 w-4" />
+								</Button>
+								<Button variant="ghost" size="icon" className="h-7 w-7" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+									<ChevronRight className="h-4 w-4" />
+								</Button>
+							</div>
+						</div>
+					)}
 				</div>
 			)}
 		</div>

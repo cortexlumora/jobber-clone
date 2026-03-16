@@ -1,5 +1,37 @@
 import type { LineItemImageDTO } from "./quote";
 
+export interface InvoiceStatsDTO {
+	pastDueCount: number;
+	pastDueAmount: number;
+	sentCount: number;
+	sentAmount: number;
+	draftCount: number;
+	draftAmount: number;
+	issuedLast30: number;
+	issuedLast30Change: number;
+	avgInvoiceLast30: number;
+}
+
+export interface InvoiceListItemDTO {
+	id: string;
+	clientId: string;
+	jobId: string | null;
+	invoiceNumber: string | null;
+	status: "draft" | "sent" | "paid" | "partial" | "overdue" | "void";
+	subject: string | null;
+	dueDate: string | null;
+	total: string;
+	balance: string;
+	createdAt: Date;
+	client: {
+		title: string;
+		firstName: string;
+		lastName: string;
+		companyName: string | null;
+		useCompanyAsPrimary: boolean;
+	} | null;
+}
+
 export interface InvoiceLineItemDTO {
 	id: string;
 	name: string;

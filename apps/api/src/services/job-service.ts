@@ -1,6 +1,7 @@
 import db, { jobsSchema, jobLineItemsSchema, filesSchema, visitsSchema, clientsSchema, propertiesSchema } from "@repo/db";
 import type { CreateJobForm, UpdateJobLineItemsForm } from "@repo/zod/job";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import type { PaginationQuery } from "@repo/zod/pagination";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { signKey } from "./file-service";
 import { getTimeEntriesByJobId } from "./time-entry-service";
 import { getExpensesByJobId } from "./expense-service";
@@ -58,20 +59,71 @@ export async function createJob(userId: string, data: CreateJobForm) {
 	return { ...job, lineItems: insertedLineItems.map((item) => ({ ...item, image: null })), visits: [], timeEntries: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, expenses: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, clientNotes: { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } }, client: null, property: null };
 }
 
-export async function getJobs() {
-	const jobs = await db.select().from(jobsSchema).where(isNull(jobsSchema.deletedAt));
+export async function getJobs(pagination: PaginationQuery) {
+	const { page, limit } = pagination;
+	const offset = (page - 1) * limit;
 
-	const result = await Promise.all(
-		jobs.map(async (job) => {
-			const [items, clientNotes] = await Promise.all([
-				db.select().from(jobLineItemsSchema).where(eq(jobLineItemsSchema.jobId, job.id)),
-				getClientNotes(job.clientId, "jobs", { page: 1, limit: 20, search: "" }),
-			]);
-			return { ...job, lineItems: items.map((item) => ({ ...item, image: null })), visits: [], timeEntries: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, expenses: { data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }, clientNotes, client: null, property: null };
+	const where = isNull(jobsSchema.deletedAt);
+
+	const [rows, [{ count }]] = await Promise.all([
+		db
+			.select({
+				id: jobsSchema.id,
+				clientId: jobsSchema.clientId,
+				title: jobsSchema.title,
+				jobNumber: jobsSchema.jobNumber,
+				salesperson: jobsSchema.salesperson,
+				status: jobsSchema.status,
+				jobType: jobsSchema.jobType,
+				startDate: jobsSchema.startDate,
+				startTime: jobsSchema.startTime,
+				endTime: jobsSchema.endTime,
+				repeats: jobsSchema.repeats,
+				repeatDays: jobsSchema.repeatDays,
+				endsType: jobsSchema.endsType,
+				endsOnDate: jobsSchema.endsOnDate,
+				createdAt: jobsSchema.createdAt,
+				client: {
+					title: clientsSchema.title,
+					firstName: clientsSchema.firstName,
+					lastName: clientsSchema.lastName,
+					companyName: clientsSchema.companyName,
+					useCompanyAsPrimary: clientsSchema.useCompanyAsPrimary,
+				},
+			})
+			.from(jobsSchema)
+			.innerJoin(clientsSchema, eq(jobsSchema.clientId, clientsSchema.id))
+			.where(where)
+			.orderBy(desc(jobsSchema.createdAt))
+			.limit(limit)
+			.offset(offset),
+		db.select({ count: sql<number>`count(*)` }).from(jobsSchema).where(where),
+	]);
+
+	const data = await Promise.all(
+		rows.map(async (row) => {
+			const [property] = await db
+				.select({ street1: propertiesSchema.street1, street2: propertiesSchema.street2, city: propertiesSchema.city, state: propertiesSchema.state, zip: propertiesSchema.zip })
+				.from(propertiesSchema)
+				.where(eq(propertiesSchema.clientId, row.clientId))
+				.limit(1);
+
+			const lineItems = await db.select({ qty: jobLineItemsSchema.qty, unitPrice: jobLineItemsSchema.unitPrice }).from(jobLineItemsSchema).where(eq(jobLineItemsSchema.jobId, row.id));
+			const total = lineItems.reduce((sum, item) => sum + item.qty * Number(item.unitPrice), 0);
+
+			return { ...row, client: row.client?.firstName ? row.client : null, property: property ?? null, total };
 		}),
 	);
 
-	return result;
+	return {
+		data,
+		pagination: {
+			page,
+			limit,
+			total: Number(count),
+			totalPages: Math.ceil(Number(count) / limit),
+		},
+	};
 }
 
 async function getJobLineItemsByJobId(jobId: string) {

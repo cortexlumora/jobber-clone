@@ -17,6 +17,39 @@ export interface JobStatsDTO {
 	scheduledVisitsRevenue: number;
 }
 
+export interface JobListItemDTO {
+	id: string;
+	clientId: string;
+	title: string;
+	jobNumber: string | null;
+	salesperson: string | null;
+	status: "draft" | "active" | "action_required" | "complete" | "archived";
+	jobType: "one_off" | "recurring";
+	startDate: string | null;
+	startTime: string | null;
+	endTime: string | null;
+	repeats: string | null;
+	repeatDays: string[] | null;
+	endsType: "after" | "on" | null;
+	endsOnDate: string | null;
+	total: number;
+	createdAt: Date;
+	client: {
+		title: string;
+		firstName: string;
+		lastName: string;
+		companyName: string | null;
+		useCompanyAsPrimary: boolean;
+	} | null;
+	property: {
+		street1: string | null;
+		street2: string | null;
+		city: string | null;
+		state: string | null;
+		zip: string | null;
+	} | null;
+}
+
 export interface JobClientDTO {
 	title: string;
 	firstName: string;

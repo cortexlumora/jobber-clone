@@ -1,6 +1,7 @@
-import db, { quotesSchema, quoteFilesSchema, quoteLineItemsSchema, filesSchema } from "@repo/db";
+import db, { quotesSchema, quoteFilesSchema, quoteLineItemsSchema, filesSchema, clientsSchema, propertiesSchema } from "@repo/db";
 import type { CreateQuoteForm, UpdateQuoteLineItemsForm } from "@repo/zod/quote";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import type { PaginationQuery } from "@repo/zod/pagination";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { signKey } from "./file-service";
 import { getClientNotes } from "./client-note-service";
 
@@ -89,24 +90,67 @@ async function getQuoteFiles(quoteId: string) {
 	};
 }
 
-export async function getQuotesByUser(userId: string) {
-	const quotes = await db
-		.select()
-		.from(quotesSchema)
-		.where(and(eq(quotesSchema.userId, userId), isNull(quotesSchema.deletedAt)));
+export async function getQuotes(pagination: PaginationQuery) {
+	const { page, limit } = pagination;
+	const offset = (page - 1) * limit;
 
-	const result = await Promise.all(
-		quotes.map(async (quote) => {
-			const [fileIds, items, clientNotes] = await Promise.all([
-				getQuoteFiles(quote.id),
-				db.select().from(quoteLineItemsSchema).where(eq(quoteLineItemsSchema.quoteId, quote.id)),
-				getClientNotes(quote.clientId, "quotes", { page: 1, limit: 20, search: "" }),
-			]);
-			return { ...quote, lineItems: items.map((item) => ({ ...item, image: null })), clientNotes, ...fileIds };
+	const where = isNull(quotesSchema.deletedAt);
+
+	const [rows, [{ count }]] = await Promise.all([
+		db
+			.select({
+				id: quotesSchema.id,
+				clientId: quotesSchema.clientId,
+				title: quotesSchema.title,
+				quoteNumber: quotesSchema.quoteNumber,
+				salesperson: quotesSchema.salesperson,
+				status: quotesSchema.status,
+				discount: quotesSchema.discount,
+				tax: quotesSchema.tax,
+				createdAt: quotesSchema.createdAt,
+				client: {
+					title: clientsSchema.title,
+					firstName: clientsSchema.firstName,
+					lastName: clientsSchema.lastName,
+					companyName: clientsSchema.companyName,
+					useCompanyAsPrimary: clientsSchema.useCompanyAsPrimary,
+					phones: clientsSchema.phones,
+					emails: clientsSchema.emails,
+				},
+			})
+			.from(quotesSchema)
+			.innerJoin(clientsSchema, eq(quotesSchema.clientId, clientsSchema.id))
+			.where(where)
+			.orderBy(desc(quotesSchema.createdAt))
+			.limit(limit)
+			.offset(offset),
+		db.select({ count: sql<number>`count(*)` }).from(quotesSchema).where(where),
+	]);
+
+	const data = await Promise.all(
+		rows.map(async (row) => {
+			const [property] = await db
+				.select({ street1: propertiesSchema.street1, street2: propertiesSchema.street2, city: propertiesSchema.city, state: propertiesSchema.state, zip: propertiesSchema.zip })
+				.from(propertiesSchema)
+				.where(eq(propertiesSchema.clientId, row.clientId))
+				.limit(1);
+
+			const lineItems = await db.select({ qty: quoteLineItemsSchema.qty, unitPrice: quoteLineItemsSchema.unitPrice }).from(quoteLineItemsSchema).where(eq(quoteLineItemsSchema.quoteId, row.id));
+			const total = lineItems.reduce((sum, item) => sum + item.qty * Number(item.unitPrice), 0) - (row.discount ? Number(row.discount) : 0) + (row.tax ? Number(row.tax) : 0);
+
+			return { ...row, client: row.client?.firstName ? row.client : null, property: property ?? null, total };
 		}),
 	);
 
-	return result;
+	return {
+		data,
+		pagination: {
+			page,
+			limit,
+			total: Number(count),
+			totalPages: Math.ceil(Number(count) / limit),
+		},
+	};
 }
 
 async function getQuoteLineItemsByQuoteId(quoteId: string) {

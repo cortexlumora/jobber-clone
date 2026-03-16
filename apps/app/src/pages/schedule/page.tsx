@@ -100,7 +100,8 @@ const SchedulePage = () => {
 	const [view, setView] = useState<ViewMode>("month");
 	const [showUnscheduled, setShowUnscheduled] = useState(true);
 
-	const { data: jobs = [] } = useQuery({ queryKey: ["jobs"], queryFn: getJobs });
+	const { data: jobsResult } = useQuery({ queryKey: ["jobs"], queryFn: () => getJobs(1, 100) });
+	const jobs = jobsResult?.data ?? [];
 	const { data: requestsResult } = useQuery({ queryKey: ["requests"], queryFn: () => getRequests(1, 100) });
 	const requests = requestsResult?.data ?? [];
 	const { data: clients = [] } = useQuery({ queryKey: ["clients"], queryFn: getClients });

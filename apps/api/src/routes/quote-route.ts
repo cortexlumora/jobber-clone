@@ -7,7 +7,7 @@ import { getUserIdFromCTX } from "../lib/helpers";
 import {
 	createQuote,
 	getQuoteById,
-	getQuotesByUser,
+	getQuotes,
 	updateQuoteLineItems,
 	getQuoteStats,
 } from "../services/quote-service";
@@ -25,11 +25,10 @@ const quoteRoute = new Hono()
 		const quote = await createQuote(userId, data);
 		return c.json<APIResponse<QuoteDTO>>({ data: quote });
 	})
-	.get("/", async (c) => {
-		const userId = getUserIdFromCTX(c);
-
-		const quotes = await getQuotesByUser(userId);
-		return c.json<APIResponse<QuoteDTO[]>>({ data: quotes });
+	.get("/", zValidator("query", paginationSchema), async (c) => {
+		const pagination = c.req.valid("query");
+		const result = await getQuotes(pagination);
+		return c.json(result);
 	})
 	.get("/:id", async (c) => {
 		const quoteId = c.req.param("id");

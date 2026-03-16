@@ -11,6 +11,35 @@ export interface QuoteStatsDTO {
 	convertedLast30Change: number;
 }
 
+export interface QuoteListItemDTO {
+	id: string;
+	clientId: string;
+	title: string;
+	quoteNumber: string | null;
+	salesperson: string | null;
+	status: "draft" | "sent" | "approved" | "rejected" | "archived";
+	discount: string | null;
+	tax: string | null;
+	total: number;
+	createdAt: Date;
+	client: {
+		title: string;
+		firstName: string;
+		lastName: string;
+		companyName: string | null;
+		useCompanyAsPrimary: boolean;
+		phones: import("./client").Phone[];
+		emails: import("./client").Email[];
+	} | null;
+	property: {
+		street1: string | null;
+		street2: string | null;
+		city: string | null;
+		state: string | null;
+		zip: string | null;
+	} | null;
+}
+
 export interface LineItemImageDTO {
 	id: string;
 	name: string;
