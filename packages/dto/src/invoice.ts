@@ -13,7 +13,6 @@ export interface InvoiceLineItemDTO {
 
 export interface InvoiceDTO {
 	id: string;
-	userId: string;
 	clientId: string;
 	jobId: string | null;
 	invoiceNumber: string | null;

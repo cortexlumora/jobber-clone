@@ -267,6 +267,13 @@
       "when": 1773612359311,
       "tag": "0037_redundant_outlaw_kid",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1773640856542,
+      "tag": "0038_great_alex_wilder",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,4 @@
 import { integer, numeric, pgEnum, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
-import usersSchema from "../users";
 import clientsSchema from "../client/clients";
 import jobsSchema from "../job/jobs";
 import filesSchema from "../files";
@@ -8,7 +7,6 @@ export const invoiceStatusEnum = pgEnum("invoice_status", ["draft", "sent", "pai
 
 const invoicesSchema = pgTable("invoices", {
 	id: uuid("id").primaryKey().defaultRandom(),
-	userId: uuid("user_id").notNull().references(() => usersSchema.id, { onDelete: "cascade" }),
 	clientId: uuid("client_id").notNull().references(() => clientsSchema.id, { onDelete: "cascade" }),
 	jobId: uuid("job_id").references(() => jobsSchema.id, { onDelete: "set null" }),
 	invoiceNumber: varchar("invoice_number", { length: 50 }),

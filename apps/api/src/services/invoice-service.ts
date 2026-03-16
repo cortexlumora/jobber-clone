@@ -2,7 +2,7 @@ import db, { invoicesSchema, invoiceLineItemsSchema } from "@repo/db";
 import type { CreateInvoiceForm } from "@repo/zod/invoice";
 import { and, eq, isNull } from "drizzle-orm";
 
-export async function createInvoice(userId: string, data: CreateInvoiceForm) {
+export async function createInvoice(data: CreateInvoiceForm) {
 	const { lineItems, ...invoiceData } = data;
 
 	const subtotal = (lineItems ?? []).reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
@@ -13,7 +13,6 @@ export async function createInvoice(userId: string, data: CreateInvoiceForm) {
 	const [invoice] = await db
 		.insert(invoicesSchema)
 		.values({
-			userId,
 			clientId: invoiceData.clientId,
 			jobId: invoiceData.jobId || null,
 			invoiceNumber: invoiceData.invoiceNumber || null,
