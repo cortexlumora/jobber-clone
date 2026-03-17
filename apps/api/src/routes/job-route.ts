@@ -9,6 +9,8 @@ import {
 	getJobById,
 	getJobs,
 	updateJobLineItems,
+	updateJobStatus,
+	deleteJob,
 	getJobStats,
 } from "../services/job-service";
 import { getClientNotes } from "../services/client-note-service";
@@ -74,6 +76,17 @@ const jobRoute = new Hono()
 		const reminderId = c.req.param("reminderId");
 
 		await deleteInvoiceReminder(reminderId);
+		return c.json<APIResponse<null>>({ data: null });
+	})
+	.patch("/:id/status", async (c) => {
+		const jobId = c.req.param("id");
+		const { status } = await c.req.json<{ status: string }>();
+		const job = await updateJobStatus(jobId, status as "draft" | "active" | "action_required" | "complete" | "archived");
+		return c.json<APIResponse<{ id: string }>>({ data: { id: job.id } });
+	})
+	.delete("/:id", async (c) => {
+		const jobId = c.req.param("id");
+		await deleteJob(jobId);
 		return c.json<APIResponse<null>>({ data: null });
 	})
 	.put("/:id/line-items", zValidator("json", updateJobLineItemsSchema), async (c) => {

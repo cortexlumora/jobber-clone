@@ -3,6 +3,7 @@ import { parseAsBoolean, useQueryState } from "nuqs";
 import { useParams, useNavigate } from "react-router";
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getJobById, getJobNotes, updateJobLineItems } from "../api";
+import { useJobStatusMutation, useDeleteJobMutation } from "../hooks";
 import NotesPanel from "@/components/notes-panel";
 import Section from "@/components/section";
 import LineItemsView from "@/components/line-items-view";
@@ -54,6 +55,8 @@ const JobDetailPage = () => {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const statusMutation = useJobStatusMutation(id!);
+	const deleteMutation = useDeleteJobMutation(id!);
 
 	const [editingLineItems, setEditingLineItems] = useState(false);
 	const [editLineItems, setEditLineItems] = useState<LineItemUI[]>([]);
@@ -183,11 +186,11 @@ const JobDetailPage = () => {
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
-							<DropdownMenuItem>Mark Active</DropdownMenuItem>
-							<DropdownMenuItem>Mark Complete</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => statusMutation.mutate("active")}>Mark Active</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => statusMutation.mutate("complete")}>Mark Complete</DropdownMenuItem>
 							<DropdownMenuItem onClick={() => navigate(`/invoices/create?jobId=${id}`)}>Create Invoice</DropdownMenuItem>
-							<DropdownMenuItem>Archive</DropdownMenuItem>
-							<DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => statusMutation.mutate("archived")}>Archive</DropdownMenuItem>
+							<DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate()}>Delete</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
 				</div>

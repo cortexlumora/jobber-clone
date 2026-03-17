@@ -56,6 +56,16 @@ export async function deleteInvoiceReminder(jobId: string, id: string) {
 	return res.data.data;
 }
 
+export async function updateJobStatus(jobId: string, status: string) {
+	const res = await http.patch<APIResponse<{ id: string }>>(`/api/v1/jobs/${jobId}/status`, { status });
+	return res.data.data;
+}
+
+export async function deleteJob(jobId: string) {
+	const res = await http.delete<APIResponse<null>>(`/api/v1/jobs/${jobId}`);
+	return res.data.data;
+}
+
 export async function updateJobLineItems(id: string, data: UpdateJobLineItemsForm) {
 	const res = await http.put<APIResponse<JobDTO>>(`/api/v1/jobs/${id}/line-items`, data);
 	return res.data.data;

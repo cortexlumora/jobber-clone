@@ -294,6 +294,24 @@ export async function updateJobLineItems(jobId: string, data: UpdateJobLineItems
 	return getJobById(jobId);
 }
 
+export async function updateJobStatus(jobId: string, status: "draft" | "active" | "action_required" | "complete" | "archived") {
+	const [updated] = await db
+		.update(jobsSchema)
+		.set({ status })
+		.where(eq(jobsSchema.id, jobId))
+		.returning();
+	return updated;
+}
+
+export async function deleteJob(jobId: string) {
+	const [deleted] = await db
+		.update(jobsSchema)
+		.set({ deletedAt: new Date() })
+		.where(eq(jobsSchema.id, jobId))
+		.returning();
+	return deleted;
+}
+
 export async function getJobStats() {
 	const now = new Date();
 	const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
