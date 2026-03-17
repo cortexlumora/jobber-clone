@@ -12,29 +12,10 @@ import { formatDate, formatCurrency, getInitials } from "@/lib/format";
 import SendEmailDialog from "./components/send-email-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import {
-	MoreHorizontal,
-	Mail,
-	Phone,
-	MapPin,
-	ImageIcon,
-	Pencil,
-} from "lucide-react";
-
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { MoreHorizontal, Mail, Phone, MapPin, ImageIcon, Pencil } from "lucide-react";
+import AddSectionContainer from "../../../components/add-section-container";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
 	draft: { label: "Draft", className: "bg-gray-100 text-gray-800" },
@@ -43,7 +24,6 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 	rejected: { label: "Rejected", className: "bg-red-100 text-red-800" },
 	archived: { label: "Archived", className: "bg-gray-100 text-gray-800" },
 };
-
 
 // ── Main Page ────────────────────────────────────────────────────────
 
@@ -68,11 +48,16 @@ const QuoteDetailPage = () => {
 		enabled: !!id,
 	});
 
-	const { data: notesData, hasNextPage, fetchNextPage, isFetchingNextPage } = useInfiniteQuery({
+	const {
+		data: notesData,
+		hasNextPage,
+		fetchNextPage,
+		isFetchingNextPage,
+	} = useInfiniteQuery({
 		queryKey: ["quote-notes", id],
 		queryFn: ({ pageParam }) => getQuoteNotes(id!, pageParam),
 		initialPageParam: 1,
-		getNextPageParam: (last) => last.pagination.page < last.pagination.totalPages ? last.pagination.page + 1 : undefined,
+		getNextPageParam: (last) => (last.pagination.page < last.pagination.totalPages ? last.pagination.page + 1 : undefined),
 		enabled: !!quote,
 		staleTime: 30_000,
 	});
@@ -81,8 +66,9 @@ const QuoteDetailPage = () => {
 	const notesTotal = notesData?.pages[0]?.pagination.total;
 
 	const lineItemsMutation = useMutation({
-		mutationFn: (data: { lineItems: { type: "line_item" | "text"; name: string; description?: string; qty: number; unitPrice: number; imageFileId?: string }[] }) =>
-			updateQuoteLineItems(id!, data),
+		mutationFn: (data: {
+			lineItems: { type: "line_item" | "text"; name: string; description?: string; qty: number; unitPrice: number; imageFileId?: string }[];
+		}) => updateQuoteLineItems(id!, data),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["quote", id] });
 			setEditingLineItems(false);
@@ -136,11 +122,7 @@ const QuoteDetailPage = () => {
 
 	const status = statusConfig[quote.status] ?? statusConfig.draft;
 	const property = client?.propertyDetails?.data?.[0];
-	const address = property
-		? [property.street1, property.street2, property.city, property.state, property.zip]
-				.filter(Boolean)
-				.join(", ")
-		: null;
+	const address = property ? [property.street1, property.street2, property.city, property.state, property.zip].filter(Boolean).join(", ") : null;
 
 	const clientDisplayName = client
 		? client.useCompanyAsPrimary && client.companyName
@@ -149,10 +131,7 @@ const QuoteDetailPage = () => {
 		: "";
 
 	const lineItems = quote.lineItems.filter((i) => i.type === "line_item");
-	const subtotal = lineItems.reduce(
-		(sum, item) => sum + item.qty * Number(item.unitPrice),
-		0,
-	);
+	const subtotal = lineItems.reduce((sum, item) => sum + item.qty * Number(item.unitPrice), 0);
 	const discount = quote.discount ? Number(quote.discount) : 0;
 	const tax = quote.tax ? Number(quote.tax) : 0;
 	const total = subtotal - discount + tax;
@@ -257,6 +236,10 @@ const QuoteDetailPage = () => {
 						</div>
 					</div>
 
+					<AddSectionContainer>
+							<Button variant={"outline"}>Introduction</Button>
+					</AddSectionContainer>
+
 					{/* Introduction */}
 					{(quote.introTitle || quote.introDescription || quote.introImageFileId) && (
 						<Section title="Introduction">
@@ -266,12 +249,8 @@ const QuoteDetailPage = () => {
 										<ImageIcon className="h-8 w-8 text-muted-foreground" />
 									</div>
 								)}
-								{quote.introTitle && (
-									<p className="text-sm font-medium">{quote.introTitle}</p>
-								)}
-								{quote.introDescription && (
-									<p className="text-sm text-muted-foreground">{quote.introDescription}</p>
-								)}
+								{quote.introTitle && <p className="text-sm font-medium">{quote.introTitle}</p>}
+								{quote.introDescription && <p className="text-sm text-muted-foreground">{quote.introDescription}</p>}
 							</div>
 						</Section>
 					)}
@@ -314,13 +293,20 @@ const QuoteDetailPage = () => {
 						</Section>
 					)}
 
+					<AddSectionContainer>
+							<Button variant={"outline"}>Attachments</Button>
+							<Button variant={"outline"}>Images</Button>
+							<Button variant={"outline"}>Client Messages</Button>
+					</AddSectionContainer>
+
 					{/* Payment Schedule */}
 					{quote.depositType !== "none" && (
 						<Section title={quote.depositType === "deposit" ? "Deposit" : "Payment Schedule"}>
 							{quote.depositType === "deposit" && quote.depositValue && (
 								<div className="flex items-center justify-between text-sm">
 									<span className="text-muted-foreground">
-										Required deposit ({quote.depositMode === "%" ? `${quote.depositValue}%` : formatCurrency(Number(quote.depositValue))})
+										Required deposit (
+										{quote.depositMode === "%" ? `${quote.depositValue}%` : formatCurrency(Number(quote.depositValue))})
 									</span>
 									<span className="font-medium">
 										{quote.depositMode === "%"
@@ -357,12 +343,18 @@ const QuoteDetailPage = () => {
 							)}
 						</Section>
 					)}
-
 				</div>
 
 				{/* Right - Notes (30%) */}
 				<div className="sticky top-[4.5rem] h-[calc(100vh-5.5rem)]">
-					<NotesPanel notes={allNotes} total={notesTotal} hasMore={hasNextPage} onLoadMore={fetchNextPage} isLoadingMore={isFetchingNextPage} className="h-full" />
+					<NotesPanel
+						notes={allNotes}
+						total={notesTotal}
+						hasMore={hasNextPage}
+						onLoadMore={fetchNextPage}
+						isLoadingMore={isFetchingNextPage}
+						className="h-full"
+					/>
 				</div>
 			</div>
 
