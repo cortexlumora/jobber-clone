@@ -142,7 +142,7 @@ export interface JobDTO {
 	clientNotes: PaginatedResponse<ClientNoteDTO>;
 	client: JobClientDTO | null;
 	property: JobPropertyDTO | null;
-	invoices: JobInvoiceDTO[];
+	invoices: PaginatedResponse<JobInvoiceDTO>;
 	// Timestamps
 	createdAt: Date;
 	updatedAt: Date;

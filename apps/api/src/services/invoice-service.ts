@@ -145,6 +145,36 @@ export async function getInvoiceStats() {
 	};
 }
 
+export async function getInvoicesByJobId(jobId: string, pagination: PaginationQuery) {
+	const { page, limit } = pagination;
+	const offset = (page - 1) * limit;
+
+	const where = and(eq(invoicesSchema.jobId, jobId), isNull(invoicesSchema.deletedAt));
+
+	const [data, [{ count }]] = await Promise.all([
+		db.select({
+			id: invoicesSchema.id,
+			invoiceNumber: invoicesSchema.invoiceNumber,
+			dueDate: invoicesSchema.dueDate,
+			status: invoicesSchema.status,
+			subject: invoicesSchema.subject,
+			balance: invoicesSchema.balance,
+			total: invoicesSchema.total,
+		}).from(invoicesSchema).where(where).orderBy(desc(invoicesSchema.createdAt), desc(invoicesSchema.id)).limit(limit).offset(offset),
+		db.select({ count: sql<number>`count(*)` }).from(invoicesSchema).where(where),
+	]);
+
+	return {
+		data,
+		pagination: {
+			page,
+			limit,
+			total: Number(count),
+			totalPages: Math.ceil(Number(count) / limit),
+		},
+	};
+}
+
 export async function getInvoiceById(invoiceId: string) {
 	const [invoice] = await db
 		.select()

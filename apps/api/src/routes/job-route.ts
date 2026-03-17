@@ -1,7 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { createJobSchema, updateJobLineItemsSchema } from "@repo/zod/job";
 import { paginationSchema } from "@repo/zod/pagination";
-import type { APIResponse, JobDTO, JobStatsDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
+import type { APIResponse, JobDTO, JobStatsDTO, JobInvoiceDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
@@ -12,6 +12,7 @@ import {
 	getJobStats,
 } from "../services/job-service";
 import { getClientNotes } from "../services/client-note-service";
+import { getInvoicesByJobId } from "../services/invoice-service";
 
 const jobRoute = new Hono()
 	.get("/stats", async (c) => {
@@ -45,6 +46,13 @@ const jobRoute = new Hono()
 
 		const result = await getClientNotes(job.clientId, "jobs", pagination);
 		return c.json<PaginatedResponse<ClientNoteDTO>>(result);
+	})
+	.get("/:id/invoices", zValidator("query", paginationSchema), async (c) => {
+		const jobId = c.req.param("id");
+		const pagination = c.req.valid("query");
+
+		const result = await getInvoicesByJobId(jobId, pagination);
+		return c.json<PaginatedResponse<JobInvoiceDTO>>(result);
 	})
 	.put("/:id/line-items", zValidator("json", updateJobLineItemsSchema), async (c) => {
 		const jobId = c.req.param("id");

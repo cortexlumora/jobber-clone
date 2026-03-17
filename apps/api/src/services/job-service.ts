@@ -1,4 +1,4 @@
-import db, { jobsSchema, jobLineItemsSchema, filesSchema, visitsSchema, clientsSchema, propertiesSchema, requestsSchema, invoicesSchema } from "@repo/db";
+import db, { jobsSchema, jobLineItemsSchema, filesSchema, visitsSchema, clientsSchema, propertiesSchema, requestsSchema } from "@repo/db";
 import type { CreateJobForm, UpdateJobLineItemsForm } from "@repo/zod/job";
 import type { PaginationQuery } from "@repo/zod/pagination";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
@@ -6,6 +6,7 @@ import { signKey } from "./file-service";
 import { getTimeEntriesByJobId } from "./time-entry-service";
 import { getExpensesByJobId } from "./expense-service";
 import { getClientNotes } from "./client-note-service";
+import { getInvoicesByJobId } from "./invoice-service";
 
 export async function createJob(userId: string, data: CreateJobForm) {
 	const { lineItems, ...jobData } = data;
@@ -206,7 +207,7 @@ export async function getJobById(jobId: string) {
 		.from(visitsSchema)
 		.where(eq(visitsSchema.jobId, job.id));
 
-	const [items, timeEntriesResult, expensesResult, notesResult, [clientRow], properties, invoices] = await Promise.all([
+	const [items, timeEntriesResult, expensesResult, notesResult, [clientRow], properties, invoicesResult] = await Promise.all([
 		getJobLineItemsByJobId(job.id),
 		getTimeEntriesByJobId(job.id, { page: 1, limit: 10, search: "" }),
 		getExpensesByJobId(job.id, { page: 1, limit: 10, search: "" }),
@@ -227,21 +228,13 @@ export async function getJobById(jobId: string) {
 			state: propertiesSchema.state,
 			zip: propertiesSchema.zip,
 		}).from(propertiesSchema).where(eq(propertiesSchema.clientId, job.clientId)).limit(1),
-		db.select({
-			id: invoicesSchema.id,
-			invoiceNumber: invoicesSchema.invoiceNumber,
-			dueDate: invoicesSchema.dueDate,
-			status: invoicesSchema.status,
-			subject: invoicesSchema.subject,
-			balance: invoicesSchema.balance,
-			total: invoicesSchema.total,
-		}).from(invoicesSchema).where(and(eq(invoicesSchema.jobId, job.id), isNull(invoicesSchema.deletedAt))),
+		getInvoicesByJobId(job.id, { page: 1, limit: 10, search: "" }),
 	]);
 
 	const client = clientRow ?? null;
 	const property = properties[0] ?? null;
 
-	return { ...job, visits, lineItems: items, timeEntries: timeEntriesResult, expenses: expensesResult, clientNotes: notesResult, client, property, invoices };
+	return { ...job, visits, lineItems: items, timeEntries: timeEntriesResult, expenses: expensesResult, clientNotes: notesResult, client, property, invoices: invoicesResult };
 }
 
 export async function updateJobLineItems(jobId: string, data: UpdateJobLineItemsForm) {
