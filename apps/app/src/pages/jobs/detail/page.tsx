@@ -414,39 +414,58 @@ const JobDetailPage = () => {
 
 					{/* Invoices */}
 					<Section
-						title="Invoices"
+						title={`Invoices${job.invoices.length > 0 ? ` (${job.invoices.length})` : ""}`}
 						action={
-							<Button variant="ghost" size="sm" className="h-7 text-xs">
+							<Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => navigate(`/invoices/create?jobId=${id}`)}>
 								<Plus className="h-3 w-3 mr-1" />
 								Create Invoice
 							</Button>
 						}
 					>
-						<div>
-							<div className="flex gap-4 text-xs text-muted-foreground mb-2">
-								<span className="font-medium">Billing</span>
-								<span>Reminders</span>
-							</div>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead className="text-xs">Invoice</TableHead>
-										<TableHead className="text-xs">Due Date</TableHead>
-										<TableHead className="text-xs">Status</TableHead>
-										<TableHead className="text-xs">Subject</TableHead>
-										<TableHead className="text-xs text-right">Balance</TableHead>
-										<TableHead className="text-xs text-right">Total</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead className="text-xs">Invoice</TableHead>
+									<TableHead className="text-xs">Due Date</TableHead>
+									<TableHead className="text-xs">Status</TableHead>
+									<TableHead className="text-xs">Subject</TableHead>
+									<TableHead className="text-xs text-right">Balance</TableHead>
+									<TableHead className="text-xs text-right">Total</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{job.invoices.length === 0 ? (
 									<TableRow>
 										<TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-6">
 											No invoices yet
 										</TableCell>
 									</TableRow>
-								</TableBody>
-							</Table>
-						</div>
+								) : (
+									job.invoices.map((invoice) => (
+										<TableRow key={invoice.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/invoices/${invoice.id}`)}>
+											<TableCell className="text-sm font-medium">
+												{invoice.invoiceNumber ? `#${invoice.invoiceNumber}` : "—"}
+											</TableCell>
+											<TableCell className="text-sm">{invoice.dueDate ?? "—"}</TableCell>
+											<TableCell>
+												<Badge variant="secondary" className={
+													invoice.status === "paid" ? "bg-green-100 text-green-700" :
+													invoice.status === "sent" ? "bg-blue-100 text-blue-700" :
+													invoice.status === "overdue" ? "bg-red-100 text-red-700" :
+													invoice.status === "partial" ? "bg-amber-100 text-amber-700" :
+													"bg-gray-100 text-gray-700"
+												}>
+													{invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+												</Badge>
+											</TableCell>
+											<TableCell className="text-sm text-muted-foreground">{invoice.subject ?? "—"}</TableCell>
+											<TableCell className="text-sm text-right font-medium">{formatCurrency(Number(invoice.balance))}</TableCell>
+											<TableCell className="text-sm text-right font-medium">{formatCurrency(Number(invoice.total))}</TableCell>
+										</TableRow>
+									))
+								)}
+							</TableBody>
+						</Table>
 					</Section>
 				</div>
 

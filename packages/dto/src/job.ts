@@ -50,6 +50,16 @@ export interface JobListItemDTO {
 	} | null;
 }
 
+export interface JobInvoiceDTO {
+	id: string;
+	invoiceNumber: string | null;
+	dueDate: string | null;
+	status: "draft" | "sent" | "paid" | "partial" | "overdue" | "void";
+	subject: string | null;
+	balance: string;
+	total: string;
+}
+
 export interface JobClientDTO {
 	title: string;
 	firstName: string;
@@ -132,6 +142,7 @@ export interface JobDTO {
 	clientNotes: PaginatedResponse<ClientNoteDTO>;
 	client: JobClientDTO | null;
 	property: JobPropertyDTO | null;
+	invoices: JobInvoiceDTO[];
 	// Timestamps
 	createdAt: Date;
 	updatedAt: Date;

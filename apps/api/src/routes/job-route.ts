@@ -23,7 +23,7 @@ const jobRoute = new Hono()
 		const userId = getUserIdFromCTX(c);
 
 		const job = await createJob(userId, data);
-		return c.json<APIResponse<JobDTO>>({ data: job });
+		return c.json<APIResponse<{ id: string }>>({ data: job });
 	})
 	.get("/", zValidator("query", paginationSchema), async (c) => {
 		const pagination = c.req.valid("query");
