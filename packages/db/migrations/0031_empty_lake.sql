@@ -1,0 +1,1 @@
+ALTER TABLE "requests" ADD COLUMN "reminder_processed_at" timestamp with time zone;

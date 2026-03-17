@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { getJobs } from "./api";
-import { getClients, getClientProperties } from "@/pages/clients/api";
-import type { ClientDTO, JobDTO, PropertyDTO } from "@repo/dto";
+import { usePagination } from "@repo/common";
+import { getJobs, getJobStats } from "./api";
+import type { JobListItemDTO } from "@repo/dto";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, MoreHorizontal } from "lucide-react";
+import { Plus, Search, MoreHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
 import {
 	Table,
 	TableBody,
@@ -41,11 +41,7 @@ const statusLabels: Record<string, string> = {
 	archived: "Archived",
 };
 
-function computeTotal(job: JobDTO) {
-	return job.lineItems.reduce((sum, item) => sum + item.qty * Number(item.unitPrice), 0);
-}
-
-function getScheduleLabel(job: JobDTO) {
+function getScheduleLabel(job: JobListItemDTO) {
 	if (!job.startDate) return "Unscheduled";
 	if (job.jobType === "one_off") {
 		const d = new Date(job.startDate + "T00:00:00");
@@ -60,46 +56,21 @@ function getScheduleLabel(job: JobDTO) {
 
 const JobsPage = () => {
 	const navigate = useNavigate();
+	const { page, setPage, perPage, search, setSearch } = usePagination({ perPage: 10 });
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [jobTypeFilter, setJobTypeFilter] = useState("all");
-	const [search, setSearch] = useState("");
 
-	const { data: jobs, isLoading, isError, error } = useQuery({
-		queryKey: ["jobs"],
-		queryFn: getJobs,
-	});
-	const { data: clients } = useQuery({
-		queryKey: ["clients"],
-		queryFn: getClients,
+	const { data: result, isLoading, isError, error } = useQuery({
+		queryKey: ["jobs", page, perPage, statusFilter, search],
+		queryFn: () => getJobs(page, perPage),
 	});
 
-	const clientMap = useMemo(() => {
-		if (!clients) return new Map<string, ClientDTO>();
-		return new Map(clients.map((c) => [c.id, c]));
-	}, [clients]);
+	const jobs = result?.data ?? [];
+	const total = result?.pagination?.total ?? 0;
+	const totalPages = result?.pagination?.totalPages ?? 0;
 
-	const clientIds = useMemo(() => {
-		if (!jobs) return [];
-		return [...new Set(jobs.map((j) => j.clientId))];
-	}, [jobs]);
-
-	const { data: propertiesMap } = useQuery({
-		queryKey: ["job-client-properties", clientIds],
-		queryFn: async () => {
-			const map = new Map<string, PropertyDTO[]>();
-			await Promise.all(
-				clientIds.map(async (clientId) => {
-					const result = await getClientProperties(clientId, 1, 100);
-					map.set(clientId, result.data);
-				}),
-			);
-			return map;
-		},
-		enabled: clientIds.length > 0,
-	});
-
-	const getClientDisplayName = (clientId: string) => {
-		const client = clientMap.get(clientId);
+	const getClientDisplayName = (job: JobListItemDTO) => {
+		const client = job.client;
 		if (!client) return "";
 		const title = client.title !== "none" ? `${client.title} ` : "";
 		const name = client.useCompanyAsPrimary && client.companyName
@@ -108,64 +79,26 @@ const JobsPage = () => {
 		return `${title}${name}`;
 	};
 
-	const getPropertyAddress = (clientId: string) => {
-		const props = propertiesMap?.get(clientId);
-		if (!props || props.length === 0) return null;
-		const p = props[0];
-		const parts = [p.street1, p.street2, p.city, p.state, p.zip].filter(Boolean);
-		return parts.join(", ");
+	const getPropertyAddress = (job: JobListItemDTO) => {
+		if (!job.property) return null;
+		return [job.property.street1, job.property.street2, job.property.city, job.property.state, job.property.zip].filter(Boolean).join(", ");
 	};
 
 	// Stats
-	const now = new Date();
-	const in30Days = new Date(now.getTime() + 30 * 86400000);
+	const { data: stats } = useQuery({
+		queryKey: ["job-stats"],
+		queryFn: getJobStats,
+	});
 
-	const endingWithin30 = useMemo(() => {
-		if (!jobs) return 0;
-		return jobs.filter((j) => {
-			if (j.jobType !== "recurring" || j.status === "complete" || j.status === "archived") return false;
-			if (j.endsType === "on" && j.endsOnDate) {
-				const end = new Date(j.endsOnDate + "T00:00:00");
-				return end >= now && end <= in30Days;
-			}
-			return false;
-		}).length;
-	}, [jobs]);
-
-	const lateCount = useMemo(() => {
-		if (!jobs) return 0;
-		return jobs.filter((j) => {
-			if (j.status === "complete" || j.status === "archived") return false;
-			if (j.startDate) {
-				const start = new Date(j.startDate + "T00:00:00");
-				return start < now && j.status !== "active";
-			}
-			return false;
-		}).length;
-	}, [jobs]);
-
-	// TODO: requires invoicing needs invoice tracking
-	const requiresInvoicing = useMemo(() => {
-		if (!jobs) return 0;
-		return jobs.filter((j) => j.status === "complete").length;
-	}, [jobs]);
-
-	const actionRequired = useMemo(() => {
-		if (!jobs) return 0;
-		return jobs.filter((j) => j.status === "action_required").length;
-	}, [jobs]);
-
-	const unscheduled = useMemo(() => {
-		if (!jobs) return 0;
-		return jobs.filter((j) => !j.startDate && j.status !== "complete" && j.status !== "archived").length;
-	}, [jobs]);
-
-	// TODO: Recent visits and visits scheduled need a visits tracking system
-	const recentVisits = { count: 0, revenue: 0 };
-	const scheduledVisits = { count: 0, revenue: 0 };
+	const endingWithin30 = stats?.endingWithin30 ?? 0;
+	const lateCount = stats?.lateCount ?? 0;
+	const requiresInvoicing = stats?.requiresInvoicing ?? 0;
+	const actionRequired = stats?.actionRequired ?? 0;
+	const unscheduled = stats?.unscheduled ?? 0;
+	const recentVisits = { count: stats?.recentVisitsCount ?? 0, revenue: stats?.recentVisitsRevenue ?? 0 };
+	const scheduledVisits = { count: stats?.scheduledVisitsCount ?? 0, revenue: stats?.scheduledVisitsRevenue ?? 0 };
 
 	const filteredJobs = useMemo(() => {
-		if (!jobs) return [];
 		let filtered = jobs;
 		if (statusFilter !== "all") {
 			filtered = filtered.filter((j) => j.status === statusFilter);
@@ -176,7 +109,7 @@ const JobsPage = () => {
 		if (search.trim()) {
 			const q = search.toLowerCase();
 			filtered = filtered.filter((job) => {
-				const clientName = getClientDisplayName(job.clientId);
+				const clientName = getClientDisplayName(job);
 				return (
 					job.title.toLowerCase().includes(q) ||
 					clientName.toLowerCase().includes(q) ||
@@ -185,7 +118,7 @@ const JobsPage = () => {
 			});
 		}
 		return filtered;
-	}, [jobs, statusFilter, jobTypeFilter, search, clientMap]);
+	}, [jobs, statusFilter, jobTypeFilter, search]);
 
 	return (
 		<div>
@@ -350,13 +283,12 @@ const JobsPage = () => {
 								</TableRow>
 							)}
 							{filteredJobs.map((job) => {
-								const clientName = getClientDisplayName(job.clientId);
-								const property = getPropertyAddress(job.clientId);
-								const total = computeTotal(job);
+								const clientName = getClientDisplayName(job);
+								const property = getPropertyAddress(job);
 								const schedule = getScheduleLabel(job);
 
 								return (
-									<TableRow key={job.id} className="cursor-pointer hover:bg-muted/50">
+									<TableRow key={job.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/jobs/${job.id}`)}>
 										<TableCell>
 											<div className="font-medium">{clientName}</div>
 											<div className="text-sm text-muted-foreground">{job.title}</div>
@@ -376,13 +308,28 @@ const JobsPage = () => {
 											</Badge>
 										</TableCell>
 										<TableCell className="text-right font-medium">
-											${total.toFixed(2)}
+											${job.total.toFixed(2)}
 										</TableCell>
 									</TableRow>
 								);
 							})}
 						</TableBody>
 					</Table>
+					{totalPages > 1 && (
+						<div className="flex items-center justify-between px-4 py-3 border-t">
+							<p className="text-xs text-muted-foreground">
+								{(page - 1) * perPage + 1}–{Math.min(page * perPage, total)} of {total}
+							</p>
+							<div className="flex items-center gap-1">
+								<Button variant="ghost" size="icon" className="h-7 w-7" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+									<ChevronLeft className="h-4 w-4" />
+								</Button>
+								<Button variant="ghost" size="icon" className="h-7 w-7" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+									<ChevronRight className="h-4 w-4" />
+								</Button>
+							</div>
+						</div>
+					)}
 				</div>
 			)}
 		</div>

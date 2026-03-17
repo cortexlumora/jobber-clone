@@ -1,8 +1,10 @@
 import { boolean, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { reminderEnum } from "../request/requests";
 import usersSchema from "../users";
 import clientsSchema from "../client/clients";
 import filesSchema from "../files";
 
+export const visitStatusEnum = pgEnum("visit_status", ["scheduled", "completed", "cancelled"]);
 export const jobTypeEnum = pgEnum("job_type", ["one_off", "recurring"]);
 export const jobStatusEnum = pgEnum("job_status", ["draft", "active", "action_required", "complete", "archived"]);
 export const billingTypeEnum = pgEnum("billing_type", ["visit_based", "fixed_price"]);
@@ -34,8 +36,6 @@ const jobsSchema = pgTable("jobs", {
 	billingType: billingTypeEnum("billing_type"),
 	invoiceFrequency: varchar("invoice_frequency", { length: 50 }),
 	autoPay: boolean("auto_pay").notNull().default(false),
-	// Notes
-	notes: text("notes"),
 	// Link to related
 	relatedQuoteId: uuid("related_quote_id"),
 	relatedRequestId: uuid("related_request_id"),
@@ -56,6 +56,57 @@ export const jobLineItemsSchema = pgTable("job_line_items", {
 	imageFileId: uuid("image_file_id").references(() => filesSchema.id, { onDelete: "set null" }),
 	sortOrder: integer("sort_order").notNull().default(0),
 	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const visitsSchema = pgTable("visits", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	jobId: uuid("job_id").notNull().references(() => jobsSchema.id, { onDelete: "cascade" }),
+	title: varchar("title", { length: 255 }).notNull(),
+	instructions: text("instructions"),
+	startDate: varchar("start_date", { length: 10 }),
+	endDate: varchar("end_date", { length: 10 }),
+	startTime: varchar("start_time", { length: 5 }),
+	endTime: varchar("end_time", { length: 5 }),
+	scheduleLater: boolean("schedule_later").notNull().default(false),
+	anytime: boolean("anytime").notNull().default(false),
+	assignedTo: varchar("assigned_to", { length: 255 }),
+	emailOnAssign: boolean("email_on_assign").notNull().default(false),
+	teamReminder: reminderEnum("team_reminder").notNull().default("none"),
+	reminderScheduleName: varchar("reminder_schedule_name", { length: 255 }),
+	reminderScheduledAt: timestamp("reminder_scheduled_at", { withTimezone: true }),
+	reminderProcessedAt: timestamp("reminder_processed_at", { withTimezone: true }),
+	status: visitStatusEnum("status").notNull().default("scheduled"),
+	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const timeEntriesSchema = pgTable("time_entries", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	jobId: uuid("job_id").notNull().references(() => jobsSchema.id, { onDelete: "cascade" }),
+	startTime: varchar("start_time", { length: 5 }),
+	endTime: varchar("end_time", { length: 5 }),
+	durationMinutes: integer("duration_minutes").notNull(),
+	notes: text("notes"),
+	date: varchar("date", { length: 10 }).notNull(),
+	employee: varchar("employee", { length: 255 }).notNull(),
+	employeeCostPerHour: numeric("employee_cost_per_hour", { precision: 10, scale: 2 }).notNull().default("0"),
+	totalCost: numeric("total_cost", { precision: 10, scale: 2 }).notNull().default("0"),
+	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const expensesSchema = pgTable("expenses", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	jobId: uuid("job_id").notNull().references(() => jobsSchema.id, { onDelete: "cascade" }),
+	itemName: varchar("item_name", { length: 255 }).notNull(),
+	accountingCode: varchar("accounting_code", { length: 100 }),
+	description: text("description"),
+	date: varchar("date", { length: 10 }).notNull(),
+	total: numeric("total", { precision: 10, scale: 2 }).notNull(),
+	reimburseTo: varchar("reimburse_to", { length: 255 }),
+	receiptFileId: uuid("receipt_file_id").references(() => filesSchema.id, { onDelete: "set null" }),
+	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
 export default jobsSchema;

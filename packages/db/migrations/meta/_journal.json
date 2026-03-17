@@ -204,6 +204,104 @@
       "when": 1773349894889,
       "tag": "0028_sticky_corsair",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1773400140548,
+      "tag": "0029_clammy_shiver_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1773582778731,
+      "tag": "0030_next_thunderbolt_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1773584042462,
+      "tag": "0031_empty_lake",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1773584691109,
+      "tag": "0032_low_paladin",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1773601762707,
+      "tag": "0033_great_mimic",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1773602727576,
+      "tag": "0034_military_jigsaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1773603685407,
+      "tag": "0035_charming_roughhouse",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1773611798404,
+      "tag": "0036_past_silver_surfer",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1773612359311,
+      "tag": "0037_redundant_outlaw_kid",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1773640856542,
+      "tag": "0038_great_alex_wilder",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1773652291110,
+      "tag": "0039_lean_magik",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1773658411192,
+      "tag": "0040_aspiring_norrin_radd",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1773664746575,
+      "tag": "0041_strange_echo",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1773761123052,
+      "tag": "0042_sweet_arachne",
+      "breakpoints": true
     }
   ]
 }

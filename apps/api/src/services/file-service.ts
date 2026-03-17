@@ -1,4 +1,4 @@
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import db, { filesSchema } from "@repo/db";
 import { randomUUID } from "crypto";
@@ -27,4 +27,9 @@ export async function presignUpload(fileName: string, contentType: string) {
 		.returning();
 
 	return { fileId: file.id, key, uploadUrl };
+}
+
+export async function signKey(key: string) {
+	const command = new GetObjectCommand({ Bucket: S3_BUCKET, Key: key });
+	return getSignedUrl(s3, command, { expiresIn: 3600 });
 }

@@ -1,8 +1,9 @@
-import db, { clientsSchema, clientContactsSchema, propertiesSchema } from "@repo/db";
+import db, { clientsSchema, clientContactsSchema, propertiesSchema, clientTagsSchema, tagsSchema } from "@repo/db";
 import type { CreateClientForm } from "@repo/zod/client";
 import { and, eq, ilike, isNull, or, sql, type SQL } from "drizzle-orm";
 import { getClientContacts } from "./client-contact-service";
 import { getClientNotes } from "./client-note-service";
+import { getClientTags } from "./tag-service";
 
 export async function createClient(userId: string, data: CreateClientForm) {
 	const { additionalContacts, properties, ...clientData } = data;
@@ -57,26 +58,53 @@ export async function createClient(userId: string, data: CreateClientForm) {
 }
 
 export async function getClientsByUser(userId: string) {
-	return db
-		.select()
-		.from(clientsSchema)
-		.where(and(eq(clientsSchema.userId, userId), isNull(clientsSchema.deletedAt)));
+	const [clients, allTags] = await Promise.all([
+		db
+			.select()
+			.from(clientsSchema)
+			.where(and(eq(clientsSchema.userId, userId), isNull(clientsSchema.deletedAt))),
+		db
+			.select({
+				clientId: clientTagsSchema.clientId,
+				id: tagsSchema.id,
+				name: tagsSchema.name,
+				color: tagsSchema.color,
+				createdAt: tagsSchema.createdAt,
+			})
+			.from(clientTagsSchema)
+			.innerJoin(tagsSchema, eq(clientTagsSchema.tagId, tagsSchema.id))
+			.innerJoin(clientsSchema, eq(clientTagsSchema.clientId, clientsSchema.id))
+			.where(and(eq(clientsSchema.userId, userId), isNull(clientsSchema.deletedAt))),
+	]);
+
+	const tagsByClient = new Map<string, typeof allTags>();
+	for (const tag of allTags) {
+		const list = tagsByClient.get(tag.clientId) ?? [];
+		list.push(tag);
+		tagsByClient.set(tag.clientId, list);
+	}
+
+	return clients.map((client) => ({
+		...client,
+		tags: (tagsByClient.get(client.id) ?? []).map(({ clientId: _, ...tag }) => tag),
+	}));
 }
 
 export async function getClientById(clientId: string) {
-	const [[client], contactsResult, propertiesResult, notes] = await Promise.all([
+	const [[client], contactsResult, propertiesResult, notesResult, tags] = await Promise.all([
 		db
 			.select()
 			.from(clientsSchema)
 			.where(and(eq(clientsSchema.id, clientId), isNull(clientsSchema.deletedAt))),
 		getClientContacts(clientId, { page: 1, limit: 10, search: "" }),
 		getClientProperties(clientId, { page: 1, limit: 10, search: "" }),
-		getClientNotes(clientId),
+		getClientNotes(clientId, undefined, { page: 1, limit: 20, search: "" }),
+		getClientTags(clientId),
 	]);
 
 	if (!client) return null;
 
-	return { ...client, additionalContacts: contactsResult, propertyDetails: propertiesResult, notes };
+	return { ...client, additionalContacts: contactsResult, propertyDetails: propertiesResult, notes: notesResult, tags };
 }
 
 export async function getClientProperties(clientId: string, pagination: { page: number; limit: number; search: string }) {

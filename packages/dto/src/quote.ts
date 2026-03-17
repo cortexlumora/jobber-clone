@@ -1,12 +1,60 @@
+import type { PaginatedResponse } from "./common";
+import type { ClientNoteDTO } from "./client-note";
+
+export interface QuoteStatsDTO {
+	draftCount: number;
+	awaitingCount: number;
+	approvedCount: number;
+	sentLast30: number;
+	sentLast30Change: number;
+	convertedLast30: number;
+	convertedLast30Change: number;
+}
+
+export interface QuoteListItemDTO {
+	id: string;
+	clientId: string;
+	title: string;
+	quoteNumber: string | null;
+	salesperson: string | null;
+	status: "draft" | "sent" | "approved" | "rejected" | "archived";
+	discount: string | null;
+	tax: string | null;
+	total: number;
+	createdAt: Date;
+	client: {
+		title: string;
+		firstName: string;
+		lastName: string;
+		companyName: string | null;
+		useCompanyAsPrimary: boolean;
+		phones: import("./client").Phone[];
+		emails: import("./client").Email[];
+	} | null;
+	property: {
+		street1: string | null;
+		street2: string | null;
+		city: string | null;
+		state: string | null;
+		zip: string | null;
+	} | null;
+}
+
+export interface LineItemImageDTO {
+	id: string;
+	name: string;
+	contentType: string;
+	url: string | null;
+}
+
 export interface QuoteLineItemDTO {
 	id: string;
-	quoteId: string;
 	type: string;
 	name: string;
 	description: string | null;
 	qty: number;
 	unitPrice: string;
-	imageFileId: string | null;
+	image: LineItemImageDTO | null;
 	sortOrder: number;
 	createdAt: Date;
 }
@@ -49,6 +97,7 @@ export interface QuoteDTO {
 	attachmentFileIds: string[];
 	imageFileIds: string[];
 	noteFileIds: string[];
+	clientNotes: PaginatedResponse<ClientNoteDTO>;
 	// Timestamps
 	createdAt: Date;
 	updatedAt: Date;

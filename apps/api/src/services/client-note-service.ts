@@ -2,8 +2,9 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import db, { clientNotesSchema, clientNoteFilesSchema, filesSchema, usersSchema } from "@repo/db";
 import type { CreateClientNoteForm, UpdateClientNoteForm } from "@repo/zod/client-note";
+import type { PaginationQuery } from "@repo/zod/pagination";
 import type { ClientNoteFileDTO } from "@repo/dto";
-import { eq, desc, asc, isNull, and } from "drizzle-orm";
+import { eq, desc, asc, isNull, and, sql } from "drizzle-orm";
 import { s3, S3_BUCKET } from "../lib/s3";
 
 async function getPresignedFiles(noteId: string): Promise<ClientNoteFileDTO[]> {
@@ -65,33 +66,62 @@ export async function createClientNote(userId: string, clientId: string, data: C
 	};
 }
 
-export async function getClientNotes(clientId: string) {
-	const notes = await db
-		.select({
-			id: clientNotesSchema.id,
-			clientId: clientNotesSchema.clientId,
-			createdById: clientNotesSchema.createdById,
-			createdByName: usersSchema.name,
-			content: clientNotesSchema.content,
-			isPinned: clientNotesSchema.isPinned,
-			relatedToRequests: clientNotesSchema.relatedToRequests,
-			relatedToQuotes: clientNotesSchema.relatedToQuotes,
-			relatedToJobs: clientNotesSchema.relatedToJobs,
-			relatedToInvoices: clientNotesSchema.relatedToInvoices,
-			createdAt: clientNotesSchema.createdAt,
-			updatedAt: clientNotesSchema.updatedAt,
-		})
-		.from(clientNotesSchema)
-		.innerJoin(usersSchema, eq(clientNotesSchema.createdById, usersSchema.id))
-		.where(and(eq(clientNotesSchema.clientId, clientId), isNull(clientNotesSchema.deletedAt)))
-		.orderBy(desc(clientNotesSchema.isPinned), desc(clientNotesSchema.createdAt));
+export type RelatedToFilter = "all" | "requests" | "quotes" | "jobs" | "invoices";
 
-	return Promise.all(
+export async function getClientNotes(clientId: string, relatedTo?: RelatedToFilter, pagination?: PaginationQuery) {
+	const { page = 1, limit = 20 } = pagination ?? {};
+	const offset = (page - 1) * limit;
+
+	const conditions = [eq(clientNotesSchema.clientId, clientId), isNull(clientNotesSchema.deletedAt)];
+
+	if (relatedTo === "requests") conditions.push(eq(clientNotesSchema.relatedToRequests, true));
+	if (relatedTo === "quotes") conditions.push(eq(clientNotesSchema.relatedToQuotes, true));
+	if (relatedTo === "jobs") conditions.push(eq(clientNotesSchema.relatedToJobs, true));
+	if (relatedTo === "invoices") conditions.push(eq(clientNotesSchema.relatedToInvoices, true));
+
+	const where = and(...conditions);
+
+	const [notes, [{ count }]] = await Promise.all([
+		db
+			.select({
+				id: clientNotesSchema.id,
+				clientId: clientNotesSchema.clientId,
+				createdById: clientNotesSchema.createdById,
+				createdByName: usersSchema.name,
+				content: clientNotesSchema.content,
+				isPinned: clientNotesSchema.isPinned,
+				relatedToRequests: clientNotesSchema.relatedToRequests,
+				relatedToQuotes: clientNotesSchema.relatedToQuotes,
+				relatedToJobs: clientNotesSchema.relatedToJobs,
+				relatedToInvoices: clientNotesSchema.relatedToInvoices,
+				createdAt: clientNotesSchema.createdAt,
+				updatedAt: clientNotesSchema.updatedAt,
+			})
+			.from(clientNotesSchema)
+			.innerJoin(usersSchema, eq(clientNotesSchema.createdById, usersSchema.id))
+			.where(where)
+			.orderBy(desc(clientNotesSchema.isPinned), desc(clientNotesSchema.createdAt))
+			.limit(limit)
+			.offset(offset),
+		db.select({ count: sql<number>`count(*)` }).from(clientNotesSchema).where(where),
+	]);
+
+	const data = await Promise.all(
 		notes.map(async (note) => {
 			const files = await getPresignedFiles(note.id);
 			return { ...note, createdByAvatar: null as string | null, files };
 		}),
 	);
+
+	return {
+		data,
+		pagination: {
+			page,
+			limit,
+			total: Number(count),
+			totalPages: Math.ceil(Number(count) / limit),
+		},
+	};
 }
 
 export async function updateClientNote(noteId: string, data: UpdateClientNoteForm) {

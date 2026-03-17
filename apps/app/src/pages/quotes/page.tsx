@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { getQuotes } from "./api";
-import { getClients, getClientProperties } from "@/pages/clients/api";
-import type { ClientDTO, QuoteDTO, PropertyDTO } from "@repo/dto";
+import { usePagination } from "@repo/common";
+import { getQuotes, getQuoteStats } from "./api";
+import type { QuoteListItemDTO } from "@repo/dto";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, MoreHorizontal } from "lucide-react";
+import { Plus, Search, MoreHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
 import {
 	Table,
 	TableBody,
@@ -33,58 +33,23 @@ const statusColors: Record<string, string> = {
 	archived: "bg-muted text-muted-foreground",
 };
 
-function computeTotal(quote: QuoteDTO) {
-	const subtotal = quote.lineItems
-		.filter((i) => i.type === "line_item")
-		.reduce((sum, item) => sum + item.qty * Number(item.unitPrice), 0);
-	const discount = quote.discount ? Number(quote.discount) : 0;
-	const tax = quote.tax ? Number(quote.tax) : 0;
-	return subtotal - discount + tax;
-}
-
 const QuotesPage = () => {
 	const navigate = useNavigate();
+	const { page, setPage, perPage, search, setSearch } = usePagination({ perPage: 10 });
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [salespersonFilter, setSalespersonFilter] = useState("all");
-	const [search, setSearch] = useState("");
 
-	const { data: quotes, isLoading, isError, error } = useQuery({
-		queryKey: ["quotes"],
-		queryFn: getQuotes,
-	});
-	const { data: clients } = useQuery({
-		queryKey: ["clients"],
-		queryFn: getClients,
+	const { data: result, isLoading, isError, error } = useQuery({
+		queryKey: ["quotes", page, perPage, statusFilter, search],
+		queryFn: () => getQuotes(page, perPage),
 	});
 
-	const clientMap = useMemo(() => {
-		if (!clients) return new Map<string, ClientDTO>();
-		return new Map(clients.map((c) => [c.id, c]));
-	}, [clients]);
+	const quotes = result?.data ?? [];
+	const total = result?.pagination?.total ?? 0;
+	const totalPages = result?.pagination?.totalPages ?? 0;
 
-	// Fetch properties for all clients that have quotes
-	const clientIds = useMemo(() => {
-		if (!quotes) return [];
-		return [...new Set(quotes.map((q) => q.clientId))];
-	}, [quotes]);
-
-	const { data: propertiesMap } = useQuery({
-		queryKey: ["quote-client-properties", clientIds],
-		queryFn: async () => {
-			const map = new Map<string, PropertyDTO[]>();
-			await Promise.all(
-				clientIds.map(async (clientId) => {
-					const result = await getClientProperties(clientId, 1, 100);
-					map.set(clientId, result.data);
-				}),
-			);
-			return map;
-		},
-		enabled: clientIds.length > 0,
-	});
-
-	const getClientDisplayName = (clientId: string) => {
-		const client = clientMap.get(clientId);
+	const getClientDisplayName = (quote: QuoteListItemDTO) => {
+		const client = quote.client;
 		if (!client) return "";
 		const title = client.title !== "none" ? `${client.title} ` : "";
 		const name = client.useCompanyAsPrimary && client.companyName
@@ -93,42 +58,23 @@ const QuotesPage = () => {
 		return `${title}${name}`;
 	};
 
-	const getPropertyAddress = (clientId: string) => {
-		const props = propertiesMap?.get(clientId);
-		if (!props || props.length === 0) return null;
-		const p = props[0];
-		const parts = [p.street1, p.street2, p.city, p.state, p.zip].filter(Boolean);
-		return parts.join(", ");
+	const getPropertyAddress = (quote: QuoteListItemDTO) => {
+		if (!quote.property) return null;
+		return [quote.property.street1, quote.property.street2, quote.property.city, quote.property.state, quote.property.zip].filter(Boolean).join(", ");
 	};
 
 	// Stats
-	const draftCount = quotes?.filter((q) => q.status === "draft").length ?? 0;
-	const awaitingCount = quotes?.filter((q) => q.status === "sent").length ?? 0;
+	const { data: stats } = useQuery({
+		queryKey: ["quote-stats"],
+		queryFn: getQuoteStats,
+	});
+
+	const draftCount = stats?.draftCount ?? 0;
+	const awaitingCount = stats?.awaitingCount ?? 0;
 	const changesRequestedCount = 0;
-	const approvedCount = quotes?.filter((q) => q.status === "approved").length ?? 0;
-
-	const sentLast30 = useMemo(() => {
-		if (!quotes) return { count: 0, total: 0 };
-		const cutoff = new Date();
-		cutoff.setDate(cutoff.getDate() - 30);
-		const sent = quotes.filter((q) => q.status !== "draft" && new Date(q.createdAt) >= cutoff);
-		return {
-			count: sent.length,
-			total: sent.reduce((sum, q) => sum + computeTotal(q), 0),
-		};
-	}, [quotes]);
-
-	const convertedLast30 = useMemo(() => {
-		if (!quotes) return { count: 0, total: 0 };
-		const cutoff = new Date();
-		cutoff.setDate(cutoff.getDate() - 30);
-		const converted = quotes.filter((q) => q.status === "approved" && new Date(q.createdAt) >= cutoff);
-		return {
-			count: converted.length,
-			total: converted.reduce((sum, q) => sum + computeTotal(q), 0),
-		};
-	}, [quotes]);
-
+	const approvedCount = stats?.approvedCount ?? 0;
+	const sentLast30 = { count: stats?.sentLast30 ?? 0, change: stats?.sentLast30Change ?? 0 };
+	const convertedLast30 = { count: stats?.convertedLast30 ?? 0, change: stats?.convertedLast30Change ?? 0 };
 	const conversionRate = sentLast30.count > 0
 		? Math.round((convertedLast30.count / sentLast30.count) * 100)
 		: 0;
@@ -140,7 +86,6 @@ const QuotesPage = () => {
 	}, [quotes]);
 
 	const filteredQuotes = useMemo(() => {
-		if (!quotes) return [];
 		let filtered = quotes;
 		if (statusFilter !== "all") {
 			filtered = filtered.filter((q) => q.status === statusFilter);
@@ -151,7 +96,7 @@ const QuotesPage = () => {
 		if (search.trim()) {
 			const q = search.toLowerCase();
 			filtered = filtered.filter((quote) => {
-				const clientName = getClientDisplayName(quote.clientId);
+				const clientName = getClientDisplayName(quote);
 				return (
 					quote.title.toLowerCase().includes(q) ||
 					clientName.toLowerCase().includes(q) ||
@@ -160,7 +105,7 @@ const QuotesPage = () => {
 			});
 		}
 		return filtered;
-	}, [quotes, statusFilter, salespersonFilter, search, clientMap]);
+	}, [quotes, statusFilter, salespersonFilter, search]);
 
 	return (
 		<div>
@@ -241,7 +186,7 @@ const QuotesPage = () => {
 						<div className="flex items-baseline gap-3">
 							<span className="text-3xl font-semibold">{sentLast30.count}</span>
 							<span className="text-sm text-muted-foreground">0%</span>
-							<span className="text-sm font-medium">${sentLast30.total.toFixed(0)}</span>
+							<span className="text-sm font-medium">{sentLast30.change}%</span>
 						</div>
 					</CardContent>
 				</Card>
@@ -256,7 +201,7 @@ const QuotesPage = () => {
 						<div className="flex items-baseline gap-3">
 							<span className="text-3xl font-semibold">{convertedLast30.count}</span>
 							<span className="text-sm text-muted-foreground">0%</span>
-							<span className="text-sm font-medium">${convertedLast30.total.toFixed(0)}</span>
+							<span className="text-sm font-medium">{convertedLast30.change}%</span>
 						</div>
 					</CardContent>
 				</Card>
@@ -334,9 +279,8 @@ const QuotesPage = () => {
 								</TableRow>
 							)}
 							{filteredQuotes.map((quote) => {
-								const clientName = getClientDisplayName(quote.clientId);
-								const property = getPropertyAddress(quote.clientId);
-								const total = computeTotal(quote);
+								const clientName = getClientDisplayName(quote);
+								const property = getPropertyAddress(quote);
 								const created = new Date(quote.createdAt).toLocaleDateString("en-US", {
 									month: "short",
 									day: "numeric",
@@ -363,13 +307,28 @@ const QuotesPage = () => {
 											</Badge>
 										</TableCell>
 										<TableCell className="text-right font-medium">
-											${total.toFixed(2)}
+											${quote.total.toFixed(2)}
 										</TableCell>
 									</TableRow>
 								);
 							})}
 						</TableBody>
 					</Table>
+					{totalPages > 1 && (
+						<div className="flex items-center justify-between px-4 py-3 border-t">
+							<p className="text-xs text-muted-foreground">
+								{(page - 1) * perPage + 1}–{Math.min(page * perPage, total)} of {total}
+							</p>
+							<div className="flex items-center gap-1">
+								<Button variant="ghost" size="icon" className="h-7 w-7" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+									<ChevronLeft className="h-4 w-4" />
+								</Button>
+								<Button variant="ghost" size="icon" className="h-7 w-7" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+									<ChevronRight className="h-4 w-4" />
+								</Button>
+							</div>
+						</div>
+					)}
 				</div>
 			)}
 		</div>

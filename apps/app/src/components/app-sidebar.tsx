@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router";
+import { NavLink } from "react-router";
 import {
 	Sidebar,
 	SidebarContent,
@@ -19,9 +19,6 @@ function NavGroupSection({
 	label: string;
 	items: NavItem[];
 }) {
-	const location = useLocation();
-	const navigate = useNavigate();
-
 	return (
 		<SidebarGroup>
 			<SidebarGroupLabel>{label}</SidebarGroupLabel>
@@ -29,13 +26,16 @@ function NavGroupSection({
 				<SidebarMenu>
 					{items.map((item) => (
 						<SidebarMenuItem key={item.title}>
-							<SidebarMenuButton
-								isActive={location.pathname === item.path}
-								onClick={() => navigate(item.path)}
-							>
-								<item.icon />
-								<span>{item.title}</span>
-							</SidebarMenuButton>
+							<NavLink to={item.path}>
+								{({ isActive }) => (
+									<SidebarMenuButton isActive={isActive} asChild>
+										<span>
+											<item.icon />
+											<span>{item.title}</span>
+										</span>
+									</SidebarMenuButton>
+								)}
+							</NavLink>
 						</SidebarMenuItem>
 					))}
 				</SidebarMenu>
@@ -48,7 +48,7 @@ export function AppSidebar() {
 	return (
 		<Sidebar>
 			<SidebarHeader className="border-b h-14 justify-center">
-				<span className="text-lg font-semibold px-2">Jobber</span>
+				<span className="text-lg font-semibold px-2">WorkPulse</span>
 			</SidebarHeader>
 			<SidebarContent>
 				{navGroups.map((group) => (

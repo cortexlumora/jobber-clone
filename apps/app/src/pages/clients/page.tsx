@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { getClients, getClientStats, archiveClient, deleteClient } from "./api";
+import { TagsDialog } from "@/components/common/tags-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, TrendingUp, TrendingDown, MoreHorizontal, Phone, Mail, Archive, Trash2, ExternalLink } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, MoreHorizontal, Phone, Mail, Archive, Trash2, ExternalLink, Tag } from "lucide-react";
 import {
 	Table,
 	TableBody,
@@ -22,6 +25,7 @@ import {
 const ClientsPage = () => {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const [tagsDialogClient, setTagsDialogClient] = useState<{ id: string; tags: import("@repo/dto").TagDTO[] } | null>(null);
 	const { data: clients, isLoading, isError, error } = useQuery({
 		queryKey: ["clients"],
 		queryFn: getClients,
@@ -122,6 +126,7 @@ const ClientsPage = () => {
 							<TableRow>
 								<TableHead>Name</TableHead>
 								<TableHead>Company</TableHead>
+								<TableHead>Tags</TableHead>
 								<TableHead>Email</TableHead>
 								<TableHead>Phone</TableHead>
 								<TableHead className="w-10"></TableHead>
@@ -130,7 +135,7 @@ const ClientsPage = () => {
 						<TableBody>
 							{clients.length === 0 && (
 								<TableRow>
-									<TableCell colSpan={5} className="text-center text-muted-foreground">
+									<TableCell colSpan={6} className="text-center text-muted-foreground">
 										No clients yet
 									</TableCell>
 								</TableRow>
@@ -142,6 +147,24 @@ const ClientsPage = () => {
 										{client.firstName} {client.lastName}
 									</TableCell>
 									<TableCell>{client.companyName ?? "—"}</TableCell>
+									<TableCell>
+										{client.tags && client.tags.length > 0 ? (
+											<div className="flex flex-wrap gap-1">
+												{client.tags.map((tag) => (
+													<Badge
+														key={tag.id}
+														variant="secondary"
+														className="text-xs"
+														style={tag.color ? { backgroundColor: `${tag.color}20`, color: tag.color, borderColor: `${tag.color}40` } : undefined}
+													>
+														{tag.name}
+													</Badge>
+												))}
+											</div>
+										) : (
+											"—"
+										)}
+									</TableCell>
 									<TableCell>{client.emails[0]?.value ?? "—"}</TableCell>
 									<TableCell>{client.phones[0]?.number ?? "—"}</TableCell>
 									<TableCell onClick={(e) => e.stopPropagation()}>
@@ -168,6 +191,10 @@ const ClientsPage = () => {
 														</a>
 													</DropdownMenuItem>
 												)}
+												<DropdownMenuItem onClick={() => setTagsDialogClient({ id: client.id, tags: client.tags ?? [] })}>
+													<Tag className="h-4 w-4 mr-2" />
+													Tags
+												</DropdownMenuItem>
 												<DropdownMenuItem onClick={() => archiveMutation.mutate(client.id)}>
 													<Archive className="h-4 w-4 mr-2" />
 													Archive
@@ -191,6 +218,14 @@ const ClientsPage = () => {
 						</TableBody>
 					</Table>
 				</div>
+			)}
+		{tagsDialogClient && (
+				<TagsDialog
+					open={!!tagsDialogClient}
+					onOpenChange={(open) => !open && setTagsDialogClient(null)}
+					clientId={tagsDialogClient.id}
+					clientTags={tagsDialogClient.tags}
+				/>
 			)}
 		</div>
 	);

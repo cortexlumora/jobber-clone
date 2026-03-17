@@ -1,18 +1,72 @@
-import type { APIResponse, JobDTO } from "@repo/dto";
-import type { CreateJobForm } from "@repo/zod/job";
+import type { APIResponse, JobDTO, JobListItemDTO, JobInvoiceDTO, JobStatsDTO, InvoiceReminderDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
+import type { CreateJobForm, UpdateJobLineItemsForm } from "@repo/zod/job";
+import type { CreateInvoiceReminderForm } from "@repo/zod/invoice-reminder";
 import { http } from "@/lib/http";
+
+export async function getJobStats() {
+	const res = await http.get<APIResponse<JobStatsDTO>>("/api/v1/jobs/stats");
+	return res.data.data;
+}
 
 export async function createJob(data: CreateJobForm) {
 	const res = await http.post<APIResponse<JobDTO>>("/api/v1/jobs", data);
 	return res.data.data;
 }
 
-export async function getJobs() {
-	const res = await http.get<APIResponse<JobDTO[]>>("/api/v1/jobs");
-	return res.data.data;
+export async function getJobs(page = 1, limit = 10) {
+	const res = await http.get<PaginatedResponse<JobListItemDTO>>("/api/v1/jobs", {
+		params: { page, limit },
+	});
+	return res.data;
 }
 
 export async function getJobById(id: string) {
 	const res = await http.get<APIResponse<JobDTO | null>>(`/api/v1/jobs/${id}`);
+	return res.data.data;
+}
+
+export async function getJobNotes(jobId: string, page = 1, limit = 20) {
+	const res = await http.get<PaginatedResponse<ClientNoteDTO>>(`/api/v1/jobs/${jobId}/notes`, {
+		params: { page, limit },
+	});
+	return res.data;
+}
+
+export async function getJobInvoices(jobId: string, page = 1, limit = 10) {
+	const res = await http.get<PaginatedResponse<JobInvoiceDTO>>(`/api/v1/jobs/${jobId}/invoices`, {
+		params: { page, limit },
+	});
+	return res.data;
+}
+
+export async function createInvoiceReminder(jobId: string, data: CreateInvoiceReminderForm) {
+	const res = await http.post<APIResponse<InvoiceReminderDTO>>(`/api/v1/jobs/${jobId}/invoice-reminders`, data);
+	return res.data.data;
+}
+
+export async function getInvoiceReminders(jobId: string, page = 1, limit = 10) {
+	const res = await http.get<PaginatedResponse<InvoiceReminderDTO>>(`/api/v1/jobs/${jobId}/invoice-reminders`, {
+		params: { page, limit },
+	});
+	return res.data;
+}
+
+export async function deleteInvoiceReminder(jobId: string, id: string) {
+	const res = await http.delete<APIResponse<null>>(`/api/v1/jobs/${jobId}/invoice-reminders/${id}`);
+	return res.data.data;
+}
+
+export async function updateJobStatus(jobId: string, status: string) {
+	const res = await http.patch<APIResponse<{ id: string }>>(`/api/v1/jobs/${jobId}/status`, { status });
+	return res.data.data;
+}
+
+export async function deleteJob(jobId: string) {
+	const res = await http.delete<APIResponse<null>>(`/api/v1/jobs/${jobId}`);
+	return res.data.data;
+}
+
+export async function updateJobLineItems(id: string, data: UpdateJobLineItemsForm) {
+	const res = await http.put<APIResponse<JobDTO>>(`/api/v1/jobs/${id}/line-items`, data);
 	return res.data.data;
 }

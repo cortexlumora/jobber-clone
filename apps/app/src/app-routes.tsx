@@ -14,6 +14,9 @@ import RequestsPage from "./pages/requests/page";
 import QuotesPage from "./pages/quotes/page";
 import JobsPage from "./pages/jobs/page";
 import InvoicesPage from "./pages/invoices/page";
+import InvoiceClientSelectPage from "./pages/invoices/clients/select-page";
+import CreateInvoicePage from "./pages/invoices/create/page";
+import InvoiceDetailPage from "./pages/invoices/detail/page";
 import MarketingPage from "./pages/marketing/page";
 import ReportsPage from "./pages/reports/page";
 import ExpensesPage from "./pages/expenses/page";
@@ -23,12 +26,12 @@ import AppsPage from "./pages/apps/page";
 import CreateClientPage from "./pages/clients/create/page";
 import ClientDetailPage from "./pages/clients/detail/page";
 import EditClientPage from "./pages/clients/edit/page";
-import ClientContactsPage from "./pages/clients/contacts/page";
 import CreateRequestPage from "./pages/requests/create/page";
 import RequestDetailPage from "./pages/requests/detail/page";
 import CreateQuotePage from "./pages/quotes/create/page";
 import QuoteDetailPage from "./pages/quotes/detail/page";
 import CreateJobPage from "./pages/jobs/create/page";
+import JobDetailPage from "./pages/jobs/detail/page";
 import SettingsLayout from "./pages/settings/layout";
 import CompanySettingsPage from "./pages/settings/company/page";
 import TeamSettingsPage from "./pages/settings/team/page";
@@ -50,7 +53,6 @@ const routes = createBrowserRouter([
 			{ path: "/clients/create", element: <CreateClientPage /> },
 			{ path: "/clients/:id", element: <ClientDetailPage /> },
 			{ path: "/clients/:id/edit", element: <EditClientPage /> },
-			{ path: "/clients/:id/contacts", element: <ClientContactsPage /> },
 			{ path: "/requests", element: <RequestsPage /> },
 			{ path: "/requests/create", element: <CreateRequestPage /> },
 			{ path: "/requests/:id", element: <RequestDetailPage /> },
@@ -59,7 +61,11 @@ const routes = createBrowserRouter([
 			{ path: "/quotes/:id", element: <QuoteDetailPage /> },
 			{ path: "/jobs", element: <JobsPage /> },
 			{ path: "/jobs/create", element: <CreateJobPage /> },
+			{ path: "/jobs/:id", element: <JobDetailPage /> },
 			{ path: "/invoices", element: <InvoicesPage /> },
+			{ path: "/invoices/clients/select", element: <InvoiceClientSelectPage /> },
+			{ path: "/invoices/create", element: <CreateInvoicePage /> },
+			{ path: "/invoices/:id", element: <InvoiceDetailPage /> },
 			{ path: "/marketing", element: <MarketingPage /> },
 			{ path: "/reports", element: <ReportsPage /> },
 			{ path: "/expenses", element: <ExpensesPage /> },

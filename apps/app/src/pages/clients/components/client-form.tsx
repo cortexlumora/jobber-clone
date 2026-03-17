@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createClientSchema, type CreateClientForm } from "@repo/zod/client";
-import { getCustomFieldDefinitions, createCustomFieldDefinition } from "@/pages/settings/api";
+import { getCustomFieldDefinitions } from "@/pages/settings/api";
+import { CustomFieldDialog } from "@/components/custom-field-dialog";
+import { CompanyNameField } from "@/components/common/company-name-field";
+import { MultiInputField } from "@/components/common/multi-input-field";
+import { PersonNameFields } from "@/components/common/person-name-fields";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,8 +83,6 @@ interface ClientFormProps {
 }
 
 export default function ClientForm({ defaultValues, initialContacts, onSubmit: onSubmitProp, onReset, error }: ClientFormProps) {
-	const queryClient = useQueryClient();
-
 	const [additionalContacts, setAdditionalContacts] = useState<ContactEntry[]>(initialContacts?.additional ?? []);
 	const [propertyContacts, setPropertyContacts] = useState<ContactEntry[]>(initialContacts?.property ?? []);
 	const [contactDialogOpen, setContactDialogOpen] = useState(false);
@@ -97,13 +99,6 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 	const { data: propertyCustomFields = [] } = useQuery({
 		queryKey: ["custom-field-definitions", "property"],
 		queryFn: () => getCustomFieldDefinitions("property"),
-	});
-
-	const createFieldMutation = useMutation({
-		mutationFn: createCustomFieldDefinition,
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["custom-field-definitions"] });
-		},
 	});
 
 	const {
@@ -167,9 +162,6 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 
 	const [customFieldDialogOpen, setCustomFieldDialogOpen] = useState(false);
 	const [customFieldTarget, setCustomFieldTarget] = useState<"client" | "property">("client");
-	const [customFieldName, setCustomFieldName] = useState("");
-	const [customFieldType, setCustomFieldType] = useState<string>("");
-	const [customFieldDefault, setCustomFieldDefault] = useState("");
 
 	const [commDialogOpen, setCommDialogOpen] = useState(false);
 	const [commState, setCommState] = useState({
@@ -187,26 +179,6 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 		});
 	};
 
-	const handleAddCustomField = () => {
-		if (!customFieldName || !customFieldType) return;
-		createFieldMutation.mutate(
-			{
-				name: customFieldName,
-				fieldType: customFieldType as "text" | "number" | "dropdown" | "checkbox" | "date",
-				appliesTo: customFieldTarget,
-				defaultValue: customFieldDefault || undefined,
-			},
-			{
-				onSuccess: () => {
-					setCustomFieldDialogOpen(false);
-					setCustomFieldName("");
-					setCustomFieldType("");
-					setCustomFieldDefault("");
-				},
-			}
-		);
-	};
-
 	return (
 		<>
 			<form id="client-form" onSubmit={handleSubmit(onSubmit)} className="space-y-10">
@@ -215,175 +187,68 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 					title="Primary contact details"
 					description="Provide the main point of contact to ensure smooth communication and reliable client records."
 				>
-					<div className="grid grid-cols-[120px_1fr_1fr] gap-4">
-						<div className="space-y-2">
-							<Label>Title</Label>
-							<Controller
-								control={control}
-								name="title"
-								render={({ field }) => (
-									<Select onValueChange={field.onChange} value={field.value}>
-										<SelectTrigger>
-											<SelectValue placeholder="Title" />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="none">None</SelectItem>
-											<SelectItem value="Mr.">Mr.</SelectItem>
-											<SelectItem value="Ms.">Ms.</SelectItem>
-											<SelectItem value="Mrs.">Mrs.</SelectItem>
-											<SelectItem value="Miss.">Miss.</SelectItem>
-											<SelectItem value="Dr.">Dr.</SelectItem>
-										</SelectContent>
-									</Select>
-								)}
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="firstName">First Name</Label>
-							<Input id="firstName" placeholder="John" {...register("firstName")} />
-							{errors.firstName && (
-								<p className="text-sm text-destructive">{errors.firstName.message}</p>
-							)}
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="lastName">Last Name</Label>
-							<Input id="lastName" placeholder="Smith" {...register("lastName")} />
-							{errors.lastName && (
-								<p className="text-sm text-destructive">{errors.lastName.message}</p>
-							)}
-						</div>
-					</div>
-					<div className="space-y-2">
-						<Label htmlFor="companyName">Company Name</Label>
-						<Input id="companyName" placeholder="Acme Inc." {...register("companyName")} />
-					</div>
-					<Controller
-						control={control}
-						name="useCompanyAsPrimary"
-						render={({ field }) => (
-							<div className="flex items-center gap-2">
-								<Checkbox
-									id="useCompanyAsPrimary"
-									checked={field.value}
-									onCheckedChange={field.onChange}
-								/>
-								<Label htmlFor="useCompanyAsPrimary" className="font-normal">
-									Use company name as the primary name
-								</Label>
-							</div>
-						)}
+					<PersonNameFields
+						title={watch("title")}
+						onTitleChange={(v) => setValue("title", v)}
+						firstNameProps={register("firstName")}
+						lastNameProps={register("lastName")}
+						errors={{
+							firstName: errors.firstName?.message,
+							lastName: errors.lastName?.message,
+						}}
+					/>
+
+					<CompanyNameField
+						inputProps={register("companyName")}
+						useAsPrimary={watch("useCompanyAsPrimary")}
+						onUseAsPrimaryChange={(v) => setValue("useCompanyAsPrimary", v)}
 					/>
 
 					{/* Contact Details */}
 					<div className="space-y-4 pt-4">
 						<h3 className="text-lg font-medium">Contact Details</h3>
 
-						{/* Phone Numbers */}
-						<div className="space-y-2">
-							<Label>Phone</Label>
-							{phoneFields.map((field, index) => (
-								<div key={field.id} className="flex gap-2">
-									<Controller
-										control={control}
-										name={`phones.${index}.type`}
-										render={({ field }) => (
-											<Select onValueChange={field.onChange} value={field.value}>
-												<SelectTrigger className="w-35">
-													<SelectValue />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="mobile">Mobile</SelectItem>
-													<SelectItem value="landline">Landline</SelectItem>
-												</SelectContent>
-											</Select>
-										)}
-									/>
-									<Input
-										placeholder="(555) 123-4567"
-										{...register(`phones.${index}.number`)}
-									/>
-									{phoneFields.length > 1 && (
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											onClick={() => removePhone(index)}
-										>
-											<Trash2 className="h-4 w-4" />
-										</Button>
-									)}
-								</div>
-							))}
-							{errors.phones && (
-								<p className="text-sm text-destructive">
-									{errors.phones.root?.message || "Please check phone numbers"}
-								</p>
-							)}
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								onClick={() => appendPhone({ type: "mobile", number: "" })}
-							>
-								<Plus className="h-4 w-4 mr-1" />
-								Add Phone
-							</Button>
-						</div>
+						<MultiInputField
+							label="Phone"
+							control={control}
+							typeOptions={[
+								{ value: "mobile", label: "Mobile" },
+								{ value: "landline", label: "Landline" },
+							]}
+							items={phoneFields.map((field, index) => ({
+								id: field.id,
+								typeName: `phones.${index}.type` as const,
+								valueName: `phones.${index}.number` as const,
+								onTypeChange: (v) => setValue(`phones.${index}.type`, v as "mobile" | "landline"),
+								inputProps: { placeholder: "(555) 123-4567", ...register(`phones.${index}.number`) },
+								onRemove: () => removePhone(index),
+							}))}
+							error={errors.phones?.root?.message || (errors.phones ? "Please check phone numbers" : undefined)}
+							addLabel="Add Phone"
+							onAdd={() => appendPhone({ type: "mobile", number: "" })}
+						/>
 
-						{/* Emails */}
-						<div className="space-y-2">
-							<Label>Email</Label>
-							{emailFields.map((field, index) => (
-								<div key={field.id} className="flex gap-2">
-									<Controller
-										control={control}
-										name={`emails.${index}.type`}
-										render={({ field }) => (
-											<Select onValueChange={field.onChange} value={field.value}>
-												<SelectTrigger className="w-35">
-													<SelectValue />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="primary">Primary</SelectItem>
-													<SelectItem value="secondary">Secondary</SelectItem>
-													<SelectItem value="work">Work</SelectItem>
-													<SelectItem value="other">Other</SelectItem>
-												</SelectContent>
-											</Select>
-										)}
-									/>
-									<Input
-										type="email"
-										placeholder="john@example.com"
-										{...register(`emails.${index}.value`)}
-									/>
-									{emailFields.length > 1 && (
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											onClick={() => removeEmail(index)}
-										>
-											<Trash2 className="h-4 w-4" />
-										</Button>
-									)}
-								</div>
-							))}
-							{errors.emails && (
-								<p className="text-sm text-destructive">
-									{errors.emails.root?.message || "Please check email addresses"}
-								</p>
-							)}
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								onClick={() => appendEmail({ type: "primary", value: "" })}
-							>
-								<Plus className="h-4 w-4 mr-1" />
-								Add Email
-							</Button>
-						</div>
+						<MultiInputField
+							label="Email"
+							control={control}
+							typeOptions={[
+								{ value: "primary", label: "Primary" },
+								{ value: "secondary", label: "Secondary" },
+								{ value: "work", label: "Work" },
+								{ value: "other", label: "Other" },
+							]}
+							items={emailFields.map((field, index) => ({
+								id: field.id,
+								typeName: `emails.${index}.type` as const,
+								valueName: `emails.${index}.value` as const,
+								onTypeChange: (v) => setValue(`emails.${index}.type`, v as "primary" | "secondary" | "work" | "other"),
+								inputProps: { type: "email", placeholder: "john@example.com", ...register(`emails.${index}.value`) },
+								onRemove: () => removeEmail(index),
+							}))}
+							error={errors.emails?.root?.message || (errors.emails ? "Please check email addresses" : undefined)}
+							addLabel="Add Email"
+							onAdd={() => appendEmail({ type: "primary", value: "" })}
+						/>
 
 						{/* Communication Settings */}
 						<Button
@@ -793,48 +658,11 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 			</Dialog>
 
 			{/* Custom Field Dialog */}
-			<Dialog open={customFieldDialogOpen} onOpenChange={setCustomFieldDialogOpen}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>New custom field</DialogTitle>
-					</DialogHeader>
-					<div className="space-y-4 py-2">
-						<div className="space-y-1">
-							<Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Applies to</Label>
-							<p className="text-sm font-medium">{customFieldTarget === "client" ? "All clients" : "All properties"}</p>
-						</div>
-						<p className="text-sm text-muted-foreground">Transferable fields appear in multiple places and follow your workflow</p>
-						<div className="space-y-2">
-							<Label>Custom field name</Label>
-							<Input placeholder="Serial Number" value={customFieldName} onChange={(e) => setCustomFieldName(e.target.value)} />
-						</div>
-						<div className="space-y-2">
-							<Label>Field type</Label>
-							<Select value={customFieldType} onValueChange={setCustomFieldType}>
-								<SelectTrigger className="w-full"><SelectValue placeholder="Select field type" /></SelectTrigger>
-								<SelectContent>
-									<SelectItem value="text">Text</SelectItem>
-									<SelectItem value="number">Number</SelectItem>
-									<SelectItem value="dropdown">Dropdown</SelectItem>
-									<SelectItem value="checkbox">Checkbox</SelectItem>
-									<SelectItem value="date">Date</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-						<div className="space-y-2">
-							<Label>Default value</Label>
-							<Input placeholder="54A17-HEX" value={customFieldDefault} onChange={(e) => setCustomFieldDefault(e.target.value)} />
-						</div>
-						<p className="text-xs text-muted-foreground">All custom fields can be edited and reordered in Settings &gt; Custom Fields</p>
-					</div>
-					<DialogFooter>
-						<Button type="button" variant="outline" onClick={() => setCustomFieldDialogOpen(false)}>Cancel</Button>
-						<Button type="button" disabled={!customFieldName || !customFieldType || createFieldMutation.isPending} onClick={handleAddCustomField}>
-							{createFieldMutation.isPending ? "Adding..." : "Add Custom Field"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<CustomFieldDialog
+				open={customFieldDialogOpen}
+				onOpenChange={setCustomFieldDialogOpen}
+				appliesTo={customFieldTarget}
+			/>
 
 			{/* Contact Dialog */}
 			<Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
@@ -845,30 +673,18 @@ export default function ClientForm({ defaultValues, initialContacts, onSubmit: o
 					<div className="space-y-6 py-2">
 						<div className="space-y-4">
 							<h4 className="text-sm font-semibold">Details</h4>
-							<div className="space-y-2">
-								<Label>Title</Label>
-								<Select value={contactForm.title} onValueChange={(v) => setContactForm((s) => ({ ...s, title: v as typeof s.title }))}>
-									<SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-									<SelectContent>
-										<SelectItem value="none">None</SelectItem>
-										<SelectItem value="Mr.">Mr.</SelectItem>
-										<SelectItem value="Ms.">Ms.</SelectItem>
-										<SelectItem value="Mrs.">Mrs.</SelectItem>
-										<SelectItem value="Miss.">Miss.</SelectItem>
-										<SelectItem value="Dr.">Dr.</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-							<div className="grid grid-cols-2 gap-4">
-								<div className="space-y-2">
-									<Label>First name</Label>
-									<Input value={contactForm.firstName} onChange={(e) => setContactForm((s) => ({ ...s, firstName: e.target.value }))} />
-								</div>
-								<div className="space-y-2">
-									<Label>Last name</Label>
-									<Input value={contactForm.lastName} onChange={(e) => setContactForm((s) => ({ ...s, lastName: e.target.value }))} />
-								</div>
-							</div>
+							<PersonNameFields
+								title={contactForm.title}
+								onTitleChange={(v) => setContactForm((s) => ({ ...s, title: v }))}
+								firstNameProps={{
+									value: contactForm.firstName,
+									onChange: (e) => setContactForm((s) => ({ ...s, firstName: e.target.value })),
+								}}
+								lastNameProps={{
+									value: contactForm.lastName,
+									onChange: (e) => setContactForm((s) => ({ ...s, lastName: e.target.value })),
+								}}
+							/>
 							<div className="space-y-2">
 								<Label>Role</Label>
 								<Input placeholder="e.g., Spouse, Property Manager" value={contactForm.role} onChange={(e) => setContactForm((s) => ({ ...s, role: e.target.value }))} />

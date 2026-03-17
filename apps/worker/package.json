@@ -1,0 +1,19 @@
+{
+	"name": "worker",
+	"type": "module",
+	"scripts": {
+		"dev": "tsx watch src/index.ts",
+		"build": "esbuild --bundle --outfile=./dist/index.js --platform=node --target=node20 ./src/index.ts"
+	},
+	"devDependencies": {
+		"@types/node": "^25.5.0",
+		"esbuild": "^0.21.4",
+		"tsx": "^4.21.0"
+	},
+	"dependencies": {
+		"@aws-sdk/client-sqs": "^3.1003.0",
+		"@repo/db": "workspace:*",
+		"dotenv": "^17.3.1",
+		"drizzle-orm": "^0.45.1"
+	}
+}

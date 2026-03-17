@@ -7,7 +7,7 @@ import {
 	updateClientNote,
 	togglePinNote,
 	deleteClientNote,
-} from "../api";
+} from "../../api";
 import { presignUpload, uploadFileToS3 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FileText, Pin, X } from "lucide-react";
+import { formatDateTime, getInitials } from "@/lib/format";
 
 const RELATED_KEYS = [
 	["relatedToRequests", "Requests"],
@@ -37,25 +38,12 @@ const defaultRelated: RelatedState = {
 	relatedToInvoices: false,
 };
 
-function getInitials(name: string) {
-	return name
-		.split(" ")
-		.map((n) => n[0])
-		.join("")
-		.slice(0, 2)
-		.toUpperCase();
-}
-
 function getRelatedLabel(note: ClientNoteDTO) {
 	const linked = RELATED_KEYS.filter(([key]) => note[key]).map(([, label]) => label.toLowerCase());
 	if (linked.length === 0) return null;
 	return `Client note linked to related ${linked.join(", ")}`;
 }
 
-function formatDate(date: Date | string) {
-	const d = new Date(date);
-	return `${d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} ${d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
-}
 
 // ── Collapsed Note ──────────────────────────────────────────────────
 interface CollapsedNoteProps {
@@ -81,7 +69,7 @@ const CollapsedNote = ({ note, onClick, onTogglePin }: CollapsedNoteProps) => {
 				<div className="flex-1 min-w-0">
 					<p className="text-xs font-medium leading-none">{note.createdByName}</p>
 					<p className="text-[11px] text-muted-foreground">
-						Created: {formatDate(note.createdAt)}
+						Created: {formatDateTime(note.createdAt)}
 						{isEdited && " · Edited"}
 					</p>
 				</div>
@@ -187,7 +175,7 @@ const EditNote = ({ note, clientId, onClose, onTogglePin }: EditNoteProps) => {
 				<div className="flex-1 min-w-0">
 					<p className="text-xs font-medium leading-none">{note.createdByName}</p>
 					<p className="text-[11px] text-muted-foreground">
-						Created: {formatDate(note.createdAt)}
+						Created: {formatDateTime(note.createdAt)}
 						{isEdited && " · Edited"}
 					</p>
 				</div>
@@ -323,18 +311,19 @@ const EditNote = ({ note, clientId, onClose, onTogglePin }: EditNoteProps) => {
 // ── Main Card ───────────────────────────────────────────────────────
 interface InternalNotesCardProps {
 	clientId: string;
-	initialNotes?: ClientNoteDTO[];
 }
 
-const InternalNotesCard = ({ clientId, initialNotes }: InternalNotesCardProps) => {
+const InternalNotesCard = ({ clientId }: InternalNotesCardProps) => {
 	const queryClient = useQueryClient();
 	const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
-	const { data: notes = [] } = useQuery({
+	const { data: result } = useQuery({
 		queryKey: ["client-notes", clientId],
 		queryFn: () => getClientNotes(clientId),
-		initialData: initialNotes,
+		staleTime: 30_000,
 	});
+
+	const notes = result?.data ?? [];
 
 	const pinMutation = useMutation({
 		mutationFn: (noteId: string) => togglePinNote(clientId, noteId),
@@ -391,7 +380,7 @@ const InternalNotesCard = ({ clientId, initialNotes }: InternalNotesCardProps) =
 	return (
 		<Card>
 			<CardHeader className="pb-3">
-				<CardTitle className="text-sm font-semibold">Internal notes</CardTitle>
+				<CardTitle className="text-lg font-medium">Internal notes</CardTitle>
 				<p className="text-xs text-muted-foreground">
 					Internal notes will only be seen by your team
 				</p>

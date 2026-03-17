@@ -34,12 +34,15 @@ export const createJobSchema = z.object({
 	autoPay: z.boolean().optional(),
 	// Line items
 	lineItems: z.array(jobLineItemSchema).optional(),
-	// Notes
-	notes: z.string().optional(),
-	noteFileIds: z.array(z.string()).optional(),
 	// Link to related
 	relatedQuoteId: z.string().optional(),
 	relatedRequestId: z.string().optional(),
 });
 
 export type CreateJobForm = z.infer<typeof createJobSchema>;
+
+export const updateJobLineItemsSchema = z.object({
+	lineItems: z.array(jobLineItemSchema),
+});
+
+export type UpdateJobLineItemsForm = z.infer<typeof updateJobLineItemsSchema>;

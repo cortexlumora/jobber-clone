@@ -1,8 +1,15 @@
-import { useParams } from "react-router";
-import { useQuery } from "@tanstack/react-query";
-import { getQuoteById } from "../api";
+import { useState } from "react";
+import { parseAsBoolean, useQueryState } from "nuqs";
+import { useParams, useNavigate } from "react-router";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getQuoteById, getQuoteNotes, updateQuoteLineItems } from "../api";
 import { getClientById } from "@/pages/clients/api";
 import NotesPanel from "@/components/notes-panel";
+import Section from "@/components/section";
+import LineItemsView from "@/components/line-items-view";
+import LineItemsCard, { type LineItemUI } from "@/components/line-items-card";
+import { formatDate, formatCurrency, getInitials } from "@/lib/format";
+import SendEmailDialog from "./components/send-email-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,27 +32,9 @@ import {
 	Phone,
 	MapPin,
 	ImageIcon,
+	Pencil,
 } from "lucide-react";
 
-// ── Helpers ──────────────────────────────────────────────────────────
-
-function formatDate(date: Date | string) {
-	const d = new Date(date);
-	return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-function getInitials(name: string) {
-	return name
-		.split(" ")
-		.map((n) => n[0])
-		.join("")
-		.slice(0, 2)
-		.toUpperCase();
-}
-
-function formatCurrency(amount: number) {
-	return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
-}
 
 const statusConfig: Record<string, { label: string; className: string }> = {
 	draft: { label: "Draft", className: "bg-gray-100 text-gray-800" },
@@ -55,29 +44,81 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 	archived: { label: "Archived", className: "bg-gray-100 text-gray-800" },
 };
 
-// ── Section wrapper ──────────────────────────────────────────────────
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-	return (
-		<div className="rounded-lg border bg-background">
-			<div className="px-5 py-3 border-b">
-				<h3 className="text-sm font-semibold">{title}</h3>
-			</div>
-			<div className="px-5 py-4">{children}</div>
-		</div>
-	);
-}
 
 // ── Main Page ────────────────────────────────────────────────────────
 
 const QuoteDetailPage = () => {
 	const { id } = useParams<{ id: string }>();
+	const navigate = useNavigate();
+	const queryClient = useQueryClient();
+
+	const [editingLineItems, setEditingLineItems] = useState(false);
+	const [editLineItems, setEditLineItems] = useState<LineItemUI[]>([]);
+	const [emailDialogOpen, setEmailDialogOpen] = useQueryState("send-email", parseAsBoolean.withDefault(false));
 
 	const { data: quote, isLoading } = useQuery({
 		queryKey: ["quote", id],
-		queryFn: () => getQuoteById(id!),
+		queryFn: async () => {
+			const data = await getQuoteById(id!);
+			if (data) {
+				queryClient.setQueryData(["quote-notes", id], { pages: [data.clientNotes], pageParams: [1] });
+			}
+			return data;
+		},
 		enabled: !!id,
 	});
+
+	const { data: notesData, hasNextPage, fetchNextPage, isFetchingNextPage } = useInfiniteQuery({
+		queryKey: ["quote-notes", id],
+		queryFn: ({ pageParam }) => getQuoteNotes(id!, pageParam),
+		initialPageParam: 1,
+		getNextPageParam: (last) => last.pagination.page < last.pagination.totalPages ? last.pagination.page + 1 : undefined,
+		enabled: !!quote,
+		staleTime: 30_000,
+	});
+
+	const allNotes = notesData?.pages.flatMap((p) => p.data) ?? [];
+	const notesTotal = notesData?.pages[0]?.pagination.total;
+
+	const lineItemsMutation = useMutation({
+		mutationFn: (data: { lineItems: { type: "line_item" | "text"; name: string; description?: string; qty: number; unitPrice: number; imageFileId?: string }[] }) =>
+			updateQuoteLineItems(id!, data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["quote", id] });
+			setEditingLineItems(false);
+		},
+	});
+
+	const startEditingLineItems = () => {
+		if (!quote) return;
+		setEditLineItems(
+			quote.lineItems
+				.filter((i) => i.type === "line_item")
+				.map((item) => ({
+					name: item.name,
+					description: item.description ?? "",
+					qty: item.qty,
+					unitPrice: Number(item.unitPrice),
+					imageFileId: item.image?.id ?? null,
+					imagePreview: null,
+					imageUploading: false,
+				})),
+		);
+		setEditingLineItems(true);
+	};
+
+	const saveLineItems = () => {
+		lineItemsMutation.mutate({
+			lineItems: editLineItems.map((item) => ({
+				type: "line_item" as const,
+				name: item.name,
+				description: item.description || undefined,
+				qty: item.qty,
+				unitPrice: item.unitPrice,
+				imageFileId: item.imageFileId || undefined,
+			})),
+		});
+	};
 
 	const { data: client } = useQuery({
 		queryKey: ["client", quote?.clientId],
@@ -132,14 +173,13 @@ const QuoteDetailPage = () => {
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
-							<DropdownMenuItem>Convert to Job</DropdownMenuItem>
-							<DropdownMenuItem>Convert to Invoice</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => navigate(`/jobs/create?quoteId=${id}`)}>Convert to Job</DropdownMenuItem>
 							<DropdownMenuItem>Duplicate</DropdownMenuItem>
 							<DropdownMenuItem>Archive</DropdownMenuItem>
 							<DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
-					<Button size="sm">
+					<Button size="sm" onClick={() => setEmailDialogOpen(true)}>
 						<Mail className="h-4 w-4 mr-1" />
 						Send Email
 					</Button>
@@ -237,71 +277,40 @@ const QuoteDetailPage = () => {
 					)}
 
 					{/* Line Items */}
-					{lineItems.length > 0 && (
+					{editingLineItems ? (
 						<Section title="Product / Service">
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead className="text-xs">Line Item</TableHead>
-										<TableHead className="text-xs text-right w-20">Quantity</TableHead>
-										<TableHead className="text-xs text-right w-24">Unit Price</TableHead>
-										<TableHead className="text-xs text-right w-24">Total</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{lineItems.map((item) => {
-										const itemTotal = item.qty * Number(item.unitPrice);
-										return (
-											<TableRow key={item.id}>
-												<TableCell>
-													<div className="flex items-center gap-3">
-														{item.imageFileId && (
-															<div className="h-9 w-9 rounded bg-muted flex items-center justify-center shrink-0">
-																<ImageIcon className="h-4 w-4 text-muted-foreground" />
-															</div>
-														)}
-														<div>
-															<p className="text-sm font-medium">{item.name}</p>
-															{item.description && (
-																<p className="text-xs text-muted-foreground">{item.description}</p>
-															)}
-														</div>
-													</div>
-												</TableCell>
-												<TableCell className="text-sm text-right">{item.qty}</TableCell>
-												<TableCell className="text-sm text-right">
-													{formatCurrency(Number(item.unitPrice))}
-												</TableCell>
-												<TableCell className="text-sm text-right font-medium">
-													{formatCurrency(itemTotal)}
-												</TableCell>
-											</TableRow>
-										);
-									})}
-								</TableBody>
-							</Table>
-							<div className="mt-3 pt-3 border-t space-y-1.5">
-								<div className="flex justify-between text-sm">
-									<span className="text-muted-foreground">Subtotal</span>
-									<span>{formatCurrency(subtotal)}</span>
-								</div>
-								{discount > 0 && (
-									<div className="flex justify-between text-sm">
-										<span className="text-muted-foreground">Discount</span>
-										<span className="text-red-600">-{formatCurrency(discount)}</span>
-									</div>
-								)}
-								{tax > 0 && (
-									<div className="flex justify-between text-sm">
-										<span className="text-muted-foreground">Tax</span>
-										<span>{formatCurrency(tax)}</span>
-									</div>
-								)}
-								<div className="flex justify-between text-sm font-semibold pt-1.5 border-t">
-									<span>Total</span>
-									<span>{formatCurrency(total)}</span>
-								</div>
-							</div>
+							<LineItemsCard
+								items={editLineItems}
+								onChange={setEditLineItems}
+								onSave={saveLineItems}
+								onCancel={() => setEditingLineItems(false)}
+								saving={lineItemsMutation.isPending}
+								hideHeader
+							/>
+						</Section>
+					) : lineItems.length > 0 ? (
+						<Section
+							title="Product / Service"
+							action={
+								<Button variant="ghost" size="sm" className="h-7 text-xs" onClick={startEditingLineItems}>
+									<Pencil className="h-3 w-3 mr-1" />
+									Edit
+								</Button>
+							}
+						>
+							<LineItemsView items={lineItems} discount={discount} tax={tax} />
+						</Section>
+					) : (
+						<Section
+							title="Product / Service"
+							action={
+								<Button variant="ghost" size="sm" className="h-7 text-xs" onClick={startEditingLineItems}>
+									<Pencil className="h-3 w-3 mr-1" />
+									Edit
+								</Button>
+							}
+						>
+							<p className="text-sm text-muted-foreground">No line items</p>
 						</Section>
 					)}
 
@@ -352,8 +361,19 @@ const QuoteDetailPage = () => {
 				</div>
 
 				{/* Right - Notes (30%) */}
-				<NotesPanel clientId={quote.clientId} />
+				<div className="sticky top-[4.5rem] h-[calc(100vh-5.5rem)]">
+					<NotesPanel notes={allNotes} total={notesTotal} hasMore={hasNextPage} onLoadMore={fetchNextPage} isLoadingMore={isFetchingNextPage} className="h-full" />
+				</div>
 			</div>
+
+			<SendEmailDialog
+				open={emailDialogOpen}
+				onOpenChange={setEmailDialogOpen}
+				quoteNumber={quote.quoteNumber}
+				clientName={clientDisplayName}
+				clientEmail={client?.emails?.[0]?.value ?? null}
+				total={total}
+			/>
 		</div>
 	);
 };

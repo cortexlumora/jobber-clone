@@ -1,4 +1,4 @@
-import type { APIResponse, ClientDTO, ClientDetailDTO, ClientStatsDTO, ClientContactDTO, ClientNoteDTO, PaginatedResponse, PropertyDTO } from "@repo/dto";
+import type { APIResponse, ClientDTO, ClientDetailDTO, ClientStatsDTO, ClientContactDTO, ClientNoteDTO, PaginatedResponse, PropertyDTO, TagDTO } from "@repo/dto";
 import type { CreateClientForm } from "@repo/zod/client";
 import type { CreateClientContactForm } from "@repo/zod/client-contact";
 import type { CreateClientNoteForm, UpdateClientNoteForm } from "@repo/zod/client-note";
@@ -66,9 +66,11 @@ export async function deleteClientContact(clientId: string, id: string) {
 }
 
 // Client Notes
-export async function getClientNotes(clientId: string) {
-	const res = await http.get<APIResponse<ClientNoteDTO[]>>(`/api/v1/clients/${clientId}/notes`);
-	return res.data.data;
+export async function getClientNotes(clientId: string, page = 1, limit = 20) {
+	const res = await http.get<PaginatedResponse<ClientNoteDTO>>(`/api/v1/clients/${clientId}/notes`, {
+		params: { page, limit },
+	});
+	return res.data;
 }
 
 export async function createClientNote(clientId: string, data: CreateClientNoteForm) {
@@ -89,4 +91,24 @@ export async function togglePinNote(clientId: string, noteId: string) {
 export async function deleteClientNote(clientId: string, noteId: string) {
 	const res = await http.delete<APIResponse<ClientNoteDTO>>(`/api/v1/clients/${clientId}/notes/${noteId}`);
 	return res.data.data;
+}
+
+// Tags
+export async function getTags() {
+	const res = await http.get<APIResponse<TagDTO[]>>("/api/v1/tags");
+	return res.data.data;
+}
+
+export async function createTag(data: { name: string; color?: string }) {
+	const res = await http.post<APIResponse<TagDTO>>("/api/v1/tags", data);
+	return res.data.data;
+}
+
+export async function assignTagToClient(clientId: string, tagId: string) {
+	const res = await http.post<APIResponse<TagDTO[]>>(`/api/v1/clients/${clientId}/tags`, { tagId });
+	return res.data.data;
+}
+
+export async function removeTagFromClient(clientId: string, tagId: string) {
+	await http.delete(`/api/v1/clients/${clientId}/tags/${tagId}`);
 }

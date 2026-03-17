@@ -10,15 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import InternalNotesCard from "./internal-notes-card";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
+import InternalNotesCard from "./components/internal-notes-card";
+import ContactsCard from "./components/contacts-card";
+import PropertiesCard from "./components/properties-card";
+import TagsCard from "./components/tags-card";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -33,7 +28,6 @@ import {
 	Phone,
 	Archive,
 	Trash2,
-	Tag,
 } from "lucide-react";
 
 const statusColors: Record<string, string> = {
@@ -48,15 +42,17 @@ const ClientDetailPage = () => {
 	const queryClient = useQueryClient();
 	const { data: client, isLoading } = useQuery({
 		queryKey: ["client", id],
-		queryFn: () => getClientById(id!),
+		queryFn: async () => {
+			const data = await getClientById(id!);
+			if (data) {
+				queryClient.setQueryData(["client-properties", id, 1], data.propertyDetails);
+				queryClient.setQueryData(["client-contacts", id, 1], data.additionalContacts);
+				queryClient.setQueryData(["client-notes", id], data.notes);
+			}
+			return data;
+		},
 		enabled: !!id,
 	});
-
-	const properties = client?.propertyDetails?.data ?? [];
-	const totalProperties = client?.propertyDetails?.pagination?.total ?? 0;
-
-	const contacts = client?.additionalContacts?.data ?? [];
-	const totalContacts = client?.additionalContacts?.pagination?.total ?? 0;
 
 	const { data: customFields = [] } = useQuery({
 		queryKey: ["custom-field-definitions", "client"],
@@ -139,106 +135,19 @@ const ClientDetailPage = () => {
 				{/* Left - Main Content */}
 				<div className="space-y-6">
 					{/* Properties */}
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm font-semibold">
-								Properties{totalProperties > 0 && ` (${totalProperties})`}
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
-							{properties.length === 0 ? (
-								<p className="text-sm text-muted-foreground">No properties</p>
-							) : (
-								<>
-									<Table>
-										<TableHeader>
-											<TableRow>
-												<TableHead className="text-xs">Address</TableHead>
-												<TableHead className="text-xs">City</TableHead>
-												<TableHead className="text-xs">State</TableHead>
-												<TableHead className="text-xs">ZIP</TableHead>
-											</TableRow>
-										</TableHeader>
-										<TableBody>
-											{properties.map((prop) => (
-												<TableRow key={prop.id}>
-													<TableCell className="text-xs">
-														{[prop.street1, prop.street2].filter(Boolean).join(", ") || "—"}
-													</TableCell>
-													<TableCell className="text-xs">{prop.city ?? "—"}</TableCell>
-													<TableCell className="text-xs">{prop.state ?? "—"}</TableCell>
-													<TableCell className="text-xs">{prop.zip ?? "—"}</TableCell>
-												</TableRow>
-											))}
-										</TableBody>
-									</Table>
-									{totalProperties > properties.length && (
-										<div className="pt-3 text-center">
-											<Button variant="link" size="sm" className="text-xs">
-												View all {totalProperties} properties
-											</Button>
-										</div>
-									)}
-								</>
-							)}
-						</CardContent>
-					</Card>
+					<PropertiesCard clientId={id!} />
 
 					{/* Contacts */}
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm font-semibold">
-								Contacts{totalContacts > 0 && ` (${totalContacts})`}
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
-							{contacts.length === 0 ? (
-								<p className="text-sm text-muted-foreground">No contacts found</p>
-							) : (
-								<>
-									<Table>
-										<TableHeader>
-											<TableRow>
-												<TableHead className="text-xs">Name</TableHead>
-												<TableHead className="text-xs">Role</TableHead>
-												<TableHead className="text-xs">Phone</TableHead>
-												<TableHead className="text-xs">Email</TableHead>
-											</TableRow>
-										</TableHeader>
-										<TableBody>
-											{contacts.map((contact) => (
-												<TableRow key={contact.id}>
-													<TableCell className="text-xs">
-														{contact.title !== "none" ? `${contact.title} ` : ""}
-														{contact.firstName} {contact.lastName}
-													</TableCell>
-													<TableCell className="text-xs">{contact.role ?? "—"}</TableCell>
-													<TableCell className="text-xs">{contact.phone ?? "—"}</TableCell>
-													<TableCell className="text-xs">{contact.email ?? "—"}</TableCell>
-												</TableRow>
-											))}
-										</TableBody>
-									</Table>
-									{totalContacts > contacts.length && (
-										<div className="pt-3 text-center">
-											<Button variant="link" size="sm" className="text-xs" onClick={() => navigate(`/clients/${id}/contacts`)}>
-												View all {totalContacts} contacts
-											</Button>
-										</div>
-									)}
-								</>
-							)}
-						</CardContent>
-					</Card>
+					<ContactsCard clientId={id!} />
 
 					{/* Overview */}
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-sm font-semibold">Overview</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<Tabs defaultValue="active-work">
-								<TabsList>
+					<div className="rounded-xl px-2 border bg-background">
+						<div className="py-4 px-2">
+							<h3 className="text-lg font-medium">Overview</h3>
+						</div>
+						<div className="px-2 pb-4 min-h-[280px] flex flex-col">
+							<Tabs defaultValue="active-work" className="flex-1 flex flex-col">
+								<TabsList variant="line">
 									<TabsTrigger value="new">New</TabsTrigger>
 									<TabsTrigger value="active-work">Active Work</TabsTrigger>
 									<TabsTrigger value="requests">Requests</TabsTrigger>
@@ -246,53 +155,92 @@ const ClientDetailPage = () => {
 									<TabsTrigger value="jobs">Jobs</TabsTrigger>
 									<TabsTrigger value="invoices">Invoices</TabsTrigger>
 								</TabsList>
-								<TabsContent value="new" className="pt-4">
-									<p className="text-sm text-muted-foreground">No new items</p>
+								<TabsContent value="new" className="pt-4 flex-1 flex flex-col">
+									<div className="flex-1 flex flex-col items-center justify-center text-center py-8">
+										<p className="text-sm font-medium">No new items</p>
+										<p className="text-sm text-muted-foreground mt-1">
+											There are no new items for this client yet
+										</p>
+									</div>
 								</TabsContent>
-								<TabsContent value="active-work" className="pt-4">
-									<div className="text-center py-8">
+								<TabsContent value="active-work" className="pt-4 flex-1 flex flex-col">
+									<div className="flex-1 flex flex-col items-center justify-center text-center py-8">
 										<p className="text-sm font-medium">No active work</p>
 										<p className="text-sm text-muted-foreground mt-1">
 											No active jobs, invoices or quotes for this client yet
 										</p>
 									</div>
 								</TabsContent>
-								<TabsContent value="requests" className="pt-4">
-									<p className="text-sm text-muted-foreground">No requests</p>
+								<TabsContent value="requests" className="pt-4 flex-1 flex flex-col">
+									<div className="flex-1 flex flex-col items-center justify-center text-center py-8">
+										<p className="text-sm font-medium">Client hasn't requested any work yet</p>
+										<p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+											Clients can submit new requests for work online. You and your team can also create requests to keep track of new work that comes up.
+										</p>
+										<Button variant="outline" size="sm" className="mt-4" onClick={() => navigate("/requests/create")}>
+											<Plus className="h-3.5 w-3.5 mr-1" />
+											New Request
+										</Button>
+									</div>
 								</TabsContent>
-								<TabsContent value="quotes" className="pt-4">
-									<p className="text-sm text-muted-foreground">No quotes</p>
+								<TabsContent value="quotes" className="pt-4 flex-1 flex flex-col">
+									<div className="flex-1 flex flex-col items-center justify-center text-center py-8">
+										<p className="text-sm font-medium">No quotes</p>
+										<p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+											Measure twice, cut once. Begin by creating this client's first quote.
+										</p>
+										<Button variant="outline" size="sm" className="mt-4" onClick={() => navigate("/quotes/create")}>
+											<Plus className="h-3.5 w-3.5 mr-1" />
+											New Quote
+										</Button>
+									</div>
 								</TabsContent>
-								<TabsContent value="jobs" className="pt-4">
-									<p className="text-sm text-muted-foreground">No jobs</p>
+								<TabsContent value="jobs" className="pt-4 flex-1 flex flex-col">
+									<div className="flex-1 flex flex-col items-center justify-center text-center py-8">
+										<p className="text-sm font-medium">No jobs</p>
+										<p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+											Let's get out there and work. Begin by creating this client's first job.
+										</p>
+										<Button variant="outline" size="sm" className="mt-4" onClick={() => navigate("/jobs/create")}>
+											<Plus className="h-3.5 w-3.5 mr-1" />
+											New Job
+										</Button>
+									</div>
 								</TabsContent>
-								<TabsContent value="invoices" className="pt-4">
-									<p className="text-sm text-muted-foreground">No invoices</p>
+								<TabsContent value="invoices" className="pt-4 flex-1 flex flex-col">
+									<div className="flex-1 flex flex-col items-center justify-center text-center py-8">
+										<p className="text-sm font-medium">No invoices</p>
+										<p className="text-sm text-muted-foreground mt-1">
+											There are no current invoices for this client yet
+										</p>
+										<Button variant="outline" size="sm" className="mt-4">
+											<Plus className="h-3.5 w-3.5 mr-1" />
+											New Invoice
+										</Button>
+									</div>
 								</TabsContent>
 							</Tabs>
-						</CardContent>
-					</Card>
+						</div>
+					</div>
 
 					{/* Schedule */}
-					<Card>
-						<CardHeader className="pb-3">
-							<div className="flex items-center justify-between">
-								<CardTitle className="text-sm font-semibold">Schedule</CardTitle>
-								<Button variant="ghost" size="sm" className="h-7 text-xs">
-									<Plus className="h-3 w-3 mr-1" />
-									New
-								</Button>
-							</div>
-						</CardHeader>
-						<CardContent>
-							<div className="text-center py-8">
+					<div className="rounded-xl px-2 border bg-background">
+						<div className="py-4 px-2 flex items-center justify-between">
+							<h3 className="text-lg font-medium">Schedule</h3>
+							<Button variant="ghost" size="sm" className="h-7 text-xs">
+								<Plus className="h-3 w-3 mr-1" />
+								New
+							</Button>
+						</div>
+						<div className="px-2 pb-4 min-h-[200px] flex flex-col">
+							<div className="flex-1 flex flex-col items-center justify-center text-center py-8">
 								<p className="text-sm font-medium">No scheduled items</p>
 								<p className="text-sm text-muted-foreground mt-1">
 									Nothing is scheduled for this client yet
 								</p>
 							</div>
-						</CardContent>
-					</Card>
+						</div>
+					</div>
 				</div>
 
 				{/* Right Sidebar */}
@@ -300,7 +248,7 @@ const ClientDetailPage = () => {
 					{/* Contact Info */}
 					<Card>
 						<CardHeader className="pb-3">
-							<CardTitle className="text-sm font-semibold">Contact info</CardTitle>
+							<CardTitle className="text-lg font-medium">Contact info</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-3">
 							{client.phones.map((phone, i) => (
@@ -346,25 +294,12 @@ const ClientDetailPage = () => {
 					</Card>
 
 					{/* Tags */}
-					<Card>
-						<CardHeader className="pb-3">
-							<div className="flex items-center justify-between">
-								<CardTitle className="text-sm font-semibold">Tags</CardTitle>
-								<Button variant="ghost" size="sm" className="h-7 text-xs">
-									<Tag className="h-3 w-3 mr-1" />
-									New Tag
-								</Button>
-							</div>
-						</CardHeader>
-						<CardContent>
-							<p className="text-sm text-muted-foreground">This client has no tags</p>
-						</CardContent>
-					</Card>
+					<TagsCard clientId={id!} initialTags={client.tags ?? []} />
 
 					{/* Last Client Communication */}
 					<Card>
 						<CardHeader className="pb-3">
-							<CardTitle className="text-sm font-semibold">Last client communication</CardTitle>
+							<CardTitle className="text-lg font-medium">Last client communication</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<p className="text-sm text-muted-foreground">
@@ -377,7 +312,7 @@ const ClientDetailPage = () => {
 					<Card>
 						<CardHeader className="pb-3">
 							<div className="flex items-center justify-between">
-								<CardTitle className="text-sm font-semibold">Billing history</CardTitle>
+								<CardTitle className="text-lg font-medium">Billing history</CardTitle>
 								<Button variant="ghost" size="sm" className="h-7 text-xs">
 									<Plus className="h-3 w-3 mr-1" />
 									New
@@ -390,13 +325,13 @@ const ClientDetailPage = () => {
 							</p>
 							<div className="flex items-center justify-between pt-2 border-t">
 								<p className="text-sm font-medium">Current balance</p>
-								<p className="text-sm font-semibold">$0.00</p>
+								<p className="text-lg font-medium">$0.00</p>
 							</div>
 						</CardContent>
 					</Card>
 
 					{/* Internal Notes */}
-					<InternalNotesCard clientId={id!} initialNotes={client.notes} />
+					<InternalNotesCard clientId={id!} />
 				</div>
 			</div>
 		</div>
