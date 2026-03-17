@@ -4,6 +4,7 @@ import type { ExpenseDTO } from "./expense";
 import type { PaginatedResponse } from "./common";
 import type { ClientNoteDTO } from "./client-note";
 import type { Phone, Email } from "./client";
+import type { InvoiceReminderDTO } from "./invoice";
 
 export interface JobStatsDTO {
 	endingWithin30: number;
@@ -143,6 +144,7 @@ export interface JobDTO {
 	client: JobClientDTO | null;
 	property: JobPropertyDTO | null;
 	invoices: PaginatedResponse<JobInvoiceDTO>;
+	invoiceReminders: PaginatedResponse<InvoiceReminderDTO>;
 	// Timestamps
 	createdAt: Date;
 	updatedAt: Date;

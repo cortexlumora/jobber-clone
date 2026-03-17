@@ -7,6 +7,7 @@ import { getTimeEntriesByJobId } from "./time-entry-service";
 import { getExpensesByJobId } from "./expense-service";
 import { getClientNotes } from "./client-note-service";
 import { getInvoicesByJobId } from "./invoice-service";
+import { getInvoiceRemindersByJobId } from "./invoice-reminder-service";
 
 export async function createJob(userId: string, data: CreateJobForm) {
 	const { lineItems, ...jobData } = data;
@@ -207,7 +208,7 @@ export async function getJobById(jobId: string) {
 		.from(visitsSchema)
 		.where(eq(visitsSchema.jobId, job.id));
 
-	const [items, timeEntriesResult, expensesResult, notesResult, [clientRow], properties, invoicesResult] = await Promise.all([
+	const [items, timeEntriesResult, expensesResult, notesResult, [clientRow], properties, invoicesResult, invoiceRemindersResult] = await Promise.all([
 		getJobLineItemsByJobId(job.id),
 		getTimeEntriesByJobId(job.id, { page: 1, limit: 10, search: "" }),
 		getExpensesByJobId(job.id, { page: 1, limit: 10, search: "" }),
@@ -229,12 +230,13 @@ export async function getJobById(jobId: string) {
 			zip: propertiesSchema.zip,
 		}).from(propertiesSchema).where(eq(propertiesSchema.clientId, job.clientId)).limit(1),
 		getInvoicesByJobId(job.id, { page: 1, limit: 10, search: "" }),
+		getInvoiceRemindersByJobId(job.id, { page: 1, limit: 10, search: "" }),
 	]);
 
 	const client = clientRow ?? null;
 	const property = properties[0] ?? null;
 
-	return { ...job, visits, lineItems: items, timeEntries: timeEntriesResult, expenses: expensesResult, clientNotes: notesResult, client, property, invoices: invoicesResult };
+	return { ...job, visits, lineItems: items, timeEntries: timeEntriesResult, expenses: expensesResult, clientNotes: notesResult, client, property, invoices: invoicesResult, invoiceReminders: invoiceRemindersResult };
 }
 
 export async function updateJobLineItems(jobId: string, data: UpdateJobLineItemsForm) {

@@ -295,6 +295,13 @@
       "when": 1773664746575,
       "tag": "0041_strange_echo",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1773761123052,
+      "tag": "0042_sweet_arachne",
+      "breakpoints": true
     }
   ]
 }

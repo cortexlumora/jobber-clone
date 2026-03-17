@@ -4,6 +4,7 @@ import type { Message } from "@aws-sdk/client-sqs";
 import { sqs, SQS_REMINDER_QUEUE_URL } from "./lib/sqs";
 import { handleReminder } from "./handlers/reminder";
 import { handleVisitReminder } from "./handlers/visit-reminder";
+import { handleInvoiceReminder } from "./handlers/invoice-reminder";
 
 let running = true;
 
@@ -20,6 +21,8 @@ async function routeMessage(message: Message) {
 			return handleReminder(message);
 		case "visit_reminder":
 			return handleVisitReminder(message);
+		case "invoice_reminder":
+			return handleInvoiceReminder(message);
 		default:
 			console.warn(`Unknown message type: ${payload.type}, skipping`);
 	}

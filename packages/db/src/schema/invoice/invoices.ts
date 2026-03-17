@@ -1,4 +1,4 @@
-import { integer, numeric, pgEnum, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import clientsSchema from "../client/clients";
 import jobsSchema from "../job/jobs";
 import filesSchema from "../files";
@@ -41,6 +41,25 @@ export const invoiceLineItemsSchema = pgTable("invoice_line_items", {
 	imageFileId: uuid("image_file_id").references(() => filesSchema.id, { onDelete: "set null" }),
 	sortOrder: integer("sort_order").notNull().default(0),
 	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const invoiceReminderStatusEnum = pgEnum("invoice_reminder_status", ["scheduled", "completed", "cancelled"]);
+
+export const invoiceRemindersSchema = pgTable("invoice_reminders", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	jobId: uuid("job_id").notNull().references(() => jobsSchema.id, { onDelete: "cascade" }),
+	details: text("details"),
+	startDate: varchar("start_date", { length: 10 }),
+	endDate: varchar("end_date", { length: 10 }),
+	startTime: varchar("start_time", { length: 5 }),
+	endTime: varchar("end_time", { length: 5 }),
+	scheduleLater: boolean("schedule_later").notNull().default(false),
+	allDay: boolean("all_day").notNull().default(true),
+	assignedUserIds: jsonb("assigned_user_ids").$type<string[]>(),
+	emailTeam: boolean("email_team").notNull().default(false),
+	status: invoiceReminderStatusEnum("status").notNull().default("scheduled"),
+	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
 export default invoicesSchema;

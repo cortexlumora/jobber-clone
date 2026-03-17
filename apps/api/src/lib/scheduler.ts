@@ -32,7 +32,7 @@ function computeReminderTime(startDate: string, startTime: string, reminder: str
 }
 
 interface ScheduleReminderOptions {
-	type: "assessment_reminder" | "visit_reminder";
+	type: "assessment_reminder" | "visit_reminder" | "invoice_reminder";
 	entityId: string;
 	startDate: string | null;
 	startTime: string | null;
@@ -49,7 +49,7 @@ export async function createReminderSchedule(
 	const fireAt = computeReminderTime(startDate, startTime, teamReminder);
 	if (!fireAt || fireAt <= new Date()) return null;
 
-	const prefix = type === "assessment_reminder" ? "reminder-request" : "reminder-visit";
+	const prefix = type === "assessment_reminder" ? "reminder-request" : type === "visit_reminder" ? "reminder-visit" : "reminder-invoice";
 	const scheduleName = `${prefix}-${entityId}`;
 	const utcStr = fireAt.toISOString().replace(/\.\d{3}Z$/, "");
 

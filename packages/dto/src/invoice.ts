@@ -12,6 +12,23 @@ export interface InvoiceStatsDTO {
 	avgInvoiceLast30: number;
 }
 
+export interface InvoiceReminderDTO {
+	id: string;
+	jobId: string;
+	details: string | null;
+	startDate: string | null;
+	endDate: string | null;
+	startTime: string | null;
+	endTime: string | null;
+	scheduleLater: boolean;
+	allDay: boolean;
+	assignedUserIds: string[] | null;
+	emailTeam: boolean;
+	status: "scheduled" | "completed" | "cancelled";
+	createdAt: Date;
+	updatedAt: Date;
+}
+
 export interface InvoiceListItemDTO {
 	id: string;
 	clientId: string;

@@ -24,7 +24,8 @@
 		"./visit": "./src/visit.ts",
 		"./time-entry": "./src/time-entry.ts",
 		"./expense": "./src/expense.ts",
-		"./invoice": "./src/invoice.ts"
+		"./invoice": "./src/invoice.ts",
+		"./invoice-reminder": "./src/invoice-reminder.ts"
 	},
 	"dependencies": {
 		"zod": "^4.3.6"

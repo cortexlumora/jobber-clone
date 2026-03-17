@@ -68,6 +68,7 @@ const JobDetailPage = () => {
 				queryClient.setQueryData(["job-expenses", id, 1], data.expenses);
 				queryClient.setQueryData(["job-notes", id], { pages: [data.clientNotes], pageParams: [1] });
 				queryClient.setQueryData(["job-invoices", id, 1], data.invoices);
+				queryClient.setQueryData(["job-invoice-reminders", id, 1], data.invoiceReminders);
 			}
 			return data;
 		},
@@ -414,7 +415,13 @@ const JobDetailPage = () => {
 						</div>
 					</Section>
 
-					<InvoicesSection jobId={id!} />
+					<InvoicesSection
+						jobId={id!}
+						jobNumber={job.jobNumber}
+						clientName={clientDisplayName}
+						clientPhone={client?.phones?.[0]?.number}
+						clientAddress={address ? [address, cityStateZip].filter(Boolean).join(", ") : null}
+					/>
 				</div>
 
 				{/* Right - Notes (30%) */}

@@ -1,5 +1,6 @@
-import type { APIResponse, JobDTO, JobListItemDTO, JobInvoiceDTO, JobStatsDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
+import type { APIResponse, JobDTO, JobListItemDTO, JobInvoiceDTO, JobStatsDTO, InvoiceReminderDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
 import type { CreateJobForm, UpdateJobLineItemsForm } from "@repo/zod/job";
+import type { CreateInvoiceReminderForm } from "@repo/zod/invoice-reminder";
 import { http } from "@/lib/http";
 
 export async function getJobStats() {
@@ -36,6 +37,23 @@ export async function getJobInvoices(jobId: string, page = 1, limit = 10) {
 		params: { page, limit },
 	});
 	return res.data;
+}
+
+export async function createInvoiceReminder(jobId: string, data: CreateInvoiceReminderForm) {
+	const res = await http.post<APIResponse<InvoiceReminderDTO>>(`/api/v1/jobs/${jobId}/invoice-reminders`, data);
+	return res.data.data;
+}
+
+export async function getInvoiceReminders(jobId: string, page = 1, limit = 10) {
+	const res = await http.get<PaginatedResponse<InvoiceReminderDTO>>(`/api/v1/jobs/${jobId}/invoice-reminders`, {
+		params: { page, limit },
+	});
+	return res.data;
+}
+
+export async function deleteInvoiceReminder(jobId: string, id: string) {
+	const res = await http.delete<APIResponse<null>>(`/api/v1/jobs/${jobId}/invoice-reminders/${id}`);
+	return res.data.data;
 }
 
 export async function updateJobLineItems(id: string, data: UpdateJobLineItemsForm) {

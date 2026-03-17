@@ -1,7 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { createJobSchema, updateJobLineItemsSchema } from "@repo/zod/job";
 import { paginationSchema } from "@repo/zod/pagination";
-import type { APIResponse, JobDTO, JobStatsDTO, JobInvoiceDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
+import type { APIResponse, JobDTO, JobStatsDTO, JobInvoiceDTO, InvoiceReminderDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
@@ -13,6 +13,8 @@ import {
 } from "../services/job-service";
 import { getClientNotes } from "../services/client-note-service";
 import { getInvoicesByJobId } from "../services/invoice-service";
+import { createInvoiceReminder, getInvoiceRemindersByJobId, deleteInvoiceReminder } from "../services/invoice-reminder-service";
+import { createInvoiceReminderSchema } from "@repo/zod/invoice-reminder";
 
 const jobRoute = new Hono()
 	.get("/stats", async (c) => {
@@ -53,6 +55,26 @@ const jobRoute = new Hono()
 
 		const result = await getInvoicesByJobId(jobId, pagination);
 		return c.json<PaginatedResponse<JobInvoiceDTO>>(result);
+	})
+	.post("/:id/invoice-reminders", zValidator("json", createInvoiceReminderSchema), async (c) => {
+		const jobId = c.req.param("id");
+		const data = c.req.valid("json");
+
+		const reminder = await createInvoiceReminder(jobId, data);
+		return c.json<APIResponse<InvoiceReminderDTO>>({ data: reminder });
+	})
+	.get("/:id/invoice-reminders", zValidator("query", paginationSchema), async (c) => {
+		const jobId = c.req.param("id");
+		const pagination = c.req.valid("query");
+
+		const result = await getInvoiceRemindersByJobId(jobId, pagination);
+		return c.json(result);
+	})
+	.delete("/:id/invoice-reminders/:reminderId", async (c) => {
+		const reminderId = c.req.param("reminderId");
+
+		await deleteInvoiceReminder(reminderId);
+		return c.json<APIResponse<null>>({ data: null });
 	})
 	.put("/:id/line-items", zValidator("json", updateJobLineItemsSchema), async (c) => {
 		const jobId = c.req.param("id");
