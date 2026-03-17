@@ -361,6 +361,7 @@ const QuoteDetailPage = () => {
 			<SendEmailDialog
 				open={emailDialogOpen}
 				onOpenChange={setEmailDialogOpen}
+				quoteId={quote.id}
 				quoteNumber={quote.quoteNumber}
 				clientName={clientDisplayName}
 				clientEmail={client?.emails?.[0]?.value ?? null}

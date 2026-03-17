@@ -34,3 +34,5 @@ export { default as requestsBookingsSettingsSchema } from "./requests-bookings-s
 export { default as productsServicesSchema } from "./products-services";
 export { default as invoicesSchema } from "./invoice/invoices";
 export { invoiceStatusEnum, invoiceLineItemsSchema, invoiceReminderStatusEnum, invoiceRemindersSchema } from "./invoice/invoices";
+export { default as emailLogsSchema } from "./email-logs";
+export { emailResourceTypeEnum } from "./email-logs";

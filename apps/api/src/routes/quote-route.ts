@@ -1,7 +1,8 @@
 import { zValidator } from "@hono/zod-validator";
 import { createQuoteSchema, updateQuoteLineItemsSchema } from "@repo/zod/quote";
+import { sendEmailSchema } from "@repo/zod/email";
 import { paginationSchema } from "@repo/zod/pagination";
-import type { APIResponse, QuoteDTO, QuoteStatsDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
+import type { APIResponse, QuoteDTO, QuoteStatsDTO, ClientNoteDTO, EmailLogDTO, PaginatedResponse } from "@repo/dto";
 import { Hono } from "hono";
 import { getUserIdFromCTX } from "../lib/helpers";
 import {
@@ -12,6 +13,7 @@ import {
 	getQuoteStats,
 } from "../services/quote-service";
 import { getClientNotes } from "../services/client-note-service";
+import { sendQuoteEmail } from "../services/email-service";
 
 const quoteRoute = new Hono()
 	.get("/stats", async (c) => {
@@ -52,6 +54,20 @@ const quoteRoute = new Hono()
 
 		const quote = await updateQuoteLineItems(quoteId, data);
 		return c.json<APIResponse<QuoteDTO | null>>({ data: quote });
+	})
+	.post("/:id/send-email", zValidator("json", sendEmailSchema), async (c) => {
+		const quoteId = c.req.param("id");
+		const data = c.req.valid("json");
+
+		const log = await sendQuoteEmail({
+			quoteId,
+			to: data.to,
+			subject: data.subject,
+			message: data.message,
+			sendCopyToSelf: data.sendCopyToSelf,
+		});
+
+		return c.json<APIResponse<EmailLogDTO>>({ data: log });
 	});
 
 export default quoteRoute;
