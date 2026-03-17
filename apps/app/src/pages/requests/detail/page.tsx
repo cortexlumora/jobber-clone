@@ -221,7 +221,11 @@ const RequestDetailPage = () => {
 						<DropdownMenuContent align="end">
 							<DropdownMenuItem onClick={() => navigate(`/quotes/create?requestId=${id}`)}>Convert to Quote</DropdownMenuItem>
 							<DropdownMenuItem onClick={() => navigate(`/jobs/create?requestId=${id}`)}>Convert to Job</DropdownMenuItem>
-							<DropdownMenuItem onClick={() => statusMutation.mutate("archived")}>Archive</DropdownMenuItem>
+							{request.status === "archived" ? (
+								<DropdownMenuItem onClick={() => statusMutation.mutate("assessed")}>Unarchive</DropdownMenuItem>
+							) : (
+								<DropdownMenuItem onClick={() => statusMutation.mutate("archived")}>Archive</DropdownMenuItem>
+							)}
 							<DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate()}>Delete</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
