@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { parseAsBoolean, useQueryState } from "nuqs";
 import { useParams, useNavigate } from "react-router";
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getQuoteById, getQuoteNotes, updateQuoteLineItems } from "../api";
@@ -8,6 +9,7 @@ import Section from "@/components/section";
 import LineItemsView from "@/components/line-items-view";
 import LineItemsCard, { type LineItemUI } from "@/components/line-items-card";
 import { formatDate, formatCurrency, getInitials } from "@/lib/format";
+import SendEmailDialog from "./components/send-email-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +54,7 @@ const QuoteDetailPage = () => {
 
 	const [editingLineItems, setEditingLineItems] = useState(false);
 	const [editLineItems, setEditLineItems] = useState<LineItemUI[]>([]);
+	const [emailDialogOpen, setEmailDialogOpen] = useQueryState("send-email", parseAsBoolean.withDefault(false));
 
 	const { data: quote, isLoading } = useQuery({
 		queryKey: ["quote", id],
@@ -176,7 +179,7 @@ const QuoteDetailPage = () => {
 							<DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
-					<Button size="sm">
+					<Button size="sm" onClick={() => setEmailDialogOpen(true)}>
 						<Mail className="h-4 w-4 mr-1" />
 						Send Email
 					</Button>
@@ -362,6 +365,15 @@ const QuoteDetailPage = () => {
 					<NotesPanel notes={allNotes} total={notesTotal} hasMore={hasNextPage} onLoadMore={fetchNextPage} isLoadingMore={isFetchingNextPage} className="h-full" />
 				</div>
 			</div>
+
+			<SendEmailDialog
+				open={emailDialogOpen}
+				onOpenChange={setEmailDialogOpen}
+				quoteNumber={quote.quoteNumber}
+				clientName={clientDisplayName}
+				clientEmail={client?.emails?.[0]?.value ?? null}
+				total={total}
+			/>
 		</div>
 	);
 };
