@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getQuoteById, getQuoteNotes, updateQuoteLineItems } from "../api";
 import { getClientById } from "@/pages/clients/api";
@@ -47,6 +47,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 const QuoteDetailPage = () => {
 	const { id } = useParams<{ id: string }>();
+	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
 	const [editingLineItems, setEditingLineItems] = useState(false);
@@ -169,8 +170,7 @@ const QuoteDetailPage = () => {
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
-							<DropdownMenuItem>Convert to Job</DropdownMenuItem>
-							<DropdownMenuItem>Convert to Invoice</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => navigate(`/jobs/create?quoteId=${id}`)}>Convert to Job</DropdownMenuItem>
 							<DropdownMenuItem>Duplicate</DropdownMenuItem>
 							<DropdownMenuItem>Archive</DropdownMenuItem>
 							<DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>

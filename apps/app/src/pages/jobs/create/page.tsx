@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRequestQuery } from "@/pages/requests/hooks";
+import { useQuoteQuery } from "@/pages/quotes/hooks";
 import { getClients } from "@/pages/clients/api";
 import { createJob } from "../api";
 import { presignUpload, uploadFileToS3 } from "@/lib/api";
@@ -41,7 +42,9 @@ const CreateJobPage = () => {
 	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
 	const requestId = searchParams.get("requestId");
+	const quoteId = searchParams.get("quoteId");
 	const { data: sourceRequest } = useRequestQuery(requestId);
+	const { data: sourceQuote } = useQuoteQuery(quoteId);
 
 	// Form state
 	const [title, setTitle] = useState("");
@@ -79,7 +82,7 @@ const CreateJobPage = () => {
 	// Link to related
 	const [relatedObject, setRelatedObject] = useState("");
 
-	// Pre-fill from request if converting
+	// Pre-fill from request or quote if converting
 	useEffect(() => {
 		if (sourceRequest) {
 			setTitle(sourceRequest.title);
@@ -93,8 +96,20 @@ const CreateJobPage = () => {
 					unitPrice: Number(item.unitPrice),
 				})));
 			}
+		} else if (sourceQuote) {
+			setTitle(sourceQuote.title);
+			setClientId(sourceQuote.clientId);
+			if (sourceQuote.lineItems.length > 0) {
+				setLineItems(sourceQuote.lineItems.map((item) => ({
+					name: item.name,
+					description: item.description ?? "",
+					qty: item.qty,
+					unitCost: 0,
+					unitPrice: Number(item.unitPrice),
+				})));
+			}
 		}
-	}, [sourceRequest]);
+	}, [sourceRequest, sourceQuote]);
 
 	const { data: clients } = useQuery({
 		queryKey: ["clients"],
@@ -221,6 +236,7 @@ const CreateJobPage = () => {
 				unitPrice: item.unitPrice,
 			})),
 			relatedRequestId: requestId || undefined,
+			relatedQuoteId: quoteId || undefined,
 		});
 	};
 
