@@ -302,27 +302,19 @@ const JobDetailPage = () => {
 									<span className="font-medium">{formatCurrency(totalPrice)}</span>
 								</div>
 								<div className="flex justify-between text-sm">
-									<span className="text-muted-foreground flex items-center gap-1">
-										<span className="text-muted-foreground">−</span> Line Item Cost
-									</span>
+									<span className="text-muted-foreground">Line Item Cost</span>
 									<span>{formatCurrency(totalCost)}</span>
 								</div>
 								<div className="flex justify-between text-sm">
-									<span className="text-muted-foreground flex items-center gap-1">
-										<span className="text-muted-foreground">−</span> Labor
-									</span>
+									<span className="text-muted-foreground">Labor</span>
 									<span>{formatCurrency(totalLabor)}</span>
 								</div>
 								<div className="flex justify-between text-sm">
-									<span className="text-muted-foreground flex items-center gap-1">
-										<span className="text-muted-foreground">−</span> Expenses
-									</span>
+									<span className="text-muted-foreground">Expenses</span>
 									<span>{formatCurrency(totalExpenses)}</span>
 								</div>
 								<div className="flex justify-between text-sm pt-2 border-t font-semibold">
-									<span className="flex items-center gap-1">
-										<span>=</span> Profit
-									</span>
+									<span>Profit</span>
 									<span>{formatCurrency(profit)}</span>
 								</div>
 							</div>
