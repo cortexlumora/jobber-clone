@@ -11,6 +11,8 @@ import {
 	updateRequestOverview,
 	updateRequestLineItems,
 	updateRequestAssessment,
+	updateRequestStatus,
+	deleteRequest,
 	getRequestStats,
 } from "../services/request-service";
 import { getClientNotes } from "../services/client-note-service";
@@ -68,6 +70,17 @@ const requestRoute = new Hono()
 
 		const request = await updateRequestAssessment(requestId, data);
 		return c.json<APIResponse<RequestDTO | null>>({ data: request });
+	})
+	.patch("/:id/status", async (c) => {
+		const requestId = c.req.param("id");
+		const { status } = await c.req.json<{ status: string }>();
+		const request = await updateRequestStatus(requestId, status as "new" | "assessed" | "converted" | "archived");
+		return c.json<APIResponse<{ id: string }>>({ data: { id: request.id } });
+	})
+	.delete("/:id", async (c) => {
+		const requestId = c.req.param("id");
+		await deleteRequest(requestId);
+		return c.json<APIResponse<null>>({ data: null });
 	});
 
 export default requestRoute;

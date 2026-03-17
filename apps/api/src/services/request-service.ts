@@ -324,6 +324,24 @@ export async function updateRequestAssessment(requestId: string, data: UpdateReq
 	return getRequestById(requestId);
 }
 
+export async function updateRequestStatus(requestId: string, status: "new" | "assessed" | "converted" | "archived") {
+	const [updated] = await db
+		.update(requestsSchema)
+		.set({ status })
+		.where(eq(requestsSchema.id, requestId))
+		.returning();
+	return updated;
+}
+
+export async function deleteRequest(requestId: string) {
+	const [deleted] = await db
+		.update(requestsSchema)
+		.set({ deletedAt: new Date() })
+		.where(eq(requestsSchema.id, requestId))
+		.returning();
+	return deleted;
+}
+
 export async function getRequestStats() {
 	const now = new Date();
 	const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);

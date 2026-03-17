@@ -45,3 +45,13 @@ export async function updateRequestAssessment(id: string, data: UpdateRequestAss
 	const res = await http.put<APIResponse<RequestDTO>>(`/api/v1/requests/${id}/assessment`, data);
 	return res.data.data;
 }
+
+export async function updateRequestStatus(id: string, status: string) {
+	const res = await http.patch<APIResponse<{ id: string }>>(`/api/v1/requests/${id}/status`, { status });
+	return res.data.data;
+}
+
+export async function deleteRequest(id: string) {
+	const res = await http.delete<APIResponse<null>>(`/api/v1/requests/${id}`);
+	return res.data.data;
+}

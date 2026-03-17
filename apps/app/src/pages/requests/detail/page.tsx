@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getRequestNotes, updateRequestOverview, updateRequestLineItems, updateRequestAssessment } from "../api";
-import { useRequestQuery } from "../hooks";
+import { useRequestQuery, useRequestStatusMutation, useDeleteRequestMutation } from "../hooks";
 import NotesPanel from "@/components/notes-panel";
 import Section from "@/components/section";
 import ImageDropzone, { type UploadedFile } from "@/components/image-dropzone";
@@ -53,6 +53,8 @@ const RequestDetailPage = () => {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const statusMutation = useRequestStatusMutation(id!);
+	const deleteMutation = useDeleteRequestMutation(id!);
 
 	const [editingOverview, setEditingOverview] = useState(false);
 	const [editDescription, setEditDescription] = useState("");
@@ -219,8 +221,8 @@ const RequestDetailPage = () => {
 						<DropdownMenuContent align="end">
 							<DropdownMenuItem onClick={() => navigate(`/quotes/create?requestId=${id}`)}>Convert to Quote</DropdownMenuItem>
 							<DropdownMenuItem onClick={() => navigate(`/jobs/create?requestId=${id}`)}>Convert to Job</DropdownMenuItem>
-							<DropdownMenuItem>Archive</DropdownMenuItem>
-							<DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => statusMutation.mutate("archived")}>Archive</DropdownMenuItem>
+							<DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate()}>Delete</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
 				</div>
