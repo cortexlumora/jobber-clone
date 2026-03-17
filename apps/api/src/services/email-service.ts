@@ -3,8 +3,11 @@ import { sendEmail } from "../lib/email";
 import { eq, desc, and } from "drizzle-orm";
 import { NotFound } from "../lib/api-error";
 
-interface SendQuoteEmailParams {
-	quoteId: string;
+type ResourceType = "quote" | "invoice" | "job";
+
+interface SendEmailParams {
+	resourceType: ResourceType;
+	resourceId: string;
 	to: string;
 	subject: string;
 	message: string;
@@ -12,32 +15,34 @@ interface SendQuoteEmailParams {
 	senderEmail?: string;
 }
 
-export async function sendQuoteEmail(params: SendQuoteEmailParams) {
-	const { quoteId, to, subject, message, sendCopyToSelf, senderEmail } = params;
+export async function sendResourceEmail(params: SendEmailParams) {
+	const { resourceType, resourceId, to, subject, message, sendCopyToSelf, senderEmail } = params;
 
-	// Verify quote exists
-	const [quote] = await db
-		.select({ id: quotesSchema.id, status: quotesSchema.status })
-		.from(quotesSchema)
-		.where(eq(quotesSchema.id, quoteId));
+	// Resource-specific side effects
+	if (resourceType === "quote") {
+		const [quote] = await db
+			.select({ id: quotesSchema.id, status: quotesSchema.status })
+			.from(quotesSchema)
+			.where(eq(quotesSchema.id, resourceId));
 
-	if (!quote) throw NotFound("Quote not found");
+		if (!quote) throw NotFound("Quote not found");
+
+		// Update quote status to "sent" if it's still a draft
+		if (quote.status === "draft") {
+			await db.update(quotesSchema).set({ status: "sent" }).where(eq(quotesSchema.id, resourceId));
+		}
+	}
 
 	// Send email via SES
 	const cc = sendCopyToSelf && senderEmail ? [senderEmail] : undefined;
 	await sendEmail({ to, subject, body: message, cc });
 
-	// Update quote status to "sent" if it's still a draft
-	if (quote.status === "draft") {
-		await db.update(quotesSchema).set({ status: "sent" }).where(eq(quotesSchema.id, quoteId));
-	}
-
 	// Log the email
 	const [log] = await db
 		.insert(emailLogsSchema)
 		.values({
-			resourceType: "quote",
-			resourceId: quoteId,
+			resourceType,
+			resourceId,
 			sentTo: to,
 			subject,
 			message,
@@ -47,7 +52,7 @@ export async function sendQuoteEmail(params: SendQuoteEmailParams) {
 	return log;
 }
 
-export async function getEmailLogsByResource(resourceType: "quote" | "invoice" | "job", resourceId: string) {
+export async function getEmailLogsByResource(resourceType: ResourceType, resourceId: string) {
 	return db
 		.select()
 		.from(emailLogsSchema)

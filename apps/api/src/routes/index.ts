@@ -16,6 +16,7 @@ import visitRoute from "./visit-route";
 import timeEntryRoute from "./time-entry-route";
 import expenseRoute from "./expense-route";
 import invoiceRoute from "./invoice-route";
+import emailRoute from "./email-route";
 const appRoutes = new Hono();
 
 appRoutes.route("/clients", clientRoute);
@@ -35,5 +36,6 @@ appRoutes.route("/jobs", visitRoute);
 appRoutes.route("/jobs", timeEntryRoute);
 appRoutes.route("/jobs", expenseRoute);
 appRoutes.route("/invoices", invoiceRoute);
+appRoutes.route("/emails", emailRoute);
 
 export default appRoutes;

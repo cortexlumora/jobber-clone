@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDate, formatCurrency } from "@/lib/format";
-import { sendQuoteEmail } from "../../api";
+import { sendEmail } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,7 +50,9 @@ const SendEmailDialog = ({
 
 	const mutation = useMutation({
 		mutationFn: () =>
-			sendQuoteEmail(quoteId, {
+			sendEmail({
+				resourceType: "quote",
+				resourceId: quoteId,
 				to,
 				subject,
 				message,
