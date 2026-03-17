@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { createInvoiceSchema, type CreateInvoiceForm } from "@repo/zod/invoice";
 import { getClientById, getClientProperties } from "@/pages/clients/api";
+import { useJobQuery } from "@/pages/jobs/hooks";
 import { createInvoice } from "../api";
 import { StickyFooter } from "@/components/sticky-footer";
 import Section from "@/components/section";
@@ -32,7 +33,11 @@ import { Phone, Mail, Plus, ChevronDown, RefreshCw, X } from "lucide-react";
 const CreateInvoicePage = () => {
 	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
-	const clientId = searchParams.get("clientId") ?? "";
+	const clientIdParam = searchParams.get("clientId") ?? "";
+	const jobId = searchParams.get("jobId");
+	const { data: sourceJob } = useJobQuery(jobId);
+
+	const clientId = sourceJob?.clientId ?? clientIdParam;
 
 	const [lineItems, setLineItems] = useState<LineItemUI[]>([createEmptyLineItem()]);
 	const [showDiscount, setShowDiscount] = useState(false);
@@ -51,6 +56,21 @@ const CreateInvoicePage = () => {
 		enabled: !!clientId,
 	});
 
+	const defaultFormValues: CreateInvoiceForm = {
+		clientId,
+		jobId: jobId ?? undefined,
+		invoiceNumber: "",
+		subject: "",
+		issuedDate: "",
+		dueDate: "net_30",
+		salesperson: "",
+		discount: "",
+		tax: "",
+		clientMessage: "Thank you for your business. Please contact us with any questions regarding this invoice.",
+		contract: "",
+		noteContent: "",
+	};
+
 	const {
 		register,
 		handleSubmit,
@@ -59,20 +79,30 @@ const CreateInvoicePage = () => {
 		formState: { errors },
 	} = useForm<CreateInvoiceForm>({
 		resolver: zodResolver(createInvoiceSchema) as never,
-		defaultValues: {
-			clientId,
-			invoiceNumber: "",
-			subject: "",
-			issuedDate: "",
-			dueDate: "net_30",
-			salesperson: "",
-			discount: "",
-			tax: "",
-			clientMessage: "Thank you for your business. Please contact us with any questions regarding this invoice.",
-			contract: "",
-			noteContent: "",
-		},
+		defaultValues: defaultFormValues,
+		values: sourceJob ? {
+			...defaultFormValues,
+			clientId: sourceJob.clientId,
+			jobId: sourceJob.id,
+			subject: sourceJob.title,
+			salesperson: sourceJob.salesperson ?? "",
+		} : undefined,
 	});
+
+	// Pre-fill line items from job
+	useEffect(() => {
+		if (sourceJob?.lineItems.length) {
+			setLineItems(sourceJob.lineItems.map((item) => ({
+				name: item.name,
+				description: item.description ?? "",
+				qty: item.qty,
+				unitPrice: Number(item.unitPrice),
+				imageFileId: item.image?.id ?? null,
+				imagePreview: null,
+				imageUploading: false,
+			})));
+		}
+	}, [sourceJob]);
 
 	const discount = watch("discount");
 	const tax = watch("tax");

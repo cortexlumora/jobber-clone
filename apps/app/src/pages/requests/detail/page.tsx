@@ -209,10 +209,6 @@ const RequestDetailPage = () => {
 					<Badge className={status.className}>{status.label}</Badge>
 				</div>
 				<div className="flex items-center gap-2">
-					<Button variant="outline" size="sm">
-						<Mail className="h-4 w-4 mr-1" />
-						Email Booking Confirmation
-					</Button>
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button variant="outline" size="sm">

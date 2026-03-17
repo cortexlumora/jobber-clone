@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { parseAsBoolean, useQueryState } from "nuqs";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getJobById, getJobNotes, updateJobLineItems } from "../api";
 import NotesPanel from "@/components/notes-panel";
@@ -51,6 +51,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 const JobDetailPage = () => {
 	const { id } = useParams<{ id: string }>();
+	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
 	const [editingLineItems, setEditingLineItems] = useState(false);
@@ -186,7 +187,7 @@ const JobDetailPage = () => {
 						<DropdownMenuContent align="end">
 							<DropdownMenuItem>Mark Active</DropdownMenuItem>
 							<DropdownMenuItem>Mark Complete</DropdownMenuItem>
-							<DropdownMenuItem>Create Invoice</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => navigate(`/invoices/create?jobId=${id}`)}>Create Invoice</DropdownMenuItem>
 							<DropdownMenuItem>Archive</DropdownMenuItem>
 							<DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
 						</DropdownMenuContent>
