@@ -51,6 +51,15 @@ export interface JobListItemDTO {
 	} | null;
 }
 
+export interface JobProfitabilityDTO {
+	totalPrice: number;
+	totalCost: number;
+	totalLabor: number;
+	totalExpenses: number;
+	profit: number;
+	profitMargin: number;
+}
+
 export interface JobInvoiceDTO {
 	id: string;
 	invoiceNumber: string | null;
@@ -145,6 +154,7 @@ export interface JobDTO {
 	property: JobPropertyDTO | null;
 	invoices: PaginatedResponse<JobInvoiceDTO>;
 	invoiceReminders: PaginatedResponse<InvoiceReminderDTO>;
+	profitability: JobProfitabilityDTO;
 	// Timestamps
 	createdAt: Date;
 	updatedAt: Date;

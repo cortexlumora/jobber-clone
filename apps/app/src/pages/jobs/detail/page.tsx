@@ -149,12 +149,7 @@ const JobDetailPage = () => {
 		: "";
 
 	const isUnscheduled = !job.startDate;
-	const totalPrice = job.lineItems.reduce((sum, item) => sum + item.qty * Number(item.unitPrice), 0);
-	const totalCost = job.lineItems.reduce((sum, item) => sum + item.qty * Number(item.unitCost), 0);
-	const totalLabor = job.timeEntries.data.reduce((sum, entry) => sum + Number(entry.totalCost), 0);
-	const totalExpenses = job.expenses.data.reduce((sum, expense) => sum + Number(expense.total), 0);
-	const profit = totalPrice - totalCost - totalLabor - totalExpenses;
-	const profitMargin = totalPrice > 0 ? Math.round((profit / totalPrice) * 100) : 0;
+	const { totalPrice, totalCost, totalLabor, totalExpenses, profit, profitMargin } = job.profitability;
 
 	const billingLabel = job.billingType === "visit_based"
 		? "Per visit"

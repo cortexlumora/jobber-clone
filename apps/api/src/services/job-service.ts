@@ -1,4 +1,4 @@
-import db, { jobsSchema, jobLineItemsSchema, filesSchema, visitsSchema, clientsSchema, propertiesSchema, requestsSchema } from "@repo/db";
+import db, { jobsSchema, jobLineItemsSchema, filesSchema, visitsSchema, clientsSchema, propertiesSchema, requestsSchema, timeEntriesSchema, expensesSchema } from "@repo/db";
 import type { CreateJobForm, UpdateJobLineItemsForm } from "@repo/zod/job";
 import type { PaginationQuery } from "@repo/zod/pagination";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
@@ -182,6 +182,39 @@ async function getJobLineItemsByJobId(jobId: string) {
 	);
 }
 
+async function getJobProfitability(jobId: string) {
+	const [result] = await db
+		.select({
+			totalPrice: sql<number>`coalesce(sum(${jobLineItemsSchema.qty} * ${jobLineItemsSchema.unitPrice}::numeric), 0)`,
+			totalCost: sql<number>`coalesce(sum(${jobLineItemsSchema.qty} * ${jobLineItemsSchema.unitCost}::numeric), 0)`,
+		})
+		.from(jobLineItemsSchema)
+		.where(eq(jobLineItemsSchema.jobId, jobId));
+
+	const [laborResult] = await db
+		.select({
+			totalLabor: sql<number>`coalesce(sum(${timeEntriesSchema.totalCost}::numeric), 0)`,
+		})
+		.from(timeEntriesSchema)
+		.where(eq(timeEntriesSchema.jobId, jobId));
+
+	const [expenseResult] = await db
+		.select({
+			totalExpenses: sql<number>`coalesce(sum(${expensesSchema.total}::numeric), 0)`,
+		})
+		.from(expensesSchema)
+		.where(eq(expensesSchema.jobId, jobId));
+
+	const totalPrice = Number(result.totalPrice);
+	const totalCost = Number(result.totalCost);
+	const totalLabor = Number(laborResult.totalLabor);
+	const totalExpenses = Number(expenseResult.totalExpenses);
+	const profit = totalPrice - totalCost - totalLabor - totalExpenses;
+	const profitMargin = totalPrice > 0 ? Math.round((profit / totalPrice) * 100) : 0;
+
+	return { totalPrice, totalCost, totalLabor, totalExpenses, profit, profitMargin };
+}
+
 export async function getJobById(jobId: string) {
 	const [job] = await db
 		.select()
@@ -208,7 +241,7 @@ export async function getJobById(jobId: string) {
 		.from(visitsSchema)
 		.where(eq(visitsSchema.jobId, job.id));
 
-	const [items, timeEntriesResult, expensesResult, notesResult, [clientRow], properties, invoicesResult, invoiceRemindersResult] = await Promise.all([
+	const [items, timeEntriesResult, expensesResult, notesResult, [clientRow], properties, invoicesResult, invoiceRemindersResult, profitability] = await Promise.all([
 		getJobLineItemsByJobId(job.id),
 		getTimeEntriesByJobId(job.id, { page: 1, limit: 10, search: "" }),
 		getExpensesByJobId(job.id, { page: 1, limit: 10, search: "" }),
@@ -231,12 +264,13 @@ export async function getJobById(jobId: string) {
 		}).from(propertiesSchema).where(eq(propertiesSchema.clientId, job.clientId)).limit(1),
 		getInvoicesByJobId(job.id, { page: 1, limit: 10, search: "" }),
 		getInvoiceRemindersByJobId(job.id, { page: 1, limit: 10, search: "" }),
+		getJobProfitability(job.id),
 	]);
 
 	const client = clientRow ?? null;
 	const property = properties[0] ?? null;
 
-	return { ...job, visits, lineItems: items, timeEntries: timeEntriesResult, expenses: expensesResult, clientNotes: notesResult, client, property, invoices: invoicesResult, invoiceReminders: invoiceRemindersResult };
+	return { ...job, visits, lineItems: items, timeEntries: timeEntriesResult, expenses: expensesResult, clientNotes: notesResult, client, property, invoices: invoicesResult, invoiceReminders: invoiceRemindersResult, profitability };
 }
 
 export async function updateJobLineItems(jobId: string, data: UpdateJobLineItemsForm) {
