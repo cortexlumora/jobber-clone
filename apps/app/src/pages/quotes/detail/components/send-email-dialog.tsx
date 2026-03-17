@@ -12,7 +12,7 @@ import {
 	DialogTitle,
 	DialogFooter,
 } from "@/components/ui/dialog";
-import { FileText, Paperclip, X } from "lucide-react";
+import { FileText, Paperclip } from "lucide-react";
 
 interface SendEmailDialogProps {
 	open: boolean;
