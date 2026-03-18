@@ -24,7 +24,7 @@ export { default as quotesSchema } from "./quote/quotes";
 export { quoteStatusEnum, depositTypeEnum, depositModeEnum, quoteLineItemsSchema } from "./quote/quotes";
 export { default as quoteFilesSchema } from "./quote/quote-files";
 export { default as jobsSchema } from "./job/jobs";
-export { jobTypeEnum, jobStatusEnum, billingTypeEnum, endsTypeEnum, jobLineItemsSchema } from "./job/jobs";
+export { jobTypeEnum, jobStatusEnum, billingTypeEnum, endsTypeEnum, jobLineItemsSchema, jobSchedulesSchema, scheduleStatusEnum } from "./job/jobs";
 export { visitsSchema, visitStatusEnum, timeEntriesSchema, expensesSchema } from "./job/jobs";
 export { default as clientNotesSchema } from "./client/client-notes";
 export { default as clientNoteFilesSchema } from "./client/client-note-files";

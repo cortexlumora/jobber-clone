@@ -19,23 +19,6 @@ const jobsSchema = pgTable("jobs", {
 	salesperson: varchar("salesperson", { length: 255 }),
 	status: jobStatusEnum("status").notNull().default("draft"),
 	jobType: jobTypeEnum("job_type").notNull().default("one_off"),
-	// Schedule
-	startDate: varchar("start_date", { length: 10 }),
-	startTime: varchar("start_time", { length: 5 }),
-	endTime: varchar("end_time", { length: 5 }),
-	scheduleLater: boolean("schedule_later").notNull().default(false),
-	anytime: boolean("anytime").notNull().default(false),
-	// Recurring schedule
-	repeats: varchar("repeats", { length: 50 }),
-	repeatDay: varchar("repeat_day", { length: 10 }),
-	repeatDays: jsonb("repeat_days").$type<string[]>(),
-	endsType: endsTypeEnum("ends_type"),
-	endsAfterValue: varchar("ends_after_value", { length: 10 }),
-	endsAfterUnit: varchar("ends_after_unit", { length: 20 }),
-	endsAfterVisits: integer("ends_after_visits"),
-	endsOnDate: varchar("ends_on_date", { length: 10 }),
-	visitInstructions: text("visit_instructions"),
-	emailTeamAboutAssignment: boolean("email_team_about_assignment").notNull().default(false),
 	// Team assignment
 	assignedUserIds: jsonb("assigned_user_ids").$type<string[]>(),
 	// Notes
@@ -51,6 +34,37 @@ const jobsSchema = pgTable("jobs", {
 	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 	deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+export const scheduleStatusEnum = pgEnum("schedule_status", ["pending", "active", "paused", "completed", "failed"]);
+
+export const jobSchedulesSchema = pgTable("job_schedules", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	jobId: uuid("job_id").notNull().references(() => jobsSchema.id, { onDelete: "cascade" }).unique(),
+	// Schedule
+	startDate: varchar("start_date", { length: 10 }),
+	startTime: varchar("start_time", { length: 5 }),
+	endTime: varchar("end_time", { length: 5 }),
+	scheduleLater: boolean("schedule_later").notNull().default(false),
+	anytime: boolean("anytime").notNull().default(false),
+	// Recurring
+	repeats: varchar("repeats", { length: 50 }),
+	repeatDay: varchar("repeat_day", { length: 10 }),
+	repeatDays: jsonb("repeat_days").$type<string[]>(),
+	endsType: endsTypeEnum("ends_type"),
+	endsAfterValue: varchar("ends_after_value", { length: 10 }),
+	endsAfterUnit: varchar("ends_after_unit", { length: 20 }),
+	endsAfterVisits: integer("ends_after_visits"),
+	endsOnDate: varchar("ends_on_date", { length: 10 }),
+	visitInstructions: text("visit_instructions"),
+	emailTeamAboutAssignment: boolean("email_team_about_assignment").notNull().default(false),
+	// EventBridge integration
+	scheduleArn: varchar("schedule_arn", { length: 512 }),
+	scheduleName: varchar("schedule_name", { length: 255 }),
+	scheduleStatus: scheduleStatusEnum("schedule_status").notNull().default("pending"),
+	// Timestamps
+	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
 export const jobLineItemsSchema = pgTable("job_line_items", {

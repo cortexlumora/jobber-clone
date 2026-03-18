@@ -1,4 +1,4 @@
-import db, { jobsSchema, jobLineItemsSchema, filesSchema, visitsSchema, clientsSchema, propertiesSchema, requestsSchema, timeEntriesSchema, expensesSchema } from "@repo/db";
+import db, { jobsSchema, jobSchedulesSchema, jobLineItemsSchema, filesSchema, visitsSchema, clientsSchema, propertiesSchema, requestsSchema, timeEntriesSchema, expensesSchema } from "@repo/db";
 import type { CreateJobForm, UpdateJobLineItemsForm } from "@repo/zod/job";
 import type { PaginationQuery } from "@repo/zod/pagination";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
@@ -8,68 +8,97 @@ import { getExpensesByJobId } from "./expense-service";
 import { getClientNotes } from "./client-note-service";
 import { getInvoicesByJobId } from "./invoice-service";
 import { getInvoiceRemindersByJobId } from "./invoice-reminder-service";
+import { createJobSchedule, deleteJobSchedule } from "../lib/scheduler";
 
 export async function createJob(userId: string, data: CreateJobForm) {
-	const { lineItems, noteFileIds, ...jobData } = data;
+	const { lineItems, noteFileIds, startDate, startTime, endTime, scheduleLater, anytime, repeats, repeatDay, endsType, endsAfterValue, endsAfterUnit, endsOnDate, visitInstructions, emailTeamAboutAssignment, ...jobData } = data;
 
-	const [job] = await db
-		.insert(jobsSchema)
-		.values({
-			userId,
-			clientId: jobData.clientId,
-			title: jobData.title,
-			jobNumber: jobData.jobNumber || null,
-			salesperson: jobData.salesperson || null,
-			jobType: jobData.jobType ?? "one_off",
-			startDate: jobData.startDate || null,
-			startTime: jobData.startTime || null,
-			endTime: jobData.endTime || null,
-			scheduleLater: jobData.scheduleLater ?? false,
-			anytime: jobData.anytime ?? false,
-			repeats: jobData.repeats || null,
-			repeatDay: jobData.repeatDay || null,
-			repeatDays: jobData.repeatDay ? [jobData.repeatDay] : null,
-			endsType: jobData.endsType ?? null,
-			endsAfterValue: jobData.endsAfterValue || null,
-			endsAfterUnit: jobData.endsAfterUnit || null,
-			endsOnDate: jobData.endsOnDate || null,
-			visitInstructions: jobData.visitInstructions || null,
-			emailTeamAboutAssignment: jobData.emailTeamAboutAssignment ?? false,
-			assignedUserIds: jobData.assignedUserIds ?? null,
-			billingType: jobData.billingType ?? null,
-			invoiceFrequency: jobData.invoiceFrequency || null,
-			autoPay: jobData.autoPay ?? false,
-			notes: jobData.notes || null,
-			relatedQuoteId: jobData.relatedQuoteId || null,
-			relatedRequestId: jobData.relatedRequestId || null,
-		})
-		.returning();
-
-	let insertedLineItems: (typeof jobLineItemsSchema.$inferSelect)[] = [];
-	if (lineItems && lineItems.length > 0) {
-		insertedLineItems = await db
-			.insert(jobLineItemsSchema)
-			.values(
-				lineItems.map((item, index) => ({
-					jobId: job.id,
-					name: item.name,
-					description: item.description || null,
-					qty: item.qty,
-					unitCost: String(item.unitCost),
-					unitPrice: String(item.unitPrice),
-					imageFileId: item.imageFileId || null,
-					sortOrder: index,
-				})),
-			)
+	return db.transaction(async (tx) => {
+		const [job] = await tx
+			.insert(jobsSchema)
+			.values({
+				userId,
+				clientId: jobData.clientId,
+				title: jobData.title,
+				jobNumber: jobData.jobNumber || null,
+				salesperson: jobData.salesperson || null,
+				jobType: jobData.jobType ?? "one_off",
+				assignedUserIds: jobData.assignedUserIds ?? null,
+				billingType: jobData.billingType ?? null,
+				invoiceFrequency: jobData.invoiceFrequency || null,
+				autoPay: jobData.autoPay ?? false,
+				notes: jobData.notes || null,
+				relatedQuoteId: jobData.relatedQuoteId || null,
+				relatedRequestId: jobData.relatedRequestId || null,
+			})
 			.returning();
-	}
 
-	// Mark related request as converted
-	if (jobData.relatedRequestId) {
-		await db.update(requestsSchema).set({ status: "converted" }).where(eq(requestsSchema.id, jobData.relatedRequestId));
-	}
+		const [jobSchedule] = await tx.insert(jobSchedulesSchema).values({
+			jobId: job.id,
+			startDate: startDate || null,
+			startTime: startTime || null,
+			endTime: endTime || null,
+			scheduleLater: scheduleLater ?? false,
+			anytime: anytime ?? false,
+			repeats: repeats || null,
+			repeatDay: repeatDay || null,
+			repeatDays: repeatDay ? [repeatDay] : null,
+			endsType: endsType ?? null,
+			endsAfterValue: endsAfterValue || null,
+			endsAfterUnit: endsAfterUnit || null,
+			endsOnDate: endsOnDate || null,
+			visitInstructions: visitInstructions || null,
+			emailTeamAboutAssignment: emailTeamAboutAssignment ?? false,
+		}).returning();
 
-	return { id: job.id };
+		// Create EventBridge schedule if not scheduling later
+		if (!scheduleLater && startDate) {
+			try {
+				const result = await createJobSchedule({
+					jobScheduleId: jobSchedule.id,
+					jobId: job.id,
+					jobType: jobData.jobType ?? "one_off",
+					startDate,
+					startTime,
+					repeats,
+					repeatDay,
+					endsOnDate,
+				});
+				await tx.update(jobSchedulesSchema).set({
+					scheduleName: result.scheduleName,
+					scheduleArn: result.scheduleArn,
+					scheduleStatus: "active",
+				}).where(eq(jobSchedulesSchema.id, jobSchedule.id));
+			} catch (err) {
+				console.error("Failed to create EventBridge schedule:", err);
+				await tx.update(jobSchedulesSchema).set({ scheduleStatus: "failed" }).where(eq(jobSchedulesSchema.id, jobSchedule.id));
+			}
+		}
+
+		if (lineItems && lineItems.length > 0) {
+			await tx
+				.insert(jobLineItemsSchema)
+				.values(
+					lineItems.map((item, index) => ({
+						jobId: job.id,
+						name: item.name,
+						description: item.description || null,
+						qty: item.qty,
+						unitCost: String(item.unitCost),
+						unitPrice: String(item.unitPrice),
+						imageFileId: item.imageFileId || null,
+						sortOrder: index,
+					})),
+				);
+		}
+
+		// Mark related request as converted
+		if (jobData.relatedRequestId) {
+			await tx.update(requestsSchema).set({ status: "converted" }).where(eq(requestsSchema.id, jobData.relatedRequestId));
+		}
+
+		return { id: job.id };
+	});
 }
 
 export async function getJobs(pagination: PaginationQuery) {
@@ -88,13 +117,13 @@ export async function getJobs(pagination: PaginationQuery) {
 				salesperson: jobsSchema.salesperson,
 				status: jobsSchema.status,
 				jobType: jobsSchema.jobType,
-				startDate: jobsSchema.startDate,
-				startTime: jobsSchema.startTime,
-				endTime: jobsSchema.endTime,
-				repeats: jobsSchema.repeats,
-				repeatDays: jobsSchema.repeatDays,
-				endsType: jobsSchema.endsType,
-				endsOnDate: jobsSchema.endsOnDate,
+				startDate: jobSchedulesSchema.startDate,
+				startTime: jobSchedulesSchema.startTime,
+				endTime: jobSchedulesSchema.endTime,
+				repeats: jobSchedulesSchema.repeats,
+				repeatDays: jobSchedulesSchema.repeatDays,
+				endsType: jobSchedulesSchema.endsType,
+				endsOnDate: jobSchedulesSchema.endsOnDate,
 				createdAt: jobsSchema.createdAt,
 				client: {
 					title: clientsSchema.title,
@@ -106,6 +135,7 @@ export async function getJobs(pagination: PaginationQuery) {
 			})
 			.from(jobsSchema)
 			.innerJoin(clientsSchema, eq(jobsSchema.clientId, clientsSchema.id))
+			.leftJoin(jobSchedulesSchema, eq(jobsSchema.id, jobSchedulesSchema.jobId))
 			.where(where)
 			.orderBy(desc(jobsSchema.createdAt))
 			.limit(limit)
@@ -222,12 +252,22 @@ async function getJobProfitability(jobId: string) {
 }
 
 export async function getJobById(jobId: string) {
-	const [job] = await db
-		.select()
+	const [row] = await db
+		.select({ job: jobsSchema, schedule: jobSchedulesSchema })
 		.from(jobsSchema)
+		.leftJoin(jobSchedulesSchema, eq(jobsSchema.id, jobSchedulesSchema.jobId))
 		.where(and(eq(jobsSchema.id, jobId), isNull(jobsSchema.deletedAt)));
 
-	if (!job) return null;
+	if (!row) return null;
+	const { job, schedule: rawSchedule } = row;
+	const schedule = rawSchedule ?? {
+		startDate: null, startTime: null, endTime: null,
+		scheduleLater: false, anytime: false,
+		repeats: null, repeatDay: null, repeatDays: null,
+		endsType: null, endsAfterValue: null, endsAfterUnit: null, endsAfterVisits: null, endsOnDate: null,
+		visitInstructions: null, emailTeamAboutAssignment: false,
+		scheduleArn: null, scheduleName: null, scheduleStatus: "pending" as const,
+	};
 
 	const visits = await db
 		.select({
@@ -276,7 +316,7 @@ export async function getJobById(jobId: string) {
 	const client = clientRow ?? null;
 	const property = properties[0] ?? null;
 
-	return { ...job, visits, lineItems: items, timeEntries: timeEntriesResult, expenses: expensesResult, clientNotes: notesResult, client, property, invoices: invoicesResult, invoiceReminders: invoiceRemindersResult, profitability };
+	return { ...job, ...schedule, visits, lineItems: items, timeEntries: timeEntriesResult, expenses: expensesResult, clientNotes: notesResult, client, property, invoices: invoicesResult, invoiceReminders: invoiceRemindersResult, profitability };
 }
 
 export async function updateJobLineItems(jobId: string, data: UpdateJobLineItemsForm) {
@@ -324,17 +364,18 @@ export async function getJobStats() {
 
 	const [result] = await db
 		.select({
-			endingWithin30: sql<number>`count(*) filter (where ${jobsSchema.jobType} = 'recurring' and ${jobsSchema.status} not in ('complete', 'archived') and ${jobsSchema.endsType} = 'on' and ${jobsSchema.endsOnDate} is not null and ${jobsSchema.endsOnDate}::date >= ${now.toISOString().slice(0, 10)} and ${jobsSchema.endsOnDate}::date <= ${new Date(now.getTime() + 30 * 86400000).toISOString().slice(0, 10)})`,
-			lateCount: sql<number>`count(*) filter (where ${jobsSchema.status} not in ('complete', 'archived', 'active') and ${jobsSchema.startDate} is not null and ${jobsSchema.startDate}::date < ${now.toISOString().slice(0, 10)})`,
+			endingWithin30: sql<number>`count(*) filter (where ${jobsSchema.jobType} = 'recurring' and ${jobsSchema.status} not in ('complete', 'archived') and ${jobSchedulesSchema.endsType} = 'on' and ${jobSchedulesSchema.endsOnDate} is not null and ${jobSchedulesSchema.endsOnDate}::date >= ${now.toISOString().slice(0, 10)} and ${jobSchedulesSchema.endsOnDate}::date <= ${new Date(now.getTime() + 30 * 86400000).toISOString().slice(0, 10)})`,
+			lateCount: sql<number>`count(*) filter (where ${jobsSchema.status} not in ('complete', 'archived', 'active') and ${jobSchedulesSchema.startDate} is not null and ${jobSchedulesSchema.startDate}::date < ${now.toISOString().slice(0, 10)})`,
 			requiresInvoicing: sql<number>`count(*) filter (where ${jobsSchema.status} = 'complete')`,
 			actionRequired: sql<number>`count(*) filter (where ${jobsSchema.status} = 'action_required')`,
-			unscheduled: sql<number>`count(*) filter (where ${jobsSchema.startDate} is null and ${jobsSchema.status} not in ('complete', 'archived'))`,
+			unscheduled: sql<number>`count(*) filter (where ${jobSchedulesSchema.startDate} is null and ${jobsSchema.status} not in ('complete', 'archived'))`,
 			recentVisitsCount: sql<number>`0`,
 			recentVisitsRevenue: sql<number>`0`,
 			scheduledVisitsCount: sql<number>`0`,
 			scheduledVisitsRevenue: sql<number>`0`,
 		})
 		.from(jobsSchema)
+		.leftJoin(jobSchedulesSchema, eq(jobsSchema.id, jobSchedulesSchema.jobId))
 		.where(isNull(jobsSchema.deletedAt));
 
 	return {

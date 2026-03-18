@@ -124,19 +124,31 @@ export interface JobDTO {
 	salesperson: string | null;
 	status: "draft" | "active" | "action_required" | "complete" | "archived";
 	jobType: "one_off" | "recurring";
-	// Schedule
+	// Schedule (from job_schedules)
 	startDate: string | null;
 	startTime: string | null;
 	endTime: string | null;
+	scheduleLater: boolean;
+	anytime: boolean;
 	// Recurring
 	repeats: string | null;
+	repeatDay: string | null;
 	repeatDays: string[] | null;
 	endsType: "after" | "on" | null;
+	endsAfterValue: string | null;
+	endsAfterUnit: string | null;
 	endsAfterVisits: number | null;
 	endsOnDate: string | null;
 	visitInstructions: string | null;
+	emailTeamAboutAssignment: boolean;
+	// EventBridge
+	scheduleArn: string | null;
+	scheduleName: string | null;
+	scheduleStatus: "pending" | "active" | "paused" | "completed" | "failed";
 	// Team
 	assignedUserIds: string[] | null;
+	// Notes
+	notes: string | null;
 	// Billing
 	billingType: "visit_based" | "fixed_price" | null;
 	invoiceFrequency: string | null;

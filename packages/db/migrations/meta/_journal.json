@@ -316,6 +316,13 @@
       "when": 1773827949833,
       "tag": "0044_zippy_sally_floyd",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1773828825864,
+      "tag": "0045_exotic_falcon",
+      "breakpoints": true
     }
   ]
 }
