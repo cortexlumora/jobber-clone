@@ -89,7 +89,7 @@ export async function createQuote(userId: string, data: CreateQuoteForm) {
 
 async function getQuoteFiles(quoteId: string) {
 	const files = await db
-		.select({ fileId: quoteFilesSchema.fileId, category: quoteFilesSchema.category, fileName: filesSchema.name })
+		.select({ fileId: quoteFilesSchema.fileId, category: quoteFilesSchema.category, fileName: filesSchema.name, fileKey: filesSchema.key })
 		.from(quoteFilesSchema)
 		.innerJoin(filesSchema, eq(quoteFilesSchema.fileId, filesSchema.id))
 		.where(eq(quoteFilesSchema.quoteId, quoteId));
@@ -102,7 +102,7 @@ async function getQuoteFiles(quoteId: string) {
 		imageFileIds: byCategory("image").map((f) => f.fileId),
 		noteFileIds: byCategory("note").map((f) => f.fileId),
 		attachments: byCategory("attachment").map(toFileDTO),
-		images: byCategory("image").map(toFileDTO),
+		images: await Promise.all(byCategory("image").map(async (f) => ({ ...toFileDTO(f), url: await signKey(f.fileKey) }))),
 		noteFiles: byCategory("note").map(toFileDTO),
 	};
 }

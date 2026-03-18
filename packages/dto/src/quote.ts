@@ -70,6 +70,10 @@ export interface QuoteFileDTO {
 	name: string;
 }
 
+export interface QuoteImageFileDTO extends QuoteFileDTO {
+	url: string;
+}
+
 export interface QuoteDTO {
 	id: string;
 	userId: string;
@@ -104,7 +108,7 @@ export interface QuoteDTO {
 	imageFileIds: string[];
 	noteFileIds: string[];
 	attachments: QuoteFileDTO[];
-	images: QuoteFileDTO[];
+	images: QuoteImageFileDTO[];
 	noteFiles: QuoteFileDTO[];
 	clientNotes: PaginatedResponse<ClientNoteDTO>;
 	// Timestamps

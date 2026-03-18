@@ -1,20 +1,20 @@
 import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateQuoteFiles } from "../../../api";
-import type { QuoteFileDTO } from "@repo/dto";
-import AttachmentsCard, { type AttachmentFile } from "../attachments-card";
+import type { QuoteImageFileDTO } from "@repo/dto";
+import ImagesCard, { type ImageFile } from "../images-card";
 
-interface AttachmentsCardWithMutationProps {
+interface ImagesCardWithMutationProps {
 	quoteId: string;
-	initialFiles: QuoteFileDTO[];
+	initialFiles: QuoteImageFileDTO[];
 	onRemoveSection: () => void;
 }
 
-const AttachmentsCardWithMutation = ({ quoteId, initialFiles, onRemoveSection }: AttachmentsCardWithMutationProps) => {
+const ImagesCardWithMutation = ({ quoteId, initialFiles, onRemoveSection }: ImagesCardWithMutationProps) => {
 	const queryClient = useQueryClient();
 	const [isEdit, setIsEdit] = useState(initialFiles.length === 0);
-	const [files, setFiles] = useState<AttachmentFile[]>(() =>
-		initialFiles.map((f) => ({ fileId: f.id, name: f.name })),
+	const [files, setFiles] = useState<ImageFile[]>(() =>
+		initialFiles.map((f) => ({ fileId: f.id, name: f.name, preview: f.url })),
 	);
 	const addedFileIds = useRef<string[]>([]);
 	const removedFileIds = useRef<string[]>([]);
@@ -23,7 +23,7 @@ const AttachmentsCardWithMutation = ({ quoteId, initialFiles, onRemoveSection }:
 	const mutation = useMutation({
 		mutationFn: () =>
 			updateQuoteFiles(quoteId, {
-				category: "attachment",
+				category: "image",
 				addedFileIds: addedFileIds.current,
 				removedFileIds: removedFileIds.current,
 			}),
@@ -35,7 +35,7 @@ const AttachmentsCardWithMutation = ({ quoteId, initialFiles, onRemoveSection }:
 		},
 	});
 
-	const handleAdd = (newFiles: AttachmentFile[]) => {
+	const handleAdd = (newFiles: ImageFile[]) => {
 		setFiles((prev) => [...prev, ...newFiles]);
 		addedFileIds.current.push(...newFiles.map((f) => f.fileId));
 	};
@@ -50,14 +50,14 @@ const AttachmentsCardWithMutation = ({ quoteId, initialFiles, onRemoveSection }:
 	};
 
 	const handleCancel = () => {
-		setFiles(initialFiles.map((f) => ({ fileId: f.id, name: f.name })));
+		setFiles(initialFiles.map((f) => ({ fileId: f.id, name: f.name, preview: f.url })));
 		addedFileIds.current = [];
 		removedFileIds.current = [];
 		setIsEdit(false);
 	};
 
 	return (
-		<AttachmentsCard
+		<ImagesCard
 			isEdit={isEdit}
 			isDirty={isDirty}
 			onEdit={() => setIsEdit(true)}
@@ -72,4 +72,4 @@ const AttachmentsCardWithMutation = ({ quoteId, initialFiles, onRemoveSection }:
 	);
 };
 
-export default AttachmentsCardWithMutation;
+export default ImagesCardWithMutation;
