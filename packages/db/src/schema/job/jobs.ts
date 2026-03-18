@@ -23,15 +23,23 @@ const jobsSchema = pgTable("jobs", {
 	startDate: varchar("start_date", { length: 10 }),
 	startTime: varchar("start_time", { length: 5 }),
 	endTime: varchar("end_time", { length: 5 }),
+	scheduleLater: boolean("schedule_later").notNull().default(false),
+	anytime: boolean("anytime").notNull().default(false),
 	// Recurring schedule
 	repeats: varchar("repeats", { length: 50 }),
+	repeatDay: varchar("repeat_day", { length: 10 }),
 	repeatDays: jsonb("repeat_days").$type<string[]>(),
 	endsType: endsTypeEnum("ends_type"),
+	endsAfterValue: varchar("ends_after_value", { length: 10 }),
+	endsAfterUnit: varchar("ends_after_unit", { length: 20 }),
 	endsAfterVisits: integer("ends_after_visits"),
 	endsOnDate: varchar("ends_on_date", { length: 10 }),
 	visitInstructions: text("visit_instructions"),
+	emailTeamAboutAssignment: boolean("email_team_about_assignment").notNull().default(false),
 	// Team assignment
 	assignedUserIds: jsonb("assigned_user_ids").$type<string[]>(),
+	// Notes
+	notes: text("notes"),
 	// Billing (recurring)
 	billingType: billingTypeEnum("billing_type"),
 	invoiceFrequency: varchar("invoice_frequency", { length: 50 }),

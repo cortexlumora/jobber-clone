@@ -10,7 +10,7 @@ import { getInvoicesByJobId } from "./invoice-service";
 import { getInvoiceRemindersByJobId } from "./invoice-reminder-service";
 
 export async function createJob(userId: string, data: CreateJobForm) {
-	const { lineItems, ...jobData } = data;
+	const { lineItems, noteFileIds, ...jobData } = data;
 
 	const [job] = await db
 		.insert(jobsSchema)
@@ -24,16 +24,22 @@ export async function createJob(userId: string, data: CreateJobForm) {
 			startDate: jobData.startDate || null,
 			startTime: jobData.startTime || null,
 			endTime: jobData.endTime || null,
+			scheduleLater: jobData.scheduleLater ?? false,
+			anytime: jobData.anytime ?? false,
 			repeats: jobData.repeats || null,
-			repeatDays: jobData.repeatDays ?? null,
+			repeatDay: jobData.repeatDay || null,
+			repeatDays: jobData.repeatDay ? [jobData.repeatDay] : null,
 			endsType: jobData.endsType ?? null,
-			endsAfterVisits: jobData.endsAfterVisits ?? null,
+			endsAfterValue: jobData.endsAfterValue || null,
+			endsAfterUnit: jobData.endsAfterUnit || null,
 			endsOnDate: jobData.endsOnDate || null,
 			visitInstructions: jobData.visitInstructions || null,
+			emailTeamAboutAssignment: jobData.emailTeamAboutAssignment ?? false,
 			assignedUserIds: jobData.assignedUserIds ?? null,
 			billingType: jobData.billingType ?? null,
 			invoiceFrequency: jobData.invoiceFrequency || null,
 			autoPay: jobData.autoPay ?? false,
+			notes: jobData.notes || null,
 			relatedQuoteId: jobData.relatedQuoteId || null,
 			relatedRequestId: jobData.relatedRequestId || null,
 		})
