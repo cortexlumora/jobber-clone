@@ -65,6 +65,11 @@ export interface QuotePaymentDTO {
 	description: string;
 }
 
+export interface QuoteFileDTO {
+	id: string;
+	name: string;
+}
+
 export interface QuoteDTO {
 	id: string;
 	userId: string;
@@ -97,6 +102,9 @@ export interface QuoteDTO {
 	attachmentFileIds: string[];
 	imageFileIds: string[];
 	noteFileIds: string[];
+	attachments: QuoteFileDTO[];
+	images: QuoteFileDTO[];
+	noteFiles: QuoteFileDTO[];
 	clientNotes: PaginatedResponse<ClientNoteDTO>;
 	// Timestamps
 	createdAt: Date;

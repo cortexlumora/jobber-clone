@@ -10,11 +10,15 @@ import LineItemsView from "@/components/line-items-view";
 import LineItemsCard, { type LineItemUI } from "@/components/line-items-card";
 import { formatDate, formatCurrency, getInitials } from "@/lib/format";
 import SendEmailDialog from "./components/send-email-dialog";
+import IntroCard from "./components/intro-card";
+import AttachmentsCardWithMutation from "./components/with-mutation";
+import ImagesCard from "./components/images-card";
+import ClientMessageCard from "./components/client-message-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MoreHorizontal, Mail, Phone, MapPin, ImageIcon, Pencil } from "lucide-react";
+import { MoreHorizontal, Mail, Phone, MapPin, Pencil } from "lucide-react";
 import AddSectionContainer from "../../../components/add-section-container";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -35,6 +39,10 @@ const QuoteDetailPage = () => {
 	const [editingLineItems, setEditingLineItems] = useState(false);
 	const [editLineItems, setEditLineItems] = useState<LineItemUI[]>([]);
 	const [emailDialogOpen, setEmailDialogOpen] = useQueryState("send-email", parseAsBoolean.withDefault(false));
+	const [showIntro, setShowIntro] = useState(false);
+	const [showAttachments, setShowAttachments] = useState(false);
+	const [showImages, setShowImages] = useState(false);
+	const [showClientMessage, setShowClientMessage] = useState(false);
 
 	const { data: quote, isLoading } = useQuery({
 		queryKey: ["quote", id],
@@ -130,6 +138,8 @@ const QuoteDetailPage = () => {
 			: `${client.title !== "none" ? `${client.title} ` : ""}${client.firstName} ${client.lastName}`
 		: "";
 
+	const hasIntro = !!(quote.introTitle || quote.introDescription || quote.introImageFileId);
+	const hasAttachments = quote.attachments.length > 0;
 	const lineItems = quote.lineItems.filter((i) => i.type === "line_item");
 	const subtotal = lineItems.reduce((sum, item) => sum + item.qty * Number(item.unitPrice), 0);
 	const discount = quote.discount ? Number(quote.discount) : 0;
@@ -236,23 +246,12 @@ const QuoteDetailPage = () => {
 						</div>
 					</div>
 
-					<AddSectionContainer>
-							<Button variant={"outline"}>Introduction</Button>
-					</AddSectionContainer>
-
-					{/* Introduction */}
-					{(quote.introTitle || quote.introDescription || quote.introImageFileId) && (
-						<Section title="Introduction">
-							<div className="space-y-3">
-								{quote.introImageFileId && (
-									<div className="h-40 w-full rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
-										<ImageIcon className="h-8 w-8 text-muted-foreground" />
-									</div>
-								)}
-								{quote.introTitle && <p className="text-sm font-medium">{quote.introTitle}</p>}
-								{quote.introDescription && <p className="text-sm text-muted-foreground">{quote.introDescription}</p>}
-							</div>
-						</Section>
+					{hasIntro || showIntro ? (
+						<IntroCard onRemove={() => setShowIntro(false)} />
+					) : (
+						<AddSectionContainer>
+							<Button variant={"outline"} onClick={() => setShowIntro(true)}>Introduction</Button>
+						</AddSectionContainer>
 					)}
 
 					{/* Line Items */}
@@ -293,11 +292,29 @@ const QuoteDetailPage = () => {
 						</Section>
 					)}
 
-					<AddSectionContainer>
-							<Button variant={"outline"}>Attachments</Button>
-							<Button variant={"outline"}>Images</Button>
-							<Button variant={"outline"}>Client Messages</Button>
-					</AddSectionContainer>
+					{(hasAttachments || showAttachments) && (
+						<AttachmentsCardWithMutation
+							quoteId={quote.id}
+							initialFiles={quote.attachments}
+							onRemoveSection={() => setShowAttachments(false)}
+						/>
+					)}
+
+					{showImages && (
+						<ImagesCard onRemove={() => setShowImages(false)} />
+					)}
+
+					{showClientMessage && (
+						<ClientMessageCard onRemove={() => setShowClientMessage(false)} />
+					)}
+
+					{((!hasAttachments && !showAttachments) || !showImages || !showClientMessage) && (
+						<AddSectionContainer>
+							{!hasAttachments && !showAttachments && <Button variant={"outline"} onClick={() => setShowAttachments(true)}>Attachments</Button>}
+							{!showImages && <Button variant={"outline"} onClick={() => setShowImages(true)}>Images</Button>}
+							{!showClientMessage && <Button variant={"outline"} onClick={() => setShowClientMessage(true)}>Client Messages</Button>}
+						</AddSectionContainer>
+					)}
 
 					{/* Payment Schedule */}
 					{quote.depositType !== "none" && (

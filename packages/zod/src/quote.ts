@@ -56,3 +56,11 @@ export const updateQuoteLineItemsSchema = z.object({
 });
 
 export type UpdateQuoteLineItemsForm = z.infer<typeof updateQuoteLineItemsSchema>;
+
+export const updateQuoteFilesSchema = z.object({
+	category: z.enum(["attachment", "image", "note"]),
+	addedFileIds: z.array(z.string().uuid()),
+	removedFileIds: z.array(z.string().uuid()),
+});
+
+export type UpdateQuoteFilesForm = z.infer<typeof updateQuoteFilesSchema>;

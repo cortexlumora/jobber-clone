@@ -1,7 +1,7 @@
 import db, { quotesSchema, quoteFilesSchema, quoteLineItemsSchema, filesSchema, clientsSchema, propertiesSchema, requestsSchema } from "@repo/db";
-import type { CreateQuoteForm, UpdateQuoteLineItemsForm } from "@repo/zod/quote";
+import type { CreateQuoteForm, UpdateQuoteLineItemsForm, UpdateQuoteFilesForm } from "@repo/zod/quote";
 import type { PaginationQuery } from "@repo/zod/pagination";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql, inArray } from "drizzle-orm";
 import { signKey } from "./file-service";
 import { getClientNotes } from "./client-note-service";
 
@@ -79,20 +79,30 @@ export async function createQuote(userId: string, data: CreateQuoteForm) {
 		attachmentFileIds: attachmentFileIds ?? [],
 		imageFileIds: imageFileIds ?? [],
 		noteFileIds: noteFileIds ?? [],
+		attachments: [],
+		images: [],
+		noteFiles: [],
 		clientNotes: { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } },
 	};
 }
 
 async function getQuoteFiles(quoteId: string) {
 	const files = await db
-		.select({ fileId: quoteFilesSchema.fileId, category: quoteFilesSchema.category })
+		.select({ fileId: quoteFilesSchema.fileId, category: quoteFilesSchema.category, fileName: filesSchema.name })
 		.from(quoteFilesSchema)
+		.innerJoin(filesSchema, eq(quoteFilesSchema.fileId, filesSchema.id))
 		.where(eq(quoteFilesSchema.quoteId, quoteId));
 
+	const byCategory = (cat: string) => files.filter((f) => f.category === cat);
+	const toFileDTO = (f: (typeof files)[number]) => ({ id: f.fileId, name: f.fileName });
+
 	return {
-		attachmentFileIds: files.filter((f) => f.category === "attachment").map((f) => f.fileId),
-		imageFileIds: files.filter((f) => f.category === "image").map((f) => f.fileId),
-		noteFileIds: files.filter((f) => f.category === "note").map((f) => f.fileId),
+		attachmentFileIds: byCategory("attachment").map((f) => f.fileId),
+		imageFileIds: byCategory("image").map((f) => f.fileId),
+		noteFileIds: byCategory("note").map((f) => f.fileId),
+		attachments: byCategory("attachment").map(toFileDTO),
+		images: byCategory("image").map(toFileDTO),
+		noteFiles: byCategory("note").map(toFileDTO),
 	};
 }
 
@@ -239,6 +249,22 @@ export async function updateQuoteLineItems(quoteId: string, data: UpdateQuoteLin
 				imageFileId: item.imageFileId || null,
 				sortOrder: index,
 			})),
+		);
+	}
+
+	return getQuoteById(quoteId);
+}
+
+export async function updateQuoteFiles(quoteId: string, data: UpdateQuoteFilesForm) {
+	if (data.removedFileIds.length > 0) {
+		await db
+			.delete(quoteFilesSchema)
+			.where(and(eq(quoteFilesSchema.quoteId, quoteId), inArray(quoteFilesSchema.fileId, data.removedFileIds)));
+	}
+
+	if (data.addedFileIds.length > 0) {
+		await db.insert(quoteFilesSchema).values(
+			data.addedFileIds.map((fileId) => ({ quoteId, fileId, category: data.category })),
 		);
 	}
 
