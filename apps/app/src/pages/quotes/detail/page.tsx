@@ -13,7 +13,7 @@ import SendEmailDialog from "./components/send-email-dialog";
 import IntroCard from "./components/intro-card";
 import AttachmentsCardWithMutation from "./components/with-mutation";
 import ImagesCard from "./components/images-card";
-import ClientMessageCard from "./components/client-message-card";
+import { ClientMessageWithMutation } from "./components/client-message-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -140,6 +140,7 @@ const QuoteDetailPage = () => {
 
 	const hasIntro = !!(quote.introTitle || quote.introDescription || quote.introImageFileId);
 	const hasAttachments = quote.attachments.length > 0;
+	const hasClientMessage = !!quote.clientMessage;
 	const lineItems = quote.lineItems.filter((i) => i.type === "line_item");
 	const subtotal = lineItems.reduce((sum, item) => sum + item.qty * Number(item.unitPrice), 0);
 	const discount = quote.discount ? Number(quote.discount) : 0;
@@ -304,15 +305,19 @@ const QuoteDetailPage = () => {
 						<ImagesCard onRemove={() => setShowImages(false)} />
 					)}
 
-					{showClientMessage && (
-						<ClientMessageCard onRemove={() => setShowClientMessage(false)} />
+					{(hasClientMessage || showClientMessage) && (
+						<ClientMessageWithMutation
+							quoteId={quote.id}
+							initialMessage={quote.clientMessage ?? ""}
+							onRemoveSection={() => setShowClientMessage(false)}
+						/>
 					)}
 
-					{((!hasAttachments && !showAttachments) || !showImages || !showClientMessage) && (
+					{((!hasAttachments && !showAttachments) || !showImages || (!hasClientMessage && !showClientMessage)) && (
 						<AddSectionContainer>
 							{!hasAttachments && !showAttachments && <Button variant={"outline"} onClick={() => setShowAttachments(true)}>Attachments</Button>}
 							{!showImages && <Button variant={"outline"} onClick={() => setShowImages(true)}>Images</Button>}
-							{!showClientMessage && <Button variant={"outline"} onClick={() => setShowClientMessage(true)}>Client Messages</Button>}
+							{!hasClientMessage && !showClientMessage && <Button variant={"outline"} onClick={() => setShowClientMessage(true)}>Client Messages</Button>}
 						</AddSectionContainer>
 					)}
 

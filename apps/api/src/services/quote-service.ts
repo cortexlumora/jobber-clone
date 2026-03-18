@@ -1,5 +1,5 @@
 import db, { quotesSchema, quoteFilesSchema, quoteLineItemsSchema, filesSchema, clientsSchema, propertiesSchema, requestsSchema } from "@repo/db";
-import type { CreateQuoteForm, UpdateQuoteLineItemsForm, UpdateQuoteFilesForm } from "@repo/zod/quote";
+import type { CreateQuoteForm, UpdateQuoteLineItemsForm, UpdateQuoteFilesForm, UpdateQuoteClientMessageForm } from "@repo/zod/quote";
 import type { PaginationQuery } from "@repo/zod/pagination";
 import { and, desc, eq, isNull, sql, inArray } from "drizzle-orm";
 import { signKey } from "./file-service";
@@ -267,6 +267,15 @@ export async function updateQuoteFiles(quoteId: string, data: UpdateQuoteFilesFo
 			data.addedFileIds.map((fileId) => ({ quoteId, fileId, category: data.category })),
 		);
 	}
+
+	return getQuoteById(quoteId);
+}
+
+export async function updateQuoteClientMessage(quoteId: string, data: UpdateQuoteClientMessageForm) {
+	await db
+		.update(quotesSchema)
+		.set({ clientMessage: data.clientMessage || null })
+		.where(eq(quotesSchema.id, quoteId));
 
 	return getQuoteById(quoteId);
 }

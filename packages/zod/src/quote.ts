@@ -64,3 +64,9 @@ export const updateQuoteFilesSchema = z.object({
 });
 
 export type UpdateQuoteFilesForm = z.infer<typeof updateQuoteFilesSchema>;
+
+export const updateQuoteClientMessageSchema = z.object({
+	clientMessage: z.string(),
+});
+
+export type UpdateQuoteClientMessageForm = z.infer<typeof updateQuoteClientMessageSchema>;
