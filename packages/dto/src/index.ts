@@ -20,3 +20,4 @@ export * from "./time-entry";
 export * from "./expense";
 export * from "./invoice";
 export * from "./email-log";
+export * from "./timesheet";

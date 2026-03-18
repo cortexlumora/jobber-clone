@@ -20,7 +20,10 @@ import InvoiceDetailPage from "./pages/invoices/detail/page";
 import MarketingPage from "./pages/marketing/page";
 import ReportsPage from "./pages/reports/page";
 import ExpensesPage from "./pages/expenses/page";
+import TimesheetsLayout from "./pages/timesheets/layout";
 import TimesheetsPage from "./pages/timesheets/page";
+import ApproveTimesheetsPage from "./pages/timesheets/approve/page";
+import ConfirmPayrollPage from "./pages/timesheets/payroll/page";
 import CommunityPage from "./pages/community/page";
 import AppsPage from "./pages/apps/page";
 import CreateClientPage from "./pages/clients/create/page";
@@ -69,7 +72,15 @@ const routes = createBrowserRouter([
 			{ path: "/marketing", element: <MarketingPage /> },
 			{ path: "/reports", element: <ReportsPage /> },
 			{ path: "/expenses", element: <ExpensesPage /> },
-			{ path: "/timesheets", element: <TimesheetsPage /> },
+			{
+				path: "/timesheets",
+				element: <TimesheetsLayout />,
+				children: [
+					{ index: true, element: <TimesheetsPage /> },
+					{ path: "approve", element: <ApproveTimesheetsPage /> },
+					{ path: "payroll", element: <ConfirmPayrollPage /> },
+				],
+			},
 			{ path: "/community", element: <CommunityPage /> },
 			{ path: "/apps", element: <AppsPage /> },
 			{
