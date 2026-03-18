@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { updateQuoteClientMessageSchema, type UpdateQuoteClientMessageForm } from "@repo/zod/quote";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +14,7 @@ interface ClientMessageWithMutationProps {
 
 const ClientMessageWithMutation = ({ quoteId, initialMessage, onRemoveSection }: ClientMessageWithMutationProps) => {
 	const queryClient = useQueryClient();
+	const [isEdit, setIsEdit] = useState(!initialMessage);
 
 	const form = useForm<UpdateQuoteClientMessageForm>({
 		resolver: zodResolver(updateQuoteClientMessageSchema),
@@ -24,13 +26,14 @@ const ClientMessageWithMutation = ({ quoteId, initialMessage, onRemoveSection }:
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["quote", quoteId] });
 			form.reset(form.getValues());
+			setIsEdit(false);
 		},
 	});
 
 	return (
 		<FormProvider {...form}>
 			<form onSubmit={form.handleSubmit((data) => mutation.mutateAsync(data))}>
-				<ClientMessageCard onRemoveSection={onRemoveSection} />
+				<ClientMessageCard isEdit={isEdit} onEdit={() => setIsEdit(true)} onCancelEdit={() => { form.reset(); setIsEdit(false); }} onRemoveSection={onRemoveSection} />
 			</form>
 		</FormProvider>
 	);
