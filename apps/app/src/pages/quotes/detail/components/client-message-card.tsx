@@ -1,11 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Loader2 } from "lucide-react";
-import { FormProvider, useForm, useFormContext } from "react-hook-form";
-import { updateQuoteClientMessageSchema, type UpdateQuoteClientMessageForm } from "@repo/zod/quote";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateQuoteClientMessage } from "../../api";
+import { useFormContext } from "react-hook-form";
+import type { UpdateQuoteClientMessageForm } from "@repo/zod/quote";
 
 interface ClientMessageCardProps {
 	onRemoveSection: () => void;
@@ -45,34 +42,3 @@ const ClientMessageCard = ({ onRemoveSection }: ClientMessageCardProps) => {
 };
 
 export default ClientMessageCard;
-
-interface ClientMessageWithMutationProps {
-	quoteId: string;
-	initialMessage: string;
-	onRemoveSection: () => void;
-}
-
-export const ClientMessageWithMutation = ({ quoteId, initialMessage, onRemoveSection }: ClientMessageWithMutationProps) => {
-	const queryClient = useQueryClient();
-
-	const form = useForm<UpdateQuoteClientMessageForm>({
-		resolver: zodResolver(updateQuoteClientMessageSchema),
-		defaultValues: { clientMessage: initialMessage },
-	});
-
-	const mutation = useMutation({
-		mutationFn: (data: UpdateQuoteClientMessageForm) => updateQuoteClientMessage(quoteId, data),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["quote", quoteId] });
-			form.reset(form.getValues());
-		},
-	});
-
-	return (
-		<FormProvider {...form}>
-			<form onSubmit={form.handleSubmit((data) => mutation.mutateAsync(data))}>
-				<ClientMessageCard onRemoveSection={onRemoveSection} />
-			</form>
-		</FormProvider>
-	);
-};

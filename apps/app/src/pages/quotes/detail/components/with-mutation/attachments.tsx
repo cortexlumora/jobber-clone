@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateQuoteFiles } from "../../api";
+import { updateQuoteFiles } from "../../../api";
 import type { QuoteFileDTO } from "@repo/dto";
-import AttachmentsCard, { type AttachmentFile } from "./attachments-card";
+import AttachmentsCard, { type AttachmentFile } from "../attachments-card";
 
 interface AttachmentsCardWithMutationProps {
 	quoteId: string;
