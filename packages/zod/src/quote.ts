@@ -70,3 +70,11 @@ export const updateQuoteClientMessageSchema = z.object({
 });
 
 export type UpdateQuoteClientMessageForm = z.infer<typeof updateQuoteClientMessageSchema>;
+
+export const updateQuoteIntroSchema = z.object({
+	title: z.string().optional(),
+	description: z.string().optional(),
+	imageFileId: z.string().uuid().nullable().optional(),
+});
+
+export type UpdateQuoteIntroForm = z.infer<typeof updateQuoteIntroSchema>;

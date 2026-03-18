@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { createQuoteSchema, updateQuoteLineItemsSchema, updateQuoteFilesSchema, updateQuoteClientMessageSchema } from "@repo/zod/quote";
+import { createQuoteSchema, updateQuoteLineItemsSchema, updateQuoteFilesSchema, updateQuoteClientMessageSchema, updateQuoteIntroSchema } from "@repo/zod/quote";
 import { paginationSchema } from "@repo/zod/pagination";
 import type { APIResponse, QuoteDTO, QuoteStatsDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
 import { Hono } from "hono";
@@ -10,6 +10,7 @@ import {
 	getQuotes,
 	updateQuoteLineItems,
 	updateQuoteFiles,
+	updateQuoteIntro,
 	updateQuoteClientMessage,
 	getQuoteStats,
 } from "../services/quote-service";
@@ -60,6 +61,13 @@ const quoteRoute = new Hono()
 		const data = c.req.valid("json");
 
 		const quote = await updateQuoteFiles(quoteId, data);
+		return c.json<APIResponse<QuoteDTO | null>>({ data: quote });
+	})
+	.put("/:id/intro", zValidator("json", updateQuoteIntroSchema), async (c) => {
+		const quoteId = c.req.param("id");
+		const data = c.req.valid("json");
+
+		const quote = await updateQuoteIntro(quoteId, data);
 		return c.json<APIResponse<QuoteDTO | null>>({ data: quote });
 	})
 	.put("/:id/client-message", zValidator("json", updateQuoteClientMessageSchema), async (c) => {

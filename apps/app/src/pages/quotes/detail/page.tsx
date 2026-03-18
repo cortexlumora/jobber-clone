@@ -10,7 +10,7 @@ import LineItemsView from "@/components/line-items-view";
 import LineItemsCard, { type LineItemUI } from "@/components/line-items-card";
 import { formatDate, formatCurrency, getInitials } from "@/lib/format";
 import SendEmailDialog from "./components/send-email-dialog";
-import IntroCard from "./components/intro-card";
+import IntroWithMutation from "./components/with-mutation/intro";
 import AttachmentsCardWithMutation from "./components/with-mutation/attachments";
 import ImagesCard from "./components/images-card";
 import ClientMessageWithMutation from "./components/with-mutation/client-message";
@@ -248,7 +248,13 @@ const QuoteDetailPage = () => {
 					</div>
 
 					{hasIntro || showIntro ? (
-						<IntroCard onRemove={() => setShowIntro(false)} />
+						<IntroWithMutation
+							quoteId={quote.id}
+							initialTitle={quote.introTitle ?? ""}
+							initialDescription={quote.introDescription ?? ""}
+							initialImage={quote.introImage ? { fileId: quote.introImage.id, preview: quote.introImage.url! } : null}
+							onRemoveSection={() => setShowIntro(false)}
+						/>
 					) : (
 						<AddSectionContainer>
 							<Button variant={"outline"} onClick={() => setShowIntro(true)}>Introduction</Button>

@@ -1,5 +1,5 @@
 import db, { quotesSchema, quoteFilesSchema, quoteLineItemsSchema, filesSchema, clientsSchema, propertiesSchema, requestsSchema } from "@repo/db";
-import type { CreateQuoteForm, UpdateQuoteLineItemsForm, UpdateQuoteFilesForm, UpdateQuoteClientMessageForm } from "@repo/zod/quote";
+import type { CreateQuoteForm, UpdateQuoteLineItemsForm, UpdateQuoteFilesForm, UpdateQuoteClientMessageForm, UpdateQuoteIntroForm } from "@repo/zod/quote";
 import type { PaginationQuery } from "@repo/zod/pagination";
 import { and, desc, eq, isNull, sql, inArray } from "drizzle-orm";
 import { signKey } from "./file-service";
@@ -75,6 +75,7 @@ export async function createQuote(userId: string, data: CreateQuoteForm) {
 
 	return {
 		...quote,
+		introImage: null,
 		lineItems: insertedLineItems.map((item) => ({ ...item, image: null })),
 		attachmentFileIds: attachmentFileIds ?? [],
 		imageFileIds: imageFileIds ?? [],
@@ -218,12 +219,23 @@ async function getQuoteLineItemsByQuoteId(quoteId: string) {
 }
 
 export async function getQuoteById(quoteId: string) {
-	const [quote] = await db
-		.select()
+	const [row] = await db
+		.select({
+			quote: quotesSchema,
+			introImageFile: {
+				id: filesSchema.id,
+				name: filesSchema.name,
+				contentType: filesSchema.contentType,
+				key: filesSchema.key,
+			},
+		})
 		.from(quotesSchema)
+		.leftJoin(filesSchema, eq(quotesSchema.introImageFileId, filesSchema.id))
 		.where(and(eq(quotesSchema.id, quoteId), isNull(quotesSchema.deletedAt)));
 
-	if (!quote) return null;
+	if (!row) return null;
+
+	const { quote, introImageFile } = row;
 
 	const [fileIds, items, notesResult] = await Promise.all([
 		getQuoteFiles(quote.id),
@@ -231,7 +243,11 @@ export async function getQuoteById(quoteId: string) {
 		getClientNotes(quote.clientId, "quotes", { page: 1, limit: 20, search: "" }),
 	]);
 
-	return { ...quote, lineItems: items, clientNotes: notesResult, ...fileIds };
+	const introImage = introImageFile?.key
+		? { id: introImageFile.id!, name: introImageFile.name!, contentType: introImageFile.contentType!, url: await signKey(introImageFile.key) }
+		: null;
+
+	return { ...quote, introImage, lineItems: items, clientNotes: notesResult, ...fileIds };
 }
 
 export async function updateQuoteLineItems(quoteId: string, data: UpdateQuoteLineItemsForm) {
@@ -267,6 +283,19 @@ export async function updateQuoteFiles(quoteId: string, data: UpdateQuoteFilesFo
 			data.addedFileIds.map((fileId) => ({ quoteId, fileId, category: data.category })),
 		);
 	}
+
+	return getQuoteById(quoteId);
+}
+
+export async function updateQuoteIntro(quoteId: string, data: UpdateQuoteIntroForm) {
+	await db
+		.update(quotesSchema)
+		.set({
+			introTitle: data.title || null,
+			introDescription: data.description || null,
+			introImageFileId: data.imageFileId ?? null,
+		})
+		.where(eq(quotesSchema.id, quoteId));
 
 	return getQuoteById(quoteId);
 }

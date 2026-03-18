@@ -1,5 +1,5 @@
 import type { APIResponse, QuoteDTO, QuoteListItemDTO, QuoteStatsDTO, ClientNoteDTO, PaginatedResponse } from "@repo/dto";
-import type { CreateQuoteForm, UpdateQuoteLineItemsForm, UpdateQuoteFilesForm, UpdateQuoteClientMessageForm } from "@repo/zod/quote";
+import type { CreateQuoteForm, UpdateQuoteLineItemsForm, UpdateQuoteFilesForm, UpdateQuoteClientMessageForm, UpdateQuoteIntroForm } from "@repo/zod/quote";
 import { http } from "@/lib/http";
 
 export async function getQuoteStats() {
@@ -38,6 +38,11 @@ export async function updateQuoteLineItems(id: string, data: UpdateQuoteLineItem
 
 export async function updateQuoteFiles(id: string, data: UpdateQuoteFilesForm) {
 	const res = await http.put<APIResponse<QuoteDTO>>(`/api/v1/quotes/${id}/files`, data);
+	return res.data.data;
+}
+
+export async function updateQuoteIntro(id: string, data: UpdateQuoteIntroForm) {
+	const res = await http.put<APIResponse<QuoteDTO>>(`/api/v1/quotes/${id}/intro`, data);
 	return res.data.data;
 }
 

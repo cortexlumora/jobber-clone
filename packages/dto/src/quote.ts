@@ -82,6 +82,7 @@ export interface QuoteDTO {
 	introTitle: string | null;
 	introDescription: string | null;
 	introImageFileId: string | null;
+	introImage: LineItemImageDTO | null;
 	// Pricing
 	discount: string | null;
 	tax: string | null;
