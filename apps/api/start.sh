@@ -6,4 +6,4 @@ pnpm db:generate
 pnpm db:migrate
 
 cd /app/apps/api
-node dist/index.js
+node dist/index.cjs
