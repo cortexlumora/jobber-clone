@@ -1,1 +1,0 @@
-ALTER TABLE "clients" ADD COLUMN "notifications" jsonb DEFAULT '{"quoteFollowUp":true,"appointmentReminders":true,"jobFollowUp":true,"invoiceFollowUp":true}'::jsonb NOT NULL;

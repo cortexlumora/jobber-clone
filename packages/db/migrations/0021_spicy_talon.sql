@@ -1,1 +1,0 @@
-ALTER TABLE "client_notes" ADD COLUMN "deleted_at" timestamp with time zone;
