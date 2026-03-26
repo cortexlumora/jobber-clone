@@ -5,6 +5,7 @@ import { sqs, SQS_REMINDER_QUEUE_URL } from "./lib/sqs";
 import { handleReminder } from "./handlers/reminder";
 import { handleVisitReminder } from "./handlers/visit-reminder";
 import { handleInvoiceReminder } from "./handlers/invoice-reminder";
+import { handleJobSchedule } from "./handlers/job-schedule";
 
 let running = true;
 
@@ -23,6 +24,8 @@ async function routeMessage(message: Message) {
 			return handleVisitReminder(message);
 		case "invoice_reminder":
 			return handleInvoiceReminder(message);
+		case "job_schedule":
+			return handleJobSchedule(message);
 		default:
 			console.warn(`Unknown message type: ${payload.type}, skipping`);
 	}

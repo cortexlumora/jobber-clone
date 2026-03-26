@@ -65,6 +65,15 @@ export interface QuotePaymentDTO {
 	description: string;
 }
 
+export interface QuoteFileDTO {
+	id: string;
+	name: string;
+}
+
+export interface QuoteImageFileDTO extends QuoteFileDTO {
+	url: string;
+}
+
 export interface QuoteDTO {
 	id: string;
 	userId: string;
@@ -77,6 +86,7 @@ export interface QuoteDTO {
 	introTitle: string | null;
 	introDescription: string | null;
 	introImageFileId: string | null;
+	introImage: LineItemImageDTO | null;
 	// Pricing
 	discount: string | null;
 	tax: string | null;
@@ -97,6 +107,9 @@ export interface QuoteDTO {
 	attachmentFileIds: string[];
 	imageFileIds: string[];
 	noteFileIds: string[];
+	attachments: QuoteFileDTO[];
+	images: QuoteImageFileDTO[];
+	noteFiles: QuoteFileDTO[];
 	clientNotes: PaginatedResponse<ClientNoteDTO>;
 	// Timestamps
 	createdAt: Date;

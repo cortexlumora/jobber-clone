@@ -93,9 +93,15 @@ export async function getRequests(pagination: PaginationQuery) {
 					phones: clientsSchema.phones,
 					emails: clientsSchema.emails,
 				},
+				assessment: {
+					startDate: requestAssessmentsSchema.startDate,
+					startTime: requestAssessmentsSchema.startTime,
+					endTime: requestAssessmentsSchema.endTime,
+				},
 			})
 			.from(requestsSchema)
 			.innerJoin(clientsSchema, eq(requestsSchema.clientId, clientsSchema.id))
+			.leftJoin(requestAssessmentsSchema, eq(requestsSchema.id, requestAssessmentsSchema.requestId))
 			.where(where)
 			.orderBy(desc(requestsSchema.createdAt))
 			.limit(limit)
@@ -124,6 +130,7 @@ export async function getRequests(pagination: PaginationQuery) {
 		...row,
 		client: row.client?.firstName ? row.client : null,
 		property: propertyMap.get(row.clientId) ?? null,
+		assessment: row.assessment?.startDate ? row.assessment : null,
 	}));
 
 	return {

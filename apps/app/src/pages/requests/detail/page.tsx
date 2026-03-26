@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router";
-import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getRequestNotes, updateRequestOverview, updateRequestLineItems, updateRequestAssessment } from "../api";
 import { useRequestQuery, useRequestStatusMutation, useDeleteRequestMutation } from "../hooks";
 import NotesPanel from "@/components/notes-panel";
@@ -404,7 +404,7 @@ const RequestDetailPage = () => {
 											<Bell className="h-3.5 w-3.5 text-muted-foreground" />
 											<p className="text-xs text-muted-foreground">Assessment Reminder</p>
 										</div>
-										<p className="text-sm">{reminderLabels[request.assessment?.teamReminder]}</p>
+										<p className="text-sm">{request.assessment?.teamReminder ? reminderLabels[request.assessment.teamReminder] : undefined}</p>
 									</div>
 								)}
 							</div>

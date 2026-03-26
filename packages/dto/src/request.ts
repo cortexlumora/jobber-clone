@@ -14,6 +14,7 @@ export interface RequestStatsDTO {
 
 export interface RequestListItemDTO {
 	id: string;
+	clientId: string;
 	title: string;
 	status: "new" | "assessed" | "converted" | "archived";
 	createdAt: Date;
@@ -32,6 +33,11 @@ export interface RequestListItemDTO {
 		city: string | null;
 		state: string | null;
 		zip: string | null;
+	} | null;
+	assessment: {
+		startDate: string | null;
+		startTime: string | null;
+		endTime: string | null;
 	} | null;
 }
 

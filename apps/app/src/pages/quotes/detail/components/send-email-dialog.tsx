@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDate, formatCurrency } from "@/lib/format";
+import { sendEmail } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +19,7 @@ import { FileText, Paperclip } from "lucide-react";
 interface SendEmailDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	quoteId: string;
 	quoteNumber: string | null;
 	clientName: string;
 	clientEmail: string | null;
@@ -28,6 +31,7 @@ interface SendEmailDialogProps {
 const SendEmailDialog = ({
 	open,
 	onOpenChange,
+	quoteId,
 	quoteNumber,
 	clientName,
 	clientEmail,
@@ -36,12 +40,29 @@ const SendEmailDialog = ({
 	companyEmail = "jgo@poolgenx.com",
 }: SendEmailDialogProps) => {
 	const today = formatDate(new Date());
+	const queryClient = useQueryClient();
 	const [to, setTo] = useState(clientEmail ?? "");
 	const [subject, setSubject] = useState(`Quote from ${companyName} - ${today}`);
 	const [message, setMessage] = useState(
 		`Hi ${clientName},\n\nThank you for asking us to quote on your project.\n\nThe quote total is ${formatCurrency(total)} as of ${today}.\n\nIf you have any questions or concerns regarding this quote, please don't hesitate to get in touch with us at ${companyEmail}.\n\nSincerely,\n\n${companyName}`,
 	);
-	const [includeClientView, setIncludeClientView] = useState(true);
+	const [sendMeCopy, setSendMeCopy] = useState(false);
+
+	const mutation = useMutation({
+		mutationFn: () =>
+			sendEmail({
+				resourceType: "quote",
+				resourceId: quoteId,
+				to,
+				subject,
+				message,
+				sendCopyToSelf: sendMeCopy,
+			}),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["quote", quoteId] });
+			onOpenChange(false);
+		},
+	});
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -80,16 +101,18 @@ const SendEmailDialog = ({
 								rows={12}
 								className="resize-none"
 							/>
+							<p className="text-sm text-muted-foreground">
+								Your client will see a button to view the schedule and location of their upcoming appointments in their Client Hub
+							</p>
 						</div>
 
-						<label className="flex items-start gap-2 cursor-pointer">
+						<label className="flex items-center gap-2 cursor-pointer">
 							<Checkbox
-								checked={includeClientView}
-								onCheckedChange={(checked) => setIncludeClientView(!!checked)}
-								className="mt-0.5"
+								checked={sendMeCopy}
+								onCheckedChange={(checked) => setSendMeCopy(!!checked)}
 							/>
-							<span className="text-sm text-muted-foreground leading-snug">
-								Your client will see a button to view the schedule and location of their upcoming appointments in their Client Hub
+							<span className="text-sm text-muted-foreground">
+								Send me a copy
 							</span>
 						</label>
 					</div>
@@ -98,6 +121,14 @@ const SendEmailDialog = ({
 					<div className="space-y-5">
 						<div>
 							<h4 className="text-sm font-semibold mb-3">Attachments</h4>
+
+							<div className="rounded-lg border border-dashed p-4 text-center mb-3">
+								<Paperclip className="h-5 w-5 text-muted-foreground mx-auto mb-1" />
+								<p className="text-sm text-muted-foreground">
+									Select or drag and drop a file
+								</p>
+							</div>
+
 							<div className="rounded-lg border bg-muted/30 p-3 space-y-3">
 								{/* Quote PDF */}
 								<div className="flex items-center gap-3 rounded-md border bg-background px-3 py-2.5">
@@ -114,43 +145,25 @@ const SendEmailDialog = ({
 							</div>
 						</div>
 
-						<div>
-							<div className="flex items-center justify-between mb-3">
-								<h4 className="text-sm font-semibold">Client attachments</h4>
-								<span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">0</span>
-							</div>
-							<div className="rounded-lg border border-dashed p-4 text-center">
-								<Paperclip className="h-4 w-4 text-muted-foreground mx-auto mb-1.5" />
-								<p className="text-xs text-muted-foreground">
-									Drag files here or click to attach
-								</p>
-							</div>
-						</div>
-
-						<div>
-							<div className="flex items-center justify-between mb-3">
-								<h4 className="text-sm font-semibold">Request attachments</h4>
-								<span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">0</span>
-							</div>
-							<div className="rounded-lg border border-dashed p-4 text-center">
-								<Paperclip className="h-4 w-4 text-muted-foreground mx-auto mb-1.5" />
-								<p className="text-xs text-muted-foreground">
-									Drag files here or click to attach
-								</p>
-							</div>
-						</div>
-
 						<p className="text-xs text-muted-foreground text-center">
 							You've attached 0.00 MB of the 10.00 MB limit.
 						</p>
 					</div>
 				</div>
 
+				{mutation.isError && (
+					<p className="text-sm text-destructive">
+						{mutation.error instanceof Error ? mutation.error.message : "Failed to send email"}
+					</p>
+				)}
+
 				<DialogFooter>
-					<Button variant="outline" onClick={() => onOpenChange(false)}>
+					<Button variant="outline" onClick={() => onOpenChange(false)} disabled={mutation.isPending}>
 						Cancel
 					</Button>
-					<Button>Send Email</Button>
+					<Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !to}>
+						{mutation.isPending ? "Sending..." : "Send Email"}
+					</Button>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

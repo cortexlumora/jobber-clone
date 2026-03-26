@@ -10,7 +10,7 @@ import {
 	// Megaphone,
 	// BarChart3,
 	// DollarSign,
-	// Clock,
+	Clock,
 	// UsersRound,
 	// AppWindow,
 } from "lucide-react";
@@ -45,15 +45,15 @@ export const navGroups: NavGroup[] = [
 			{ title: "Invoices", path: "/invoices", icon: Receipt },
 		],
 	},
-	// {
-	// 	label: "Manage",
-	// 	items: [
-	// 		{ title: "Marketing", path: "/marketing", icon: Megaphone },
-	// 		{ title: "Reports", path: "/reports", icon: BarChart3 },
-	// 		{ title: "Expenses", path: "/expenses", icon: DollarSign },
-	// 		{ title: "Timesheets", path: "/timesheets", icon: Clock },
-	// 		{ title: "Community", path: "/community", icon: UsersRound },
-	// 		{ title: "Apps", path: "/apps", icon: AppWindow },
-	// 	],
-	// },
+	{
+		label: "Manage",
+		items: [
+			// { title: "Marketing", path: "/marketing", icon: Megaphone },
+			// { title: "Reports", path: "/reports", icon: BarChart3 },
+			// { title: "Expenses", path: "/expenses", icon: DollarSign },
+			{ title: "Timesheets", path: "/timesheets", icon: Clock },
+			// { title: "Community", path: "/community", icon: UsersRound },
+			// { title: "Apps", path: "/apps", icon: AppWindow },
+		],
+	},
 ];

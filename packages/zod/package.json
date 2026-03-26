@@ -25,7 +25,9 @@
 		"./time-entry": "./src/time-entry.ts",
 		"./expense": "./src/expense.ts",
 		"./invoice": "./src/invoice.ts",
-		"./invoice-reminder": "./src/invoice-reminder.ts"
+		"./invoice-reminder": "./src/invoice-reminder.ts",
+		"./email": "./src/email.ts",
+		"./timesheet": "./src/timesheet.ts"
 	},
 	"dependencies": {
 		"zod": "^4.3.6"

@@ -10,31 +10,16 @@ import LineItemsView from "@/components/line-items-view";
 import LineItemsCard, { type LineItemUI } from "@/components/line-items-card";
 import { formatDate, formatCurrency, getInitials } from "@/lib/format";
 import SendEmailDialog from "./components/send-email-dialog";
+import IntroWithMutation from "./components/with-mutation/intro";
+import AttachmentsCardWithMutation from "./components/with-mutation/attachments";
+import ImagesCardWithMutation from "./components/with-mutation/images";
+import ClientMessageWithMutation from "./components/with-mutation/client-message";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import {
-	MoreHorizontal,
-	Mail,
-	Phone,
-	MapPin,
-	ImageIcon,
-	Pencil,
-} from "lucide-react";
-
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { MoreHorizontal, Mail, Phone, MapPin, Pencil } from "lucide-react";
+import AddSectionContainer from "../../../components/add-section-container";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
 	draft: { label: "Draft", className: "bg-gray-100 text-gray-800" },
@@ -43,7 +28,6 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 	rejected: { label: "Rejected", className: "bg-red-100 text-red-800" },
 	archived: { label: "Archived", className: "bg-gray-100 text-gray-800" },
 };
-
 
 // ── Main Page ────────────────────────────────────────────────────────
 
@@ -55,6 +39,10 @@ const QuoteDetailPage = () => {
 	const [editingLineItems, setEditingLineItems] = useState(false);
 	const [editLineItems, setEditLineItems] = useState<LineItemUI[]>([]);
 	const [emailDialogOpen, setEmailDialogOpen] = useQueryState("send-email", parseAsBoolean.withDefault(false));
+	const [showIntro, setShowIntro] = useState(false);
+	const [showAttachments, setShowAttachments] = useState(false);
+	const [showImages, setShowImages] = useState(false);
+	const [showClientMessage, setShowClientMessage] = useState(false);
 
 	const { data: quote, isLoading } = useQuery({
 		queryKey: ["quote", id],
@@ -68,11 +56,16 @@ const QuoteDetailPage = () => {
 		enabled: !!id,
 	});
 
-	const { data: notesData, hasNextPage, fetchNextPage, isFetchingNextPage } = useInfiniteQuery({
+	const {
+		data: notesData,
+		hasNextPage,
+		fetchNextPage,
+		isFetchingNextPage,
+	} = useInfiniteQuery({
 		queryKey: ["quote-notes", id],
 		queryFn: ({ pageParam }) => getQuoteNotes(id!, pageParam),
 		initialPageParam: 1,
-		getNextPageParam: (last) => last.pagination.page < last.pagination.totalPages ? last.pagination.page + 1 : undefined,
+		getNextPageParam: (last) => (last.pagination.page < last.pagination.totalPages ? last.pagination.page + 1 : undefined),
 		enabled: !!quote,
 		staleTime: 30_000,
 	});
@@ -81,8 +74,9 @@ const QuoteDetailPage = () => {
 	const notesTotal = notesData?.pages[0]?.pagination.total;
 
 	const lineItemsMutation = useMutation({
-		mutationFn: (data: { lineItems: { type: "line_item" | "text"; name: string; description?: string; qty: number; unitPrice: number; imageFileId?: string }[] }) =>
-			updateQuoteLineItems(id!, data),
+		mutationFn: (data: {
+			lineItems: { type: "line_item" | "text"; name: string; description?: string; qty: number; unitPrice: number; imageFileId?: string }[];
+		}) => updateQuoteLineItems(id!, data),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["quote", id] });
 			setEditingLineItems(false);
@@ -136,11 +130,7 @@ const QuoteDetailPage = () => {
 
 	const status = statusConfig[quote.status] ?? statusConfig.draft;
 	const property = client?.propertyDetails?.data?.[0];
-	const address = property
-		? [property.street1, property.street2, property.city, property.state, property.zip]
-				.filter(Boolean)
-				.join(", ")
-		: null;
+	const address = property ? [property.street1, property.street2, property.city, property.state, property.zip].filter(Boolean).join(", ") : null;
 
 	const clientDisplayName = client
 		? client.useCompanyAsPrimary && client.companyName
@@ -148,11 +138,12 @@ const QuoteDetailPage = () => {
 			: `${client.title !== "none" ? `${client.title} ` : ""}${client.firstName} ${client.lastName}`
 		: "";
 
+	const hasIntro = !!(quote.introTitle || quote.introDescription || quote.introImageFileId);
+	const hasAttachments = quote.attachments.length > 0;
+	const hasImages = quote.images.length > 0;
+	const hasClientMessage = !!quote.clientMessage;
 	const lineItems = quote.lineItems.filter((i) => i.type === "line_item");
-	const subtotal = lineItems.reduce(
-		(sum, item) => sum + item.qty * Number(item.unitPrice),
-		0,
-	);
+	const subtotal = lineItems.reduce((sum, item) => sum + item.qty * Number(item.unitPrice), 0);
 	const discount = quote.discount ? Number(quote.discount) : 0;
 	const tax = quote.tax ? Number(quote.tax) : 0;
 	const total = subtotal - discount + tax;
@@ -257,23 +248,18 @@ const QuoteDetailPage = () => {
 						</div>
 					</div>
 
-					{/* Introduction */}
-					{(quote.introTitle || quote.introDescription || quote.introImageFileId) && (
-						<Section title="Introduction">
-							<div className="space-y-3">
-								{quote.introImageFileId && (
-									<div className="h-40 w-full rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
-										<ImageIcon className="h-8 w-8 text-muted-foreground" />
-									</div>
-								)}
-								{quote.introTitle && (
-									<p className="text-sm font-medium">{quote.introTitle}</p>
-								)}
-								{quote.introDescription && (
-									<p className="text-sm text-muted-foreground">{quote.introDescription}</p>
-								)}
-							</div>
-						</Section>
+					{hasIntro || showIntro ? (
+						<IntroWithMutation
+							quoteId={quote.id}
+							initialTitle={quote.introTitle ?? ""}
+							initialDescription={quote.introDescription ?? ""}
+							initialImage={quote.introImage ? { fileId: quote.introImage.id, preview: quote.introImage.url! } : null}
+							onRemoveSection={() => setShowIntro(false)}
+						/>
+					) : (
+						<AddSectionContainer>
+							<Button variant={"outline"} onClick={() => setShowIntro(true)}>Introduction</Button>
+						</AddSectionContainer>
 					)}
 
 					{/* Line Items */}
@@ -314,13 +300,46 @@ const QuoteDetailPage = () => {
 						</Section>
 					)}
 
+					{(hasAttachments || showAttachments) && (
+						<AttachmentsCardWithMutation
+							quoteId={quote.id}
+							initialFiles={quote.attachments}
+							onRemoveSection={() => setShowAttachments(false)}
+						/>
+					)}
+
+					{(hasImages || showImages) && (
+						<ImagesCardWithMutation
+							quoteId={quote.id}
+							initialFiles={quote.images}
+							onRemoveSection={() => setShowImages(false)}
+						/>
+					)}
+
+					{(hasClientMessage || showClientMessage) && (
+						<ClientMessageWithMutation
+							quoteId={quote.id}
+							initialMessage={quote.clientMessage ?? ""}
+							onRemoveSection={() => setShowClientMessage(false)}
+						/>
+					)}
+
+					{((!hasAttachments && !showAttachments) || (!hasImages && !showImages) || (!hasClientMessage && !showClientMessage)) && (
+						<AddSectionContainer>
+							{!hasAttachments && !showAttachments && <Button variant={"outline"} onClick={() => setShowAttachments(true)}>Attachments</Button>}
+							{!hasImages && !showImages && <Button variant={"outline"} onClick={() => setShowImages(true)}>Images</Button>}
+							{!hasClientMessage && !showClientMessage && <Button variant={"outline"} onClick={() => setShowClientMessage(true)}>Client Messages</Button>}
+						</AddSectionContainer>
+					)}
+
 					{/* Payment Schedule */}
 					{quote.depositType !== "none" && (
 						<Section title={quote.depositType === "deposit" ? "Deposit" : "Payment Schedule"}>
 							{quote.depositType === "deposit" && quote.depositValue && (
 								<div className="flex items-center justify-between text-sm">
 									<span className="text-muted-foreground">
-										Required deposit ({quote.depositMode === "%" ? `${quote.depositValue}%` : formatCurrency(Number(quote.depositValue))})
+										Required deposit (
+										{quote.depositMode === "%" ? `${quote.depositValue}%` : formatCurrency(Number(quote.depositValue))})
 									</span>
 									<span className="font-medium">
 										{quote.depositMode === "%"
@@ -357,18 +376,25 @@ const QuoteDetailPage = () => {
 							)}
 						</Section>
 					)}
-
 				</div>
 
 				{/* Right - Notes (30%) */}
 				<div className="sticky top-[4.5rem] h-[calc(100vh-5.5rem)]">
-					<NotesPanel notes={allNotes} total={notesTotal} hasMore={hasNextPage} onLoadMore={fetchNextPage} isLoadingMore={isFetchingNextPage} className="h-full" />
+					<NotesPanel
+						notes={allNotes}
+						total={notesTotal}
+						hasMore={hasNextPage}
+						onLoadMore={fetchNextPage}
+						isLoadingMore={isFetchingNextPage}
+						className="h-full"
+					/>
 				</div>
 			</div>
 
 			<SendEmailDialog
 				open={emailDialogOpen}
 				onOpenChange={setEmailDialogOpen}
+				quoteId={quote.id}
 				quoteNumber={quote.quoteNumber}
 				clientName={clientDisplayName}
 				clientEmail={client?.emails?.[0]?.value ?? null}

@@ -5,14 +5,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getClients } from "@/pages/clients/api";
 import { createRequest } from "../api";
 import ImageDropzone, { type UploadedFile } from "@/components/image-dropzone";
-import LineItemsCard, { type LineItemUI, createEmptyLineItem } from "@/components/line-items-card";
+import LineItemsCard, { type LineItemUI } from "@/components/line-items-card";
 import AssessmentCard, { type AssessmentData } from "@/components/assessment-card";
 import { StickyFooter } from "@/components/sticky-footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Select,
 	SelectContent,
