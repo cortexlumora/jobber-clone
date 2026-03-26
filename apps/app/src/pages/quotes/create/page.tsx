@@ -1040,7 +1040,6 @@ const CreateQuotePage = () => {
 			open={customFieldDialogOpen}
 			onOpenChange={setCustomFieldDialogOpen}
 			appliesTo="quote"
-			appliesToLabel="All quotes"
 		/>
 
 		{/* Deposit / Payment Schedule Dialog */}

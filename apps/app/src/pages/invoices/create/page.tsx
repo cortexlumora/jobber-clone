@@ -76,7 +76,7 @@ const CreateInvoicePage = () => {
 		handleSubmit,
 		watch,
 		setValue,
-		formState: { errors },
+		formState: { },
 	} = useForm<CreateInvoiceForm>({
 		resolver: zodResolver(createInvoiceSchema) as never,
 		defaultValues: defaultFormValues,

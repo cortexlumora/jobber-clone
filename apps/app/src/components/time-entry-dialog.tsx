@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createTimeEntrySchema, type CreateTimeEntryForm } from "@repo/zod/time-entry";
@@ -58,7 +58,7 @@ const TimeEntryDialog = ({ open, onOpenChange, jobId, timeEntry }: TimeEntryDial
 		reset,
 		formState: { errors },
 	} = useForm<CreateTimeEntryForm>({
-		resolver: zodResolver(createTimeEntrySchema),
+		resolver: zodResolver(createTimeEntrySchema) as unknown as Resolver<CreateTimeEntryForm>,
 		defaultValues,
 	});
 

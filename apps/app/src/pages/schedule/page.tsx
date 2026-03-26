@@ -4,7 +4,6 @@ import { useNavigate } from "react-router";
 import { getJobs } from "@/pages/jobs/api";
 import { getRequests } from "@/pages/requests/api";
 import { getClients } from "@/pages/clients/api";
-import type { ClientDTO } from "@repo/dto";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -137,14 +136,14 @@ const SchedulePage = () => {
 		}
 
 		for (const req of requests) {
-			if (req.assessmentStartDate) {
+			if (req.assessment?.startDate) {
 				evts.push({
 					id: req.id,
 					title: req.title,
 					clientName: getClientName(req.clientId),
-					date: req.assessmentStartDate,
-					startTime: req.assessmentStartTime,
-					endTime: req.assessmentEndTime,
+					date: req.assessment.startDate,
+					startTime: req.assessment.startTime,
+					endTime: req.assessment.endTime,
 					type: "request",
 					color: "bg-blue-600",
 					assignee: null,
@@ -323,7 +322,7 @@ function MonthView({
 		<>
 			{/* Day headers */}
 			<div className="grid grid-cols-7 border-b">
-				{DAYS.map((day, i) => {
+				{DAYS.map((day) => {
 					const isToday = day === DAYS[today.getDay()];
 					return (
 						<div
@@ -525,9 +524,6 @@ function DayView({
 		// Put events without assignee in "Unassigned"
 		return map;
 	}, [events]);
-
-	const anytimeEvents = events.filter((e) => !e.startTime);
-	const timedEvents = events.filter((e) => e.startTime);
 
 	return (
 		<>

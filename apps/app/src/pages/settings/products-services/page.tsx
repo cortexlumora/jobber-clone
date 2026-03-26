@@ -30,7 +30,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Search, Plus, X, Upload, Download, ChevronLeft, ChevronRight } from "lucide-react";
-import { getProductsServices, createProductService, deleteProductService } from "../api";
+import { getProductsServices, createProductService } from "../api";
 
 interface ProductService {
 	id: string;
@@ -100,10 +100,6 @@ const ProductsServicesPage = () => {
 		},
 	});
 
-	const deleteMutation = useMutation({
-		mutationFn: deleteProductService,
-		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["products-services"] }),
-	});
 
 	const handleCreate = () => {
 		createMutation.mutate(form);

@@ -135,7 +135,7 @@ const CustomFieldsPage = () => {
 	const [showTip, setShowTip] = useState(true);
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [dialogAppliesTo, setDialogAppliesTo] = useState<string>("client");
-	const [dialogLabel, setDialogLabel] = useState("All clients");
+
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -180,9 +180,8 @@ const CustomFieldsPage = () => {
 		onSettled: () => queryClient.invalidateQueries({ queryKey: ["custom-field-definitions"] }),
 	});
 
-	const openDialog = (appliesTo: string, label: string) => {
+	const openDialog = (appliesTo: string) => {
 		setDialogAppliesTo(appliesTo);
-		setDialogLabel(label);
 		setDialogOpen(true);
 	};
 
@@ -244,7 +243,7 @@ const CustomFieldsPage = () => {
 									<Button
 										variant="outline"
 										size="sm"
-										onClick={() => openDialog(cat.key, cat.appliesToLabel)}
+										onClick={() => openDialog(cat.key)}
 									>
 										Add Field
 									</Button>
@@ -265,7 +264,7 @@ const CustomFieldsPage = () => {
 												variant="outline"
 												size="sm"
 												className="mt-2"
-												onClick={() => openDialog(cat.key, cat.appliesToLabel)}
+												onClick={() => openDialog(cat.key)}
 											>
 												Add Field
 											</Button>
@@ -304,7 +303,6 @@ const CustomFieldsPage = () => {
 				open={dialogOpen}
 				onOpenChange={setDialogOpen}
 				appliesTo={dialogAppliesTo}
-				appliesToLabel={dialogLabel}
 			/>
 		</div>
 	);
