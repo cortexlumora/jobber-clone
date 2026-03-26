@@ -1,21 +1,27 @@
-FROM node:20-alpine AS base
-RUN corepack enable
+FROM node:20-alpine
 
-FROM base AS pruner
-WORKDIR /app
-RUN npm install -g turbo@^2
-COPY . .
-RUN turbo prune api --docker
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 
-FROM base AS builder
 WORKDIR /app
-COPY --from=pruner /app/out/json/ .
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/db/package.json ./packages/db/
+COPY packages/dto/package.json ./packages/dto/
+COPY packages/zod/package.json ./packages/zod/
+COPY packages/common/package.json ./packages/common/
+
 RUN pnpm install --frozen-lockfile
-COPY --from=pruner /app/out/full/ .
+
+COPY . .
+
 RUN pnpm --filter api build
 
-FROM node:20-alpine AS runner
-WORKDIR /app
-COPY --from=builder /app/apps/api/dist/index.js .
+COPY apps/api/start.sh ./apps/api/
+RUN chmod +x ./apps/api/start.sh
+
+WORKDIR /app/apps/api
+
 EXPOSE 3001
-CMD ["node", "index.js"]
+
+CMD ["./start.sh"]
