@@ -1,1 +1,0 @@
-ALTER TABLE "quotes" ADD COLUMN "related_request_id" uuid;

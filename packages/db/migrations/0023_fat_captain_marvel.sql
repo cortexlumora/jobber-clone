@@ -1,1 +1,0 @@
-ALTER TABLE "request_forms" ADD COLUMN "description" varchar(1000);
